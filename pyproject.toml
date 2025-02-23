@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metaflow-card-sparecores"
+version = "0.1.0"
+description = "Resource usage and cloud server comparison/suggestion report."
+readme = "README.md"
+authors = [
+    {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+  "Operating System :: POSIX :: Linux",
+]
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+include = ["metaflow_extensions.card_sparecores", "metaflow_extensions.card_sparecores.plugins.cards.sparecores"]

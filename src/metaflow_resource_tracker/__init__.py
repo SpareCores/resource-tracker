@@ -19,7 +19,10 @@ class track_resources:
             print(f"Tracking resources in {getpid()}")
             pid_tracker_process = Process(
                 target=PidTracker,
-                kwargs={"output_file": self.pid_tracker_data_file.name},
+                kwargs={
+                    "interval": self.interval,
+                    "output_file": self.pid_tracker_data_file.name,
+                },
                 daemon=True,
             )
             pid_tracker_process.start()

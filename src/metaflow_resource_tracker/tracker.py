@@ -1,5 +1,5 @@
 from contextlib import suppress
-from os import getpid
+from os import cpu_count, getpid, sysconf
 from time import sleep, time
 
 
@@ -151,34 +151,35 @@ class Tracker:
         self.interval = interval
         self.children = children
         self.start_time = time()
+        self.stats = get_pid_stats(pid, children)
         # self._start_tracking()
 
-    def _print_pid_stats_csv(self, pid):
-        """Print the current stats of a process as a CSV row."""
-        current_time = time()
-        current_children = get_pid_children(pid)
-        current_pss_rollup = get_pid_pss_rollup(pid)
-        if self.children:
-            for child in current_children:
-                current_pss_rollup += get_pid_pss_rollup(child)
-        current_proc_times = get_pid_proc_times(pid, self.children)
-        current_io = get_pid_proc_io(pid)
-        if self.children:
-            for child in current_children:
-                child_io = get_pid_proc_io(child)
-                for key in current_io:
-                    current_io[key] += child_io[key]
-        current_data = [
-            current_time,
-            pid,
-            len(current_children) if self.children else None,
-            current_proc_times.utime,
-            current_proc_times.stime,
-            current_pss_rollup,
-            current_io["read_bytes"],
-            current_io["write_bytes"],
-        ]
-        print(",".join(map(str, current_data)))
+    def diff_stats(self):
+        """Calculate stats since last call."""
+        last_stats = self.stats
+        self.stats = get_pid_stats(self.pid, self.children)
+
+        return {
+            "timestamp": self.stats["timestamp"],
+            "duration": self.stats["timestamp"] - last_stats["timestamp"],
+            "pid": self.pid,
+            "children": self.stats["children"],
+            "utime": self.stats["utime"] - last_stats["utime"],
+            "stime": self.stats["stime"] - last_stats["stime"],
+            "cpu_usage": (
+                (
+                    (self.stats["utime"] + self.stats["stime"])
+                    - (last_stats["utime"] + last_stats["stime"])
+                )
+                / (self.stats["timestamp"] - last_stats["timestamp"])
+                / sysconf("SC_CLK_TCK")
+                / cpu_count()
+                * 100
+            ),
+            "pss": self.stats["pss"],
+            "read_bytes": self.stats["read_bytes"] - last_stats["read_bytes"],
+            "write_bytes": self.stats["write_bytes"] - last_stats["write_bytes"],
+        }
 
     def start_tracking(self):
         """Start an infinite loop tracking resource usage."""
@@ -189,3 +190,8 @@ class Tracker:
         while True:
             self._print_pid_stats_csv(self.pid)
             sleep(self.interval)
+
+
+t = Tracker(7501)
+t = Tracker(423838)
+print(t.diff_stats())

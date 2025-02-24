@@ -37,6 +37,8 @@ class track_resources:
             pid_tracker_process = Process(
                 target=PidTracker,
                 kwargs={
+                    # although this is the default, but better to be explicit in multiprocessing
+                    "pid": getpid(),
                     "interval": self.interval,
                     "output_file": self.pid_tracker_data_file.name,
                 },

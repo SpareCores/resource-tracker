@@ -1,5 +1,5 @@
 from contextlib import suppress
-from os import cpu_count, getpid, sysconf
+from os import getpid, sysconf
 from time import sleep, time
 
 
@@ -32,7 +32,7 @@ def get_pid_rss(pid):
                 if line.startswith("VmRSS"):
                     return int(line.split()[1])
     except FileNotFoundError:
-        return None
+        return 0
 
 
 def get_pid_pss_rollup(pid):
@@ -52,10 +52,12 @@ def get_pid_pss_rollup(pid):
 def get_pid_proc_times(pid: int, children: bool = True):
     """Get the current user and system times of a process from /proc/<pid>/stat.
 
+    Note that cannot use cutime/cstime for real-time monitoring, as they need to
+    wait for the children to exit.
+
     Args:
-        pid (int): Process ID to track.
-        children (bool, optional): Whether to include resources used by child processes.
-            Defaults to True.
+        pid (int): Process ID to track
+        children (bool, optional): Whether to include stats from exited child processes. Defaults to True.
 
     Returns:
         dict[str, int]: A dictionary containing process time information:
@@ -76,6 +78,8 @@ def get_pid_proc_times(pid: int, children: bool = True):
 
 def get_pid_proc_io(pid):
     """Get the total bytes read and written by a process from /proc/<pid>/io.
+
+    Note that it is not tracking reading from memory-mapped objects.
 
     Returns:
         dict[str, int]: A dictionary containing the total bytes read and written by the process.
@@ -104,8 +108,8 @@ def get_pid_stats(pid, children: bool = True):
         - utime (int): The total user mode CPU time in clock ticks.
         - stime (int): The total system mode CPU time in clock ticks.
         - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
-        - read_bytes (int): The total number of bytes read in kB.
-        - write_bytes (int): The total number of bytes written in kB.
+        - read_bytes (int): The total number of bytes read.
+        - write_bytes (int): The total number of bytes written.
     """
     current_time = time()
     current_children = get_pid_children(pid)
@@ -114,6 +118,10 @@ def get_pid_stats(pid, children: bool = True):
         for child in current_children:
             current_pss += get_pid_pss_rollup(child)
     current_proc_times = get_pid_proc_times(pid, children)
+    if children:
+        for child in current_children:
+            current_proc_times["utime"] += get_pid_proc_times(child, True)["utime"]
+            current_proc_times["stime"] += get_pid_proc_times(child, True)["stime"]
     current_io = get_pid_proc_io(pid)
     if children:
         for child in current_children:
@@ -127,8 +135,8 @@ def get_pid_stats(pid, children: bool = True):
         "utime": current_proc_times["utime"],
         "stime": current_proc_times["stime"],
         "pss": current_pss,
-        "read_bytes": current_io["read_bytes"] / 1024,
-        "write_bytes": current_io["write_bytes"] / 1024,
+        "read_bytes": current_io["read_bytes"],
+        "write_bytes": current_io["write_bytes"],
     }
 
 
@@ -141,13 +149,12 @@ class Tracker:
     Args:
         pid (int, optional): Process ID to track. Defaults to current process ID.
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
-        children (bool, optional): Whether to track child processes. Defaults to False.
+        children (bool, optional): Whether to track child processes. Defaults to True.
     """
 
-    def __init__(
-        self, pid: int = getpid(), interval: float = 1, children: bool = False
-    ):
+    def __init__(self, pid: int = getpid(), interval: float = 1, children: bool = True):
         self.pid = pid
+        self.status = "running"
         self.interval = interval
         self.children = children
         self.start_time = time()
@@ -161,37 +168,49 @@ class Tracker:
 
         return {
             "timestamp": self.stats["timestamp"],
-            "duration": self.stats["timestamp"] - last_stats["timestamp"],
+            "duration": round(self.stats["timestamp"] - last_stats["timestamp"], 3),
             "pid": self.pid,
             "children": self.stats["children"],
-            "utime": self.stats["utime"] - last_stats["utime"],
-            "stime": self.stats["stime"] - last_stats["stime"],
-            "cpu_usage": (
-                (
-                    (self.stats["utime"] + self.stats["stime"])
-                    - (last_stats["utime"] + last_stats["stime"])
-                )
-                / (self.stats["timestamp"] - last_stats["timestamp"])
-                / sysconf("SC_CLK_TCK")
-                / cpu_count()
-                * 100
+            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
+            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "cpu_usage": round(
+                max(
+                    0,
+                    (
+                        (
+                            (self.stats["utime"] + self.stats["stime"])
+                            - (last_stats["utime"] + last_stats["stime"])
+                        )
+                        / (self.stats["timestamp"] - last_stats["timestamp"])
+                        / sysconf("SC_CLK_TCK")
+                    ),
+                ),
+                4,
             ),
             "pss": self.stats["pss"],
-            "read_bytes": self.stats["read_bytes"] - last_stats["read_bytes"],
-            "write_bytes": self.stats["write_bytes"] - last_stats["write_bytes"],
+            "read_bytes": max(0, self.stats["read_bytes"] - last_stats["read_bytes"]),
+            "write_bytes": max(
+                0, self.stats["write_bytes"] - last_stats["write_bytes"]
+            ),
         }
 
     def start_tracking(self):
-        """Start an infinite loop tracking resource usage."""
-        # TODO print CSV header
+        """Start an infinite loop tracking resource usage of the process until it exits."""
         # NOTE if pid is missing, that's system-wide info
         # TODO add system-wide info, including network traffic
         # TODO update to run this on all subprocesses
+        print(",".join(self.stats.keys()))
         while True:
-            self._print_pid_stats_csv(self.pid)
+            current_stats = self.diff_stats()
+            if current_stats["pss"] == 0:
+                # the process has exited
+                self.status = "exited"
+                break
+            print(",".join(str(v) for v in current_stats.values()))
             sleep(self.interval)
 
 
 t = Tracker(7501)
-t = Tracker(423838)
+t.start_tracking()
+t = Tracker(481457)
 print(t.diff_stats())

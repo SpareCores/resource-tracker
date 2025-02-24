@@ -1,6 +1,7 @@
 from contextlib import suppress
 from os import getpid, sysconf
 from time import sleep, time
+from typing import Optional
 
 
 def get_pid_children(pid):
@@ -154,6 +155,7 @@ class PidTracker:
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
         children (bool, optional): Whether to track child processes. Defaults to True.
         autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
+        output_file (str, optional): File to write the output to. Defaults to None, print to stdout.
     """
 
     def __init__(
@@ -162,6 +164,7 @@ class PidTracker:
         interval: float = 1,
         children: bool = True,
         autostart: bool = True,
+        output_file: str = None,
     ):
         self.pid = pid
         self.status = "running"
@@ -171,7 +174,7 @@ class PidTracker:
         self.start_time = time()
         self.stats = get_pid_stats(pid, children)
         if autostart:
-            self.start_tracking()
+            self.start_tracking(output_file)
 
     def diff_stats(self):
         """Calculate stats since last call."""
@@ -208,17 +211,30 @@ class PidTracker:
             ),
         }
 
-    def start_tracking(self, print_header: bool = True):
+    def start_tracking(
+        self, output_file: Optional[str] = None, print_header: bool = True
+    ):
         """Start an infinite loop tracking resource usage of the process until it exits."""
-        while True:
-            current_time = time()
-            current_stats = self.diff_stats()
-            if current_stats["pss"] == 0:
-                # the process has exited
-                self.status = "exited"
-                break
-            if self.cycle == 1 and print_header:
-                print(",".join(current_stats.keys()))
-            else:
-                print(",".join(str(v) for v in current_stats.values()))
-            sleep(max(0, self.interval - (time() - current_time)))
+        file_handle = open(output_file, "w") if output_file else None
+        try:
+            while True:
+                current_time = time()
+                current_stats = self.diff_stats()
+                if current_stats["pss"] == 0:
+                    # the process has exited
+                    self.status = "exited"
+                    break
+                if self.cycle == 1 and print_header:
+                    values = current_stats.keys()
+                else:
+                    values = [str(v) for v in current_stats.values()]
+                line = ",".join(values)
+                if file_handle:
+                    file_handle.write(line + "\n")
+                    file_handle.flush()
+                else:
+                    print(line)
+                sleep(max(0, self.interval - (time() - current_time)))
+        finally:
+            if file_handle:
+                file_handle.close()

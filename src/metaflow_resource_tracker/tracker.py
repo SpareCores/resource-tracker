@@ -156,6 +156,7 @@ class Tracker:
         self.pid = pid
         self.status = "running"
         self.interval = interval
+        self.cycle = 0
         self.children = children
         self.start_time = time()
         self.stats = get_pid_stats(pid, children)
@@ -165,6 +166,7 @@ class Tracker:
         """Calculate stats since last call."""
         last_stats = self.stats
         self.stats = get_pid_stats(self.pid, self.children)
+        self.cycle += 1
 
         return {
             "timestamp": self.stats["timestamp"],
@@ -194,14 +196,15 @@ class Tracker:
             ),
         }
 
-    def start_tracking(self):
+    def start_tracking(self, print_header: bool = True):
         """Start an infinite loop tracking resource usage of the process until it exits."""
         # NOTE if pid is missing, that's system-wide info
         # TODO add system-wide info, including network traffic
         # TODO update to run this on all subprocesses
-        print(",".join(self.stats.keys()))
         while True:
             current_stats = self.diff_stats()
+            if print_header and self.cycle == 1:
+                print(",".join(current_stats.keys()))
             if current_stats["pss"] == 0:
                 # the process has exited
                 self.status = "exited"

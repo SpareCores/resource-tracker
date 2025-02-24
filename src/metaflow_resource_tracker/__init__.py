@@ -33,11 +33,10 @@ class track_resources:
     def __call__(self, step_fn):
         @wraps(step_fn)
         def step_wrapper(step_obj):
-            print(f"Tracking resources in {getpid()}")
             pid_tracker_process = Process(
                 target=PidTracker,
                 kwargs={
-                    # although this is the default, but better to be explicit in multiprocessing
+                    # although this is the default, but better to be explicit with multiprocessing
                     "pid": getpid(),
                     "interval": self.interval,
                     "output_file": self.pid_tracker_data_file.name,
@@ -45,12 +44,12 @@ class track_resources:
                 daemon=True,
             )
             pid_tracker_process.start()
-            step_result = step_fn(step_obj)
-            print(f"Resources tracked in {getpid()}")
-            pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
-            if self.create_artifact:
-                setattr(step_obj, "pid_tracker_log", pid_tracker_results)
-            unlink(self.pid_tracker_data_file.name)
-            return step_result
+            try:
+                step_fn(step_obj)
+            finally:
+                pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
+                if self.create_artifact:
+                    setattr(step_obj, "pid_tracker_log", pid_tracker_results)
+                unlink(self.pid_tracker_data_file.name)
 
         return step_wrapper

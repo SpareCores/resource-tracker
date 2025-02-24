@@ -1,7 +1,7 @@
 from multiprocessing import Pool
 from time import sleep
 
-from metaflow import FlowSpec, step
+from metaflow import Flow, FlowSpec, step
 
 from metaflow_resource_tracker import track_resources
 
@@ -32,6 +32,10 @@ class ResourceTrackingFlow(FlowSpec):
     @step
     def end(self):
         pass
+
+
+def get_tracker_artifact() -> str:
+    return Flow("ResourceTrackingFlow").latest_run.data.pid_tracker_log
 
 
 if __name__ == "__main__":

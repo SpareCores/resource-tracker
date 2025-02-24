@@ -184,8 +184,6 @@ class PidTracker:
 
         return {
             "timestamp": self.stats["timestamp"],
-            "cycle": self.cycle,
-            "duration": round(self.stats["timestamp"] - last_stats["timestamp"], 3),
             "pid": self.pid,
             "children": self.stats["children"],
             "utime": max(0, self.stats["utime"] - last_stats["utime"]),

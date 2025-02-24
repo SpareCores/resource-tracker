@@ -12,7 +12,7 @@ class Tracker:
         self._start_tracking()
 
     @staticmethod
-    def get_vm_rss(pid):
+    def _get_vm_rss(pid):
         """Get the current resident set size of a process.
 
         Returns:
@@ -25,7 +25,7 @@ class Tracker:
         return None
 
     @staticmethod
-    def get_pid_stat(pid):
+    def _get_pid_stat(pid):
         """Get the current stats of a process from /proc/<pid>/stat.
 
         Returns:
@@ -35,7 +35,7 @@ class Tracker:
             return f.read().split()
 
     @staticmethod
-    def get_pid_io(pid):
+    def _get_pid_io(pid):
         """Get the current I/O stats of a process from /proc/<pid>/io.
 
         Returns:
@@ -46,10 +46,10 @@ class Tracker:
                 parts[0]: int(parts[1]) for line in f if (parts := line.split(": "))
             }
 
-    def print_pid_stats_csv(self, pid):
+    def _print_pid_stats_csv(self, pid):
         """Print the current stats of a process as a CSV row."""
         current_usage = getrusage(RUSAGE_SELF)
-        current_io = self.get_pid_io(pid)
+        current_io = self._get_pid_io(pid)
         current_time = time()
         current_data = [
             current_time,
@@ -57,19 +57,19 @@ class Tracker:
             current_usage.ru_utime,
             current_usage.ru_stime,
             # TODO record number of threads?
-            self.get_vm_rss(pid),
+            self._get_vm_rss(pid),
             current_usage.ru_maxrss,
             current_io["read_bytes"],
             current_io["write_bytes"],
         ]
         print(",".join(map(str, current_data)))
 
-    def _start_tracking(self):
+    def start_tracking(self):
         """Start an infinite loop tracking resource usage."""
         # TODO print CSV header
         # NOTE if pid is missing, that's system-wide info
         # TODO add system-wide info, including network traffic
         # TODO update to run this on all subprocesses
         while True:
-            self.print_pid_stats_csv(self.pid)
+            self._print_pid_stats_csv(self.pid)
             sleep(self.interval)

@@ -153,9 +153,16 @@ class PidTracker:
         pid (int, optional): Process ID to track. Defaults to current process ID.
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
         children (bool, optional): Whether to track child processes. Defaults to True.
+        autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
     """
 
-    def __init__(self, pid: int = getpid(), interval: float = 1, children: bool = True):
+    def __init__(
+        self,
+        pid: int = getpid(),
+        interval: float = 1,
+        children: bool = True,
+        autostart: bool = True,
+    ):
         self.pid = pid
         self.status = "running"
         self.interval = interval
@@ -163,7 +170,8 @@ class PidTracker:
         self.children = children
         self.start_time = time()
         self.stats = get_pid_stats(pid, children)
-        self.start_tracking()
+        if autostart:
+            self.start_tracking()
 
     def diff_stats(self):
         """Calculate stats since last call."""

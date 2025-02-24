@@ -170,6 +170,7 @@ class Tracker:
 
         return {
             "timestamp": self.stats["timestamp"],
+            "cycle": self.cycle,
             "duration": round(self.stats["timestamp"] - last_stats["timestamp"], 3),
             "pid": self.pid,
             "children": self.stats["children"],
@@ -202,6 +203,7 @@ class Tracker:
         # TODO add system-wide info, including network traffic
         # TODO update to run this on all subprocesses
         while True:
+            current_time = time()
             current_stats = self.diff_stats()
             if print_header and self.cycle == 1:
                 print(",".join(current_stats.keys()))
@@ -210,7 +212,7 @@ class Tracker:
                 self.status = "exited"
                 break
             print(",".join(str(v) for v in current_stats.values()))
-            sleep(self.interval)
+            sleep(max(0, self.interval - (time() - current_time)))
 
 
 t = Tracker(7501)

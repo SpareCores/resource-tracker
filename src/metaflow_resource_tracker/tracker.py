@@ -176,6 +176,10 @@ class PidTracker:
         if autostart:
             self.start_tracking(output_file)
 
+    def __call__(self):
+        """Dummy method to make this class callable."""
+        pass
+
     def diff_stats(self):
         """Calculate stats since last call."""
         last_stats = self.stats

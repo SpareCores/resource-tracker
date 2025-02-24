@@ -140,7 +140,10 @@ def get_pid_stats(pid, children: bool = True):
     }
 
 
-class Tracker:
+# TODO add system-wide info, including network traffic
+
+
+class PidTracker:
     """Track resource usage of a process and optionally its children.
 
     This class monitors system resources like CPU time, memory usage, and I/O operations
@@ -160,7 +163,7 @@ class Tracker:
         self.children = children
         self.start_time = time()
         self.stats = get_pid_stats(pid, children)
-        # self._start_tracking()
+        self.start_tracking()
 
     def diff_stats(self):
         """Calculate stats since last call."""
@@ -199,23 +202,15 @@ class Tracker:
 
     def start_tracking(self, print_header: bool = True):
         """Start an infinite loop tracking resource usage of the process until it exits."""
-        # NOTE if pid is missing, that's system-wide info
-        # TODO add system-wide info, including network traffic
-        # TODO update to run this on all subprocesses
         while True:
             current_time = time()
             current_stats = self.diff_stats()
-            if print_header and self.cycle == 1:
-                print(",".join(current_stats.keys()))
             if current_stats["pss"] == 0:
                 # the process has exited
                 self.status = "exited"
                 break
-            print(",".join(str(v) for v in current_stats.values()))
+            if self.cycle == 1 and print_header:
+                print(",".join(current_stats.keys()))
+            else:
+                print(",".join(str(v) for v in current_stats.values()))
             sleep(max(0, self.interval - (time() - current_time)))
-
-
-t = Tracker(7501)
-t.start_tracking()
-t = Tracker(481457)
-print(t.diff_stats())

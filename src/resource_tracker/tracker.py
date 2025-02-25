@@ -131,6 +131,7 @@ def get_pid_stats(pid, children: bool = True):
             child_io = get_pid_proc_io(child)
             for key in set(current_io) & set(child_io):
                 current_io[key] += child_io[key]
+    # TODO add nvidia-smi pmon query with supress
     return {
         "timestamp": current_time,
         "pid": pid,

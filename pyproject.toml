@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "metaflow-resource-tracker"
+name = "resource-tracker"
 version = "0.1.0"
-description = "Resource usage tracker and cloud server comparison/suggestion card report."
+description = "Resource usage tracker and cloud server comparison/suggestion tool."
 readme = "README.md"
 authors = [
     {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}
@@ -16,6 +16,10 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
 ]
 
+[project.optional-dependencies]
+metaflow = ["metaflow"]
+all = ["resource-tracker[metaflow]"]
+
 [tool.setuptools.packages.find]
 where = ["src/"]
-include = ["metaflow_resource_tracker", "metaflow_extensions.card_sparecores", "metaflow_extensions.card_sparecores.plugins.cards.sparecores"]
+include = ["resource_tracker"]

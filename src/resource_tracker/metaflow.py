@@ -53,7 +53,7 @@ class track_resources:
                 unlink(self.pid_tracker_data_file.name)
                 if self.create_card:
                     from metaflow import current
-                    from metaflow.cards import Image, Markdown, Table
+                    from metaflow.cards import Table
 
                     current.card["resource_tracker"].append(
                         Table(

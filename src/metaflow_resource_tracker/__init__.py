@@ -51,5 +51,20 @@ class track_resources:
                 if self.create_artifact:
                     setattr(step_obj, "pid_tracker_log", pid_tracker_results)
                 unlink(self.pid_tracker_data_file.name)
+                if self.create_card:
+                    from metaflow import current
+                    from metaflow.cards import Image, Markdown, Table
 
-        return step_wrapper
+                    current.card["resource_tracker"].append(
+                        Table(
+                            [list(p.values()) for p in pid_tracker_results],
+                            headers=list(pid_tracker_results[0].keys()),
+                        ),
+                    )
+
+        if self.create_card:
+            from metaflow import card
+
+            return card(type="blank", id="resource_tracker")(step_wrapper)
+        else:
+            return step_wrapper

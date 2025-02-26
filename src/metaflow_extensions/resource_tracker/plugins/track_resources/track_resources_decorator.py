@@ -3,8 +3,6 @@ from multiprocessing import Process
 from os import getpid, unlink
 from tempfile import NamedTemporaryFile
 
-from metaflow import current
-from metaflow.cards import Table
 from metaflow.decorators import StepDecorator
 
 from .resource_tracker.tracker import PidTracker
@@ -79,6 +77,9 @@ class ResourceTrackerDecorator(StepDecorator):
                 task_datastore.set_task_info("pid_tracker_log", pid_tracker_results)
 
             if self.create_card and pid_tracker_results:
+                from metaflow import current
+                from metaflow.cards import Table
+
                 current.card["resource_tracker"].append(
                     Table(
                         [list(p.values()) for p in pid_tracker_results],

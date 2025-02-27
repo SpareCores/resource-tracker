@@ -21,6 +21,12 @@ class ResourceTrackerDecorator(StepDecorator):
     """Track resources used in a step."""
 
     name = "track_resources"
+    attrs = {
+        "interval": {"type": float},
+        "create_artifact": {"type": bool},
+        "create_card": {"type": bool},
+    }
+    defaults = {"interval": 1.0, "create_artifact": False, "create_card": True}
 
     def __init__(
         self,

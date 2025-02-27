@@ -88,10 +88,8 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         try:
             pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
-            # TODO fix
             if self.attributes["create_artifact"]:
-            #     task_datastore.set_task_info("pid_tracker_log", pid_tracker_results)
-
+                setattr(flow, "pid_tracker_data", pid_tracker_results)
             if self.attributes["create_card"] and pid_tracker_results:
                 from metaflow import current
                 from metaflow.cards import Table

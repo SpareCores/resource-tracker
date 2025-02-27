@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "resource_tracker"
+name = "resource-tracker"
 version = "0.1.0"
 description = "Resource usage tracker and cloud server comparison/suggestion tool."
 readme = "README.md"
@@ -18,11 +18,11 @@ classifiers = [
 
 [project.optional-dependencies]
 metaflow = ["metaflow"]
-all = ["resource_tracker[metaflow]"]
+all = ["resource-tracker[metaflow]"]
 
 [tool.setuptools.packages.find]
 where = ["src/"]
 include = [
     "resource_tracker",
-    "metaflow_extensions.resource_tracker.*",
+    "metaflow_extensions.*",
 ]

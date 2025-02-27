@@ -37,7 +37,6 @@ class ResourceTrackerDecorator(StepDecorator):
     def step_init(
         self, flow, graph, step_name, decorators, environment, flow_datastore, logger
     ):
-        self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
         self.logger = logger
         if self.attributes["create_card"]:
             self.card_name = "resource_tracker_" + step_name
@@ -67,6 +66,7 @@ class ResourceTrackerDecorator(StepDecorator):
         ubf_context,
         inputs,
     ):
+        self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
         self.pid_tracker_process = Process(
             target=PidTracker,
             kwargs={
@@ -102,9 +102,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 )
         except Exception as e:
             self.logger(
-                f"Failed to process resource tracking results: {e}",
-                # TODO bad doesn't work here?
-                bad=True,
+                f"*ERROR* Failed to process resource tracking results: {e}",
+                bad=True,  # NOTE this settings doesn't do anything here? works outside of the decorator, though
                 timestamp=False,
             )
         finally:

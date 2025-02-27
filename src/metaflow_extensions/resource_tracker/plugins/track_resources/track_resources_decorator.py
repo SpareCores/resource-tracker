@@ -93,6 +93,6 @@ class ResourceTrackerDecorator(StepDecorator):
                     ),
                 )
         except Exception as e:
-            self.logger.exception(f"Failed to process resource tracking results: {e}")
+            self.logger(f"Failed to process resource tracking results: {e}")
         finally:
             unlink(self.pid_tracker_data_file.name)

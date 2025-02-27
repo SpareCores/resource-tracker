@@ -1,9 +1,7 @@
 from multiprocessing import Pool
 from time import sleep
 
-from metaflow import Flow, FlowSpec, step
-
-# from resource_tracker.metaflow import track_resources
+from metaflow import Flow, FlowSpec, step, track_resources
 
 
 def heavy_computation(n=1e8):

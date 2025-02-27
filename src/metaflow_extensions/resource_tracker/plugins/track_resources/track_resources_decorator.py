@@ -79,8 +79,8 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         try:
             pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
-            if self.create_artifact:
-                task_datastore.set_task_info("pid_tracker_log", pid_tracker_results)
+            # if self.create_artifact:
+            #     task_datastore.set_task_info("pid_tracker_log", pid_tracker_results)
 
             if self.create_card and pid_tracker_results:
                 from metaflow import current
@@ -95,6 +95,7 @@ class ResourceTrackerDecorator(StepDecorator):
         except Exception as e:
             self.logger(
                 f"Failed to process resource tracking results: {e}",
+                # TODO bad doesn't work here?
                 bad=True,
                 timestamp=False,
             )

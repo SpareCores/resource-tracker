@@ -18,7 +18,10 @@ classifiers = [
 
 [project.optional-dependencies]
 metaflow = ["metaflow"]
-all = ["resource-tracker[metaflow]"]
+# disabled the "all" flag due to not working with metaflow extension system
+# https://outerbounds-community.slack.com/archives/C020U025QJK/p1740659880844659?thread_ts=1740603078.574349&cid=C020U025QJK
+# TODO reenable when fix/workaround is available
+#all = ["resource-tracker[metaflow]"]
 
 [tool.setuptools.packages.find]
 where = ["src/"]

@@ -40,9 +40,24 @@ class ResourceTrackerDecorator(StepDecorator):
         self.create_card = create_card
         super().__init__(**kwargs)
 
-    def step_init(self, flow, graph, step, decos, environment, datastore, logger):
+    def step_init(
+        self, flow, graph, step_name, decorators, environment, flow_datastore, logger
+    ):
         self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
         self.logger = logger
+        if self.create_card:
+            self.card_name = "resource_tracker_" + step_name
+            resource_tracker_card_exists = any(
+                getattr(decorator, "name", None) == "card"
+                and getattr(decorator, "attributes", None).get("id") == self.card_name
+                for decorator in decorators
+            )
+            if not resource_tracker_card_exists:
+                from metaflow.plugins.cards.card_decorator import CardDecorator
+
+                decorators.append(
+                    CardDecorator(attributes={"type": "blank", "id": self.card_name})
+                )
 
     def task_pre_step(
         self,
@@ -86,7 +101,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 from metaflow import current
                 from metaflow.cards import Table
 
-                current.card["resource_tracker"].append(
+                current.card[self.card_name].append(
                     Table(
                         [list(p.values()) for p in pid_tracker_results],
                         headers=list(pid_tracker_results[0].keys()),

@@ -1,7 +1,7 @@
 from multiprocessing import Pool
 from time import sleep
 
-from metaflow import Flow, FlowSpec, card, step, track_resources
+from metaflow import Flow, FlowSpec, step, track_resources
 
 
 def heavy_computation(n=1e8):
@@ -18,7 +18,6 @@ class ResourceTrackingFlow(FlowSpec):
         print("Starting")
         self.next(self.do_heavy_computation)
 
-    @card(id="resource_tracker")
     @track_resources(create_artifact=True)
     @step
     def do_heavy_computation(self):

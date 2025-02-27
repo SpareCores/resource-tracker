@@ -28,24 +28,18 @@ class ResourceTrackerDecorator(StepDecorator):
     }
     defaults = {"interval": 1.0, "create_artifact": False, "create_card": True}
 
-    def __init__(
-        self,
-        interval: float = 1,
-        create_artifact: bool = False,
-        create_card: bool = True,
-        **kwargs,
-    ):
-        self.interval = interval
-        self.create_artifact = create_artifact
-        self.create_card = create_card
-        super().__init__(**kwargs)
+    def __init__(self, attributes=None, statically_defined=False):
+        self._attributes_with_user_values = (
+            set(attributes.keys()) if attributes is not None else set()
+        )
+        super().__init__(attributes, statically_defined)
 
     def step_init(
         self, flow, graph, step_name, decorators, environment, flow_datastore, logger
     ):
         self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
         self.logger = logger
-        if self.create_card:
+        if self.attributes["create_card"]:
             self.card_name = "resource_tracker_" + step_name
             resource_tracker_card_exists = any(
                 getattr(decorator, "name", None) == "card"
@@ -77,7 +71,7 @@ class ResourceTrackerDecorator(StepDecorator):
             target=PidTracker,
             kwargs={
                 "pid": getpid(),
-                "interval": self.interval,
+                "interval": self.attributes["interval"],
                 "output_file": self.pid_tracker_data_file.name,
             },
             daemon=True,
@@ -94,10 +88,11 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         try:
             pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
-            # if self.create_artifact:
+            # TODO fix
+            if self.attributes["create_artifact"]:
             #     task_datastore.set_task_info("pid_tracker_log", pid_tracker_results)
 
-            if self.create_card and pid_tracker_results:
+            if self.attributes["create_card"] and pid_tracker_results:
                 from metaflow import current
                 from metaflow.cards import Table
 

@@ -3,11 +3,12 @@ This module attempts to determine if the code is running on a cloud server,
 and returns standardized information about the cloud provider and instance.
 """
 
+import json
+import urllib.error
+import urllib.request
 from contextlib import suppress
 from functools import cache
 from typing import Dict
-
-import requests
 
 METADATA_REQUEST_TIMEOUT = 2
 
@@ -45,31 +46,38 @@ def _check_aws() -> Dict[str, str]:
 
     with suppress(Exception):
         # Get token for IMDSv2
-        token_response = requests.put(
+        token_request = urllib.request.Request(
             "http://169.254.169.254/latest/api/token",
             headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
-            timeout=METADATA_REQUEST_TIMEOUT,
+            method="PUT",
         )
-        token = token_response.text
+        with urllib.request.urlopen(
+            token_request, timeout=METADATA_REQUEST_TIMEOUT
+        ) as response:
+            token = response.read().decode("utf-8")
+
         headers = {"X-aws-ec2-metadata-token": token}
 
         instance_type = "unknown"
         with suppress(Exception):
-            response = requests.get(
-                "http://169.254.169.254/latest/meta-data/instance-type",
-                headers=headers,
-                timeout=METADATA_REQUEST_TIMEOUT,
+            request = urllib.request.Request(
+                "http://169.254.169.254/latest/meta-data/instance-type", headers=headers
             )
-            instance_type = response.text
+            with urllib.request.urlopen(
+                request, timeout=METADATA_REQUEST_TIMEOUT
+            ) as response:
+                instance_type = response.read().decode("utf-8")
 
         region = "unknown"
         with suppress(Exception):
-            response = requests.get(
+            request = urllib.request.Request(
                 "http://169.254.169.254/latest/meta-data/placement/region",
                 headers=headers,
-                timeout=METADATA_REQUEST_TIMEOUT,
             )
-            region = response.text
+            with urllib.request.urlopen(
+                request, timeout=METADATA_REQUEST_TIMEOUT
+            ) as response:
+                region = response.read().decode("utf-8")
 
         return {"vendor": "aws", "instance_type": instance_type, "region": region}
     return {}
@@ -83,22 +91,31 @@ def _check_gcp() -> Dict[str, str]:
 
     with suppress(Exception):
         headers = {"Metadata-Flavor": "Google"}
-        response = requests.get(
+
+        request = urllib.request.Request(
             "http://metadata.google.internal/computeMetadata/v1/instance/machine-type",
             headers=headers,
-            timeout=METADATA_REQUEST_TIMEOUT,
         )
-        # projects/PROJECT_NUM/machineTypes/MACHINE_TYPE
-        instance_type = response.text.split("/")[-1]
-        response = requests.get(
+        with urllib.request.urlopen(
+            request, timeout=METADATA_REQUEST_TIMEOUT
+        ) as response:
+            machine_type = response.read().decode("utf-8")
+            # projects/PROJECT_NUM/machineTypes/MACHINE_TYPE
+            instance_type = machine_type.split("/")[-1]
+
+        request = urllib.request.Request(
             "http://metadata.google.internal/computeMetadata/v1/instance/zone",
             headers=headers,
-            timeout=METADATA_REQUEST_TIMEOUT,
         )
-        # projects/PROJECT_NUM/zones/ZONE
-        zone = response.text.split("/")[-1]
-        # region is the zone without the last part (e.g., us-central1-a -> us-central1)
-        region = "-".join(zone.split("-")[:-1]) if "-" in zone else zone
+        with urllib.request.urlopen(
+            request, timeout=METADATA_REQUEST_TIMEOUT
+        ) as response:
+            zone_text = response.read().decode("utf-8")
+            # projects/PROJECT_NUM/zones/ZONE
+            zone = zone_text.split("/")[-1]
+            # region is the zone without the last part (e.g., us-central1-a -> us-central1)
+            region = "-".join(zone.split("-")[:-1]) if "-" in zone else zone
+
         return {"vendor": "gcp", "instance_type": instance_type, "region": region}
     return {}
 
@@ -109,19 +126,21 @@ def _check_azure() -> Dict[str, str]:
 
     References: <https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service>"""
     with suppress(Exception):
-        response = requests.get(
+        request = urllib.request.Request(
             "http://169.254.169.254/metadata/instance?api-version=2021-02-01",
             headers={"Metadata": "true"},
-            timeout=METADATA_REQUEST_TIMEOUT,
         )
-        data = response.json()
-        if "compute" in data:
-            compute = data["compute"]
-            return {
-                "vendor": "azure",
-                "instance_type": compute.get("vmSize", "unknown"),
-                "region": compute.get("location", "unknown"),
-            }
+        with urllib.request.urlopen(
+            request, timeout=METADATA_REQUEST_TIMEOUT
+        ) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            if "compute" in data:
+                compute = data["compute"]
+                return {
+                    "vendor": "azure",
+                    "instance_type": compute.get("vmSize", "unknown"),
+                    "region": compute.get("location", "unknown"),
+                }
     return {}
 
 
@@ -131,29 +150,31 @@ def _check_hetzner() -> Dict[str, str]:
 
     References: <https://docs.hetzner.cloud/#server-metadata>"""
     with suppress(Exception):
-        response = requests.get(
+        with urllib.request.urlopen(
             "http://169.254.169.254/hetzner/v1/metadata",
             timeout=METADATA_REQUEST_TIMEOUT,
-        )
-        instance_type = "unknown"
-        region = "unknown"
-        with suppress(Exception):
-            lines = response.text.strip().split("\n")
-            for line in lines:
-                if ":" in line:
-                    key, value = line.split(":", 1)
-                    key = key.strip()
-                    value = value.strip()
+        ) as response:
+            text = response.read().decode("utf-8")
 
-                    if key == "instance-id":
-                        instance_type = value
-                    elif key == "region":
-                        region = value
-        return {
-            "vendor": "hcloud",
-            "instance_type": instance_type,
-            "region": region,
-        }
+            instance_type = "unknown"
+            region = "unknown"
+            with suppress(Exception):
+                lines = text.strip().split("\n")
+                for line in lines:
+                    if ":" in line:
+                        key, value = line.split(":", 1)
+                        key = key.strip()
+                        value = value.strip()
+
+                        if key == "instance-id":
+                            instance_type = value
+                        elif key == "region":
+                            region = value
+            return {
+                "vendor": "hcloud",
+                "instance_type": instance_type,
+                "region": region,
+            }
     return {}
 
 
@@ -163,15 +184,15 @@ def _check_upcloud() -> Dict[str, str]:
 
     References: <https://upcloud.com/docs/products/cloud-servers/features/metadata-service/>"""
     with suppress(Exception):
-        response = requests.get(
+        with urllib.request.urlopen(
             "http://169.254.169.254/metadata/v1.json", timeout=METADATA_REQUEST_TIMEOUT
-        )
-        data = response.json()
-        if data.get("cloud_name") == "upcloud":
-            return {
-                "vendor": "upcloud",
-                # no instance type in metadata
-                "instance_type": "unknown",
-                "region": data.get("region", "unknown"),
-            }
+        ) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            if data.get("cloud_name") == "upcloud":
+                return {
+                    "vendor": "upcloud",
+                    # no instance type in metadata
+                    "instance_type": "unknown",
+                    "region": data.get("region", "unknown"),
+                }
     return {}

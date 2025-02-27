@@ -48,12 +48,15 @@ class ResourceTrackerDecorator(StepDecorator):
         self,
         step_name,
         task_datastore,
-        attempt_id,
-        env,
+        metadata,
+        run_id,
         task_id,
         flow,
         graph,
         retry_count,
+        max_user_code_retries,
+        ubf_context,
+        inputs,
     ):
         self.pid_tracker_process = Process(
             target=PidTracker,
@@ -72,10 +75,7 @@ class ResourceTrackerDecorator(StepDecorator):
         flow,
         graph,
         retry_count,
-        task_datastore,
-        attempt_id,
-        env,
-        task_id,
+        max_user_code_retries,
     ):
         try:
             pid_tracker_results = results_reader(self.pid_tracker_data_file.name)

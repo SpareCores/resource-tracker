@@ -49,7 +49,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 from metaflow.plugins.cards.card_decorator import CardDecorator
 
                 decorators.append(
-                    CardDecorator(attributes={"type": "blank", "id": self.card_name})
+                    CardDecorator(attributes={"type": "html", "id": self.card_name})
                 )
 
     def task_pre_step(
@@ -91,15 +91,15 @@ class ResourceTrackerDecorator(StepDecorator):
             if self.attributes["create_artifact"]:
                 setattr(flow, "pid_tracker_data", pid_tracker_results)
             if self.attributes["create_card"] and pid_tracker_results:
-                from metaflow import current
-                from metaflow.cards import Table
-
-                current.card[self.card_name].append(
-                    Table(
-                        [list(p.values()) for p in pid_tracker_results],
-                        headers=list(pid_tracker_results[0].keys()),
-                    ),
-                )
+                setattr(flow, "html", "hi from resource tracker")
+                # from metaflow import current
+                # from metaflow.cards import Table
+                # current.card[self.card_name].append(
+                #     Table(
+                #         [list(p.values()) for p in pid_tracker_results],
+                #         headers=list(pid_tracker_results[0].keys()),
+                #     ),
+                # )
         except Exception as e:
             self.logger(
                 f"*ERROR* Failed to process resource tracking results: {e}",

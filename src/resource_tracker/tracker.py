@@ -19,7 +19,7 @@ def get_pid_children(pid):
             for child in children:
                 descendants.update(get_pid_children(child))
             return children | descendants
-    except FileNotFoundError:
+    except (ProcessLookupError, FileNotFoundError):
         return set()
 
 
@@ -34,7 +34,7 @@ def get_pid_rss(pid):
             for line in f:
                 if line.startswith("VmRSS"):
                     return int(line.split()[1])
-    except FileNotFoundError:
+    except (ProcessLookupError, FileNotFoundError):
         return 0
 
 
@@ -44,7 +44,7 @@ def get_pid_pss_rollup(pid):
     Returns:
         int: The total PSS in kB.
     """
-    with suppress(FileNotFoundError):
+    with suppress(ProcessLookupError, FileNotFoundError):
         with open(f"/proc/{pid}/smaps_rollup", "r") as f:
             for line in f:
                 if line.startswith("Pss:"):
@@ -75,7 +75,7 @@ def get_pid_proc_times(pid: int, children: bool = True):
                 "utime": int(values[13]) + (int(values[15]) if children else 0),
                 "stime": int(values[14]) + (int(values[16]) if children else 0),
             }
-    except FileNotFoundError:
+    except (ProcessLookupError, FileNotFoundError):
         return {"utime": 0, "stime": 0}
 
 
@@ -92,7 +92,7 @@ def get_pid_proc_io(pid):
             return {
                 parts[0]: int(parts[1]) for line in f if (parts := line.split(": "))
             }
-    except FileNotFoundError:
+    except (ProcessLookupError, FileNotFoundError):
         return {"read_bytes": 0, "write_bytes": 0}
 
 

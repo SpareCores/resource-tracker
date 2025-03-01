@@ -82,7 +82,9 @@ def get_pid_proc_times(pid: int, children: bool = True):
 def get_pid_proc_io(pid):
     """Get the total bytes read and written by a process from /proc/<pid>/io.
 
-    Note that it is not tracking reading from memory-mapped objects.
+    Note that it is not tracking reading from memory-mapped objects,
+    and is fairly limited in what it can track. E.g. the process might
+    not even have permissions to read its own `/proc/self/io`.
 
     Returns:
         dict[str, int]: A dictionary containing the total bytes read and written by the process.
@@ -92,7 +94,7 @@ def get_pid_proc_io(pid):
             return {
                 parts[0]: int(parts[1]) for line in f if (parts := line.split(": "))
             }
-    except (ProcessLookupError, FileNotFoundError):
+    except (ProcessLookupError, FileNotFoundError, PermissionError):
         return {"read_bytes": 0, "write_bytes": 0}
 
 

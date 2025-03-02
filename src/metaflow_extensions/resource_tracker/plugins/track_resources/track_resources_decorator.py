@@ -23,12 +23,17 @@ class ResourceTrackerDecorator(StepDecorator):
     name = "track_resources"
     attrs = {
         "interval": {"type": float},
-        "create_artifact": {"type": bool},
+        "artifact_name": {"type": str},
         "create_card": {"type": bool},
     }
-    defaults = {"interval": 1.0, "create_artifact": False, "create_card": True}
+    defaults = {
+        "interval": 1.0,
+        "artifact_name": "resource_tracker_data",
+        "create_card": True,
+    }
 
     def __init__(self, attributes=None, statically_defined=False):
+        """Support overriding default attributes."""
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
         )
@@ -37,6 +42,7 @@ class ResourceTrackerDecorator(StepDecorator):
     def step_init(
         self, flow, graph, step_name, decorators, environment, flow_datastore, logger
     ):
+        """Optionally initialize the card as a later decorator."""
         self.logger = logger
         if self.attributes["create_card"]:
             self.card_name = "resource_tracker_" + step_name
@@ -49,7 +55,15 @@ class ResourceTrackerDecorator(StepDecorator):
                 from metaflow.plugins.cards.card_decorator import CardDecorator
 
                 decorators.append(
-                    CardDecorator(attributes={"type": "html", "id": self.card_name})
+                    CardDecorator(
+                        attributes={
+                            "type": "tracked_resources",
+                            "id": self.card_name,
+                            "options": {
+                                "artifact_name": self.attributes["artifact_name"]
+                            },
+                        }
+                    )
                 )
 
     def task_pre_step(
@@ -66,6 +80,7 @@ class ResourceTrackerDecorator(StepDecorator):
         ubf_context,
         inputs,
     ):
+        """Start resource tracker processes."""
         self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
         self.pid_tracker_process = Process(
             target=PidTracker,
@@ -86,20 +101,12 @@ class ResourceTrackerDecorator(StepDecorator):
         retry_count,
         max_user_code_retries,
     ):
+        """Store collected data as an artifact for card/user to process."""
         try:
-            pid_tracker_results = results_reader(self.pid_tracker_data_file.name)
-            if self.attributes["create_artifact"]:
-                setattr(flow, "pid_tracker_data", pid_tracker_results)
-            if self.attributes["create_card"] and pid_tracker_results:
-                setattr(flow, "html", "hi from resource tracker")
-                # from metaflow import current
-                # from metaflow.cards import Table
-                # current.card[self.card_name].append(
-                #     Table(
-                #         [list(p.values()) for p in pid_tracker_results],
-                #         headers=list(pid_tracker_results[0].keys()),
-                #     ),
-                # )
+            data = {
+                "pid_tracker": results_reader(self.pid_tracker_data_file.name),
+            }
+            setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
             self.logger(
                 f"*ERROR* Failed to process resource tracking results: {e}",

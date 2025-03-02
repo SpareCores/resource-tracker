@@ -18,7 +18,7 @@ class ResourceTrackingFlow(FlowSpec):
         print("Starting")
         self.next(self.do_heavy_computation)
 
-    @track_resources(create_artifact=True)
+    @track_resources
     @step
     def do_heavy_computation(self):
         heavy_computation()

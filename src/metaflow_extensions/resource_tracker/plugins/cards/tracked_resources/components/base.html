@@ -1,0 +1,20 @@
+<html><head>
+    <script type="text/javascript">{{{dygraphs_js}}}</script>
+    <style type="text/css">{{{dygraphs_css}}}</style>
+</head><body>
+    <div id="graphdiv"></div>
+    <script type="text/javascript">
+        Dygraph.onDOMready(function onDOMready() {
+            g = new Dygraph(
+            // containing div
+            document.getElementById("graphdiv"),
+            `{{{csv}}}`
+            // CSV or path to a CSV file.
+            // "Date,Temperature\n" +
+            // "2008-05-07,75\n" +
+            // "2008-05-08,70\n" +
+            // "2008-05-09,80\n"
+            );
+        });
+    </script>
+</body></html>

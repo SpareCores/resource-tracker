@@ -1,6 +1,7 @@
-from csv import DictReader
+from csv import DictReader, writer as csv_writer
 from urllib.parse import urlparse
 from urllib.request import urlopen
+from io import StringIO
 
 class TinyDataFrame:
     """A very inefficient data-frame implementation with a few features.
@@ -15,6 +16,11 @@ class TinyDataFrame:
         TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'model': 'Mazda RX4', 'mpg': '21', 'cyl': '6', 'disp': '160', 'hp': '110', 'drat': '3.9', 'wt': '2.62', 'qsec': '16.46', 'vs': '0', 'am': '1', 'gear': '4', 'carb': '4'}
         >>> df[2:5][['model', 'hp']]
         TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'model': 'Datsun 710', 'hp': '93'}
+        >>> print(df[2:5][['model', 'hp']].to_csv())  # doctest: +NORMALIZE_WHITESPACE
+        model,hp
+        Datsun 710,93
+        Hornet 4 Drive,110
+        Hornet Sportabout,175
     """
 
     def __init__(self, data=None, csv_file_path=None):
@@ -112,7 +118,29 @@ class TinyDataFrame:
     def tail(self, n=5):
         """Return last n rows as a new TinyDataFrame."""
         return self[slice(-n, None)]
-    
+
     def __repr__(self):
         """Return a string representation of the data-frame."""
         return f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns. First row as a dict: {self[0]}"
+
+    def to_csv(self, csv_file_path=None):
+        """Write the data-frame to a CSV file or return as string if no path is provided.
+
+        Args:
+            csv_file_path: Path to write CSV file. If None, returns CSV as string.
+        """
+        if csv_file_path:
+            f = open(csv_file_path, "w", newline='')
+        else:
+            f = StringIO(newline='')
+
+        try:
+            writer = csv_writer(f)
+            writer.writerow(self.columns)
+            for i in range(len(self)):
+                writer.writerow([self._data[col][i] for col in self.columns])
+
+            if not csv_file_path:
+                return f.getvalue()
+        finally:
+            f.close()

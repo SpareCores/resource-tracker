@@ -29,5 +29,5 @@ class TrackedResourcesCard(MetaflowCard):
     def render(self, task):
         data = getattr(task.data, self._artifact_name)
         variables = self._read_component_files()
-        variables["csv"] = str(data)
+        variables["csv"] = data["pid_tracker"].to_csv()
         return chevron.render(variables["base_html"], variables)

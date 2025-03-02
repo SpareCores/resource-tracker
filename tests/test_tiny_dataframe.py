@@ -1,4 +1,5 @@
 import pytest
+import csv
 
 from resource_tracker import TinyDataFrame
 
@@ -155,7 +156,7 @@ def test_head_and_tail(sample_data):
 
 def test_empty_dataframe():
     """Test creating an empty dataframe"""
-    df = TinyDataFrame()
+    df = TinyDataFrame([])
     assert len(df) == 0
     assert df.columns == []
 
@@ -182,3 +183,34 @@ def test_chained_operations(sample_data):
 
     # Check the result
     assert result == [52.4, 78.2, 92.7]
+
+
+def test_csv_initialization(tmp_path, sample_data):
+    """Test TinyDataFrame initialization from a CSV file"""
+    # Capture the original column order
+    columns = list(sample_data.keys())
+
+    # Create a temporary CSV file using sample_data
+    csv_path = tmp_path / "test_data.csv"
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        # Write header using the captured column order
+        writer.writerow(columns)
+        # Write rows in the same order
+        for i in range(len(sample_data[columns[0]])):
+            row = [sample_data[col][i] for col in columns]
+            writer.writerow(row)
+
+    # Initialize TinyDataFrame from CSV
+    df = TinyDataFrame(csv_file_path=str(csv_path))
+
+    # Check columns
+    assert df.columns == columns
+
+    # Check length
+    assert len(df) == len(sample_data[columns[0]])
+
+    # Check data integrity - note that CSV values are loaded as strings
+    assert df[columns[0]][0] == str(sample_data[columns[0]][0])
+    assert df[columns[1]][5] == str(sample_data[columns[1]][5])
+    assert df[columns[2]][11] == str(sample_data[columns[2]][11])

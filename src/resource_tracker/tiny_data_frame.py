@@ -1,3 +1,5 @@
+from csv import DictReader
+
 class TinyDataFrame:
     """A tiny data-frame implementation with a few features.
 
@@ -5,21 +7,46 @@ class TinyDataFrame:
         data: Dictionary of lists/arrays or list of dictionaries.
     """
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, csv_file_path=None):
         """
         Initialize with either:
         - Dictionary of lists/arrays
         - List of dictionaries
+        - CSV file path
         """
         self.columns = []
         self._data = {}
+
+        assert data is not None or csv_file_path is not None, "either data or csv_file_path must be provided"
+        assert data is None or csv_file_path is None, "only one of data or csv_file_path must be provided"
+        assert data is None or isinstance(data, dict) or isinstance(data, list), "data must be a dictionary or a list"
+        assert csv_file_path is None or isinstance(csv_file_path, str), "csv_file_path must be a string"
+
+        if csv_file_path:
+            data = self._read_csv(csv_file_path)
 
         if isinstance(data, dict):
             self._data = {k: list(v) for k, v in data.items()}
             self.columns = list(self._data.keys())
         elif isinstance(data, list) and data and isinstance(data[0], dict):
-            self.columns = list(set().union(*[d.keys() for d in data]))
+            # let's preserve column order
+            self.columns = []
+            seen_columns = set()
+            for row in data:
+                for col in row.keys():
+                    if col not in seen_columns:
+                        self.columns.append(col)
+                        seen_columns.add(col)
             self._data = {col: [row.get(col) for row in data] for col in self.columns}
+
+    def _read_csv(self, csv_file_path):
+        """Read a CSV file and return a list of dictionaries."""
+        results = []
+        with open(csv_file_path, "r") as f:
+            reader = DictReader(f)
+            for row in reader:
+                results.append(row)
+        return results
 
     def __len__(self):
         """Return the number of rows in the data-frame"""

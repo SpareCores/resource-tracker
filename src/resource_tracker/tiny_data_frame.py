@@ -1,10 +1,20 @@
 from csv import DictReader
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 class TinyDataFrame:
-    """A tiny data-frame implementation with a few features.
+    """A very inefficient data-frame implementation with a few features.
 
     Args:
         data: Dictionary of lists/arrays or list of dictionaries.
+        csv_file_path: Path to a CSV file.
+
+    Example:
+        >>> df = TinyDataFrame(csv_file_path="https://gist.githubusercontent.com/seankross/a412dfbd88b3db70b74b/raw/5f23f993cd87c283ce766e7ac6b329ee7cc2e1d1/mtcars.csv")
+        >>> print(df)
+        TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'model': 'Mazda RX4', 'mpg': '21', 'cyl': '6', 'disp': '160', 'hp': '110', 'drat': '3.9', 'wt': '2.62', 'qsec': '16.46', 'vs': '0', 'am': '1', 'gear': '4', 'carb': '4'}
+        >>> df[2:5][['model', 'hp']]
+        TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'model': 'Datsun 710', 'hp': '93'}
     """
 
     def __init__(self, data=None, csv_file_path=None):
@@ -40,12 +50,29 @@ class TinyDataFrame:
             self._data = {col: [row.get(col) for row in data] for col in self.columns}
 
     def _read_csv(self, csv_file_path):
-        """Read a CSV file and return a list of dictionaries."""
+        """Read a CSV file and return a list of dictionaries.
+
+        Args:
+            csv_file_path: CSV file path or URL.
+        """
         results = []
-        with open(csv_file_path, "r") as f:
-            reader = DictReader(f)
+
+        parsed = urlparse(csv_file_path)
+        if parsed.scheme in ('http', 'https'):
+            with urlopen(csv_file_path) as response:
+                content = response.read().decode('utf-8').splitlines()
+                csv_source = content
+        else:
+            csv_source = open(csv_file_path, "r")
+
+        try:
+            reader = DictReader(csv_source)
             for row in reader:
                 results.append(row)
+        finally:
+            if not isinstance(csv_source, list):
+                csv_source.close()
+
         return results
 
     def __len__(self):
@@ -85,3 +112,7 @@ class TinyDataFrame:
     def tail(self, n=5):
         """Return last n rows as a new TinyDataFrame."""
         return self[slice(-n, None)]
+    
+    def __repr__(self):
+        """Return a string representation of the data-frame."""
+        return f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns. First row as a dict: {self[0]}"

@@ -21,6 +21,10 @@ class TrackedResourcesCard(MetaflowCard):
             ("base_html", ["base.html"]),
             ("dygraphs_js", ["dygraphs-2.2.1", "dygraphs.min.js"]),
             ("dygraphs_css", ["dygraphs-2.2.1", "dygraphs.min.css"]),
+            (
+                "dygraphs_crosshair_js",
+                ["dygraphs-2.2.1", "crosshair.min.js"],
+            ),
         ]:
             with open(path.join(root, *fname)) as f:
                 files[key] = f.read()
@@ -28,6 +32,8 @@ class TrackedResourcesCard(MetaflowCard):
 
     def render(self, task):
         data = getattr(task.data, self._artifact_name)
+        pid = data["pid_tracker"]
+        pid["timestamp"] = [t * 1000 for t in pid["timestamp"]]
         variables = self._read_component_files()
-        variables["csv"] = data["pid_tracker"].to_csv()
+        variables["csv"] = pid[["timestamp", "cpu_usage"]].to_csv()
         return chevron.render(variables["base_html"], variables)

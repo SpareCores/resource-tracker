@@ -1,5 +1,5 @@
 from contextlib import suppress
-from csv import writer as csv_writer
+from csv import writer as csv_writer, QUOTE_NONNUMERIC
 from os import getpid, sysconf
 from sys import stdout
 from time import sleep, time
@@ -223,7 +223,7 @@ class PidTracker:
     ):
         """Start an infinite loop tracking resource usage of the process until it exits."""
         file_handle = open(output_file, "w") if output_file else stdout
-        file_writer = csv_writer(file_handle)
+        file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
             while True:
                 current_time = time()

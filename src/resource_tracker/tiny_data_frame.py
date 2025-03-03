@@ -1,7 +1,9 @@
-from csv import DictReader, writer as csv_writer, QUOTE_NONNUMERIC
+from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
+from csv import writer as csv_writer
+from io import StringIO
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from io import StringIO
+
 
 class TinyDataFrame:
     """A very inefficient data-frame implementation with a few features.
@@ -33,10 +35,18 @@ class TinyDataFrame:
         self.columns = []
         self._data = {}
 
-        assert data is not None or csv_file_path is not None, "either data or csv_file_path must be provided"
-        assert data is None or csv_file_path is None, "only one of data or csv_file_path must be provided"
-        assert data is None or isinstance(data, dict) or isinstance(data, list), "data must be a dictionary or a list"
-        assert csv_file_path is None or isinstance(csv_file_path, str), "csv_file_path must be a string"
+        assert data is not None or csv_file_path is not None, (
+            "either data or csv_file_path must be provided"
+        )
+        assert data is None or csv_file_path is None, (
+            "only one of data or csv_file_path must be provided"
+        )
+        assert data is None or isinstance(data, dict) or isinstance(data, list), (
+            "data must be a dictionary or a list"
+        )
+        assert csv_file_path is None or isinstance(csv_file_path, str), (
+            "csv_file_path must be a string"
+        )
 
         if csv_file_path:
             data = self._read_csv(csv_file_path)
@@ -64,9 +74,9 @@ class TinyDataFrame:
         results = []
 
         parsed = urlparse(csv_file_path)
-        if parsed.scheme in ('http', 'https'):
+        if parsed.scheme in ("http", "https"):
             with urlopen(csv_file_path) as response:
-                content = response.read().decode('utf-8').splitlines()
+                content = response.read().decode("utf-8").splitlines()
                 csv_source = content
         else:
             csv_source = open(csv_file_path, "r")
@@ -126,7 +136,9 @@ class TinyDataFrame:
             raise TypeError(f"Column name must be a string, got {type(key)}")
 
         if len(self) > 0 and len(value) != len(self):
-            raise ValueError(f"Length of values ({len(value)}) must match dataframe length ({len(self)})")
+            raise ValueError(
+                f"Length of values ({len(value)}) must match dataframe length ({len(self)})"
+            )
 
         if key not in self.columns:
             self.columns.append(key)
@@ -145,19 +157,22 @@ class TinyDataFrame:
         """Return a string representation of the data-frame."""
         return f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns. First row as a dict: {self[0]}"
 
-    def to_csv(self, csv_file_path=None):
+    def to_csv(self, csv_file_path=None, quote_strings=True):
         """Write the data-frame to a CSV file or return as string if no path is provided.
 
         Args:
             csv_file_path: Path to write CSV file. If None, returns CSV as string.
+            quote_strings: Whether to quote strings.
         """
         if csv_file_path:
-            f = open(csv_file_path, "w", newline='')
+            f = open(csv_file_path, "w", newline="")
         else:
-            f = StringIO(newline='')
+            f = StringIO(newline="")
 
         try:
-            writer = csv_writer(f, quoting=QUOTE_NONNUMERIC)
+            writer = csv_writer(
+                f, quoting=QUOTE_NONNUMERIC if quote_strings else QUOTE_MINIMAL
+            )
             writer.writerow(self.columns)
             for i in range(len(self)):
                 writer.writerow([self._data[col][i] for col in self.columns])

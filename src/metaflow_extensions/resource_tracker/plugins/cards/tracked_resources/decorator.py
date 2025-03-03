@@ -37,6 +37,8 @@ class TrackedResourcesCard(MetaflowCard):
         pid = data["pid_tracker"]
         pid["timestamp"] = [t * 1000 for t in pid["timestamp"]]
         variables = self._read_component_files()
-        variables["csv_cpu"] = pid[["timestamp", "cpu_usage"]].to_csv()
-        variables["csv_mem"] = pid[["timestamp", "pss"]].to_csv()
+        variables["csv_cpu"] = pid[["timestamp", "cpu_usage"]].to_csv(
+            quote_strings=False
+        )
+        variables["csv_mem"] = pid[["timestamp", "pss"]].to_csv(quote_strings=False)
         return chevron.render(variables["base_html"], variables)

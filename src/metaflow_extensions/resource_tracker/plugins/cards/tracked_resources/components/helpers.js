@@ -36,7 +36,7 @@ function createGraph(divId, csvData, labelsDivId) {
         csvData,
         {
             labelsDiv: labelsDivId,
-            labelsKMG2: true,
+            // labelsKMB: true,
             animatedZooms: true,
             highlightSeriesBackgroundAlpha: 1,
             axes : {

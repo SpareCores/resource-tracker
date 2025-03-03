@@ -15,13 +15,7 @@ function legendFormatter(data) {
     var html = data.xHTML;
     data.series.forEach(function(series) {
         if (!series.isVisible) return;
-        // drop HTML entity encoded quotes around labelHTML if they exist
-        // TODO this in python?
-        var label = series.labelHTML;
-        if (label.startsWith('&#34;') && label.endsWith('&#34;')) {
-            label = label.substring(5, label.length - 5);
-        }
-        var labeledData = label + ': ' + series.yHTML;
+        var labeledData = series.labelHTML + ': ' + series.yHTML;
         if (series.isHighlighted) {
             labeledData = '<b>' + labeledData + '</b>';
         }

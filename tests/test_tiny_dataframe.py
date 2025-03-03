@@ -203,7 +203,75 @@ def test_csv(tmp_path, sample_data):
     # Check length
     assert len(df) == len(sample_data[columns[0]])
 
-    # Check data integrity - note that CSV values are loaded as strings
-    assert df[columns[0]][0] == str(sample_data[columns[0]][0])
-    assert df[columns[1]][5] == str(sample_data[columns[1]][5])
-    assert df[columns[2]][11] == str(sample_data[columns[2]][11])
+    # Check data integrity
+    assert df[columns[0]][0] == sample_data[columns[0]][0]
+    assert df[columns[1]][5] == sample_data[columns[1]][5]
+    assert df[columns[2]][11] == sample_data[columns[2]][11]
+
+
+def test_csv_numeric_types(tmp_path):
+    """Test that numeric types are preserved when writing and reading CSV files"""
+    # Create a dataframe with mixed types
+    original_df = TinyDataFrame({
+        "string_col": ["a", "b", "c", "d"],
+        "int_col": [1, 2, 3, 4],
+        "float_col": [1.1, 2.2, 3.3, 4.4]
+    })
+
+    # Write to CSV
+    csv_path = tmp_path / "numeric_test.csv"
+    original_df.to_csv(csv_path)
+
+    # Read back from CSV
+    loaded_df = TinyDataFrame(csv_file_path=str(csv_path))
+
+    # Check that types are preserved
+    assert isinstance(loaded_df["string_col"][0], str)
+    assert isinstance(loaded_df["int_col"][0], (int, float))  # CSV might load as float
+    assert isinstance(loaded_df["float_col"][0], float)
+
+    # Check values
+    assert loaded_df["string_col"] == ["a", "b", "c", "d"]
+    assert loaded_df["int_col"] == [1, 2, 3, 4]
+    assert loaded_df["float_col"] == [1.1, 2.2, 3.3, 4.4]
+
+    # Verify the actual CSV format with proper quoting
+    with open(csv_path, 'r') as f:
+        content = f.read()
+        # Strings should be quoted, numbers should not
+        assert '"string_col"' in content
+        assert '"a"' in content
+        assert '1,' in content  # Unquoted number
+        assert '1,1.1' in content  # Unquoted float
+
+
+def test_set_column(sample_data):
+    """Test setting a column using the __setitem__ method"""
+    df = TinyDataFrame(sample_data)
+
+    # Test adding a new column
+    df["new_column"] = [i * 10 for i in range(12)]
+
+    # Check the column was added
+    assert "new_column" in df.columns
+    assert len(df.columns) == 4  # original 3 + new one
+    assert df["new_column"] == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110]
+
+    # Test modifying an existing column
+    df["cpu"] = [i + 5 for i in range(12)]
+
+    # Check the column was modified
+    assert df["cpu"] == [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+
+    # Test error cases
+    # Wrong length
+    with pytest.raises(ValueError):
+        df["error_column"] = [1, 2, 3]  # Too short
+
+    # Wrong key type
+    with pytest.raises(TypeError):
+        df[123] = [0] * 12  # Non-string key
+
+    # Test sequential operations
+    df["new_column"] = [99] * 12
+    assert df["new_column"] == [99] * 12

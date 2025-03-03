@@ -1,4 +1,4 @@
-from csv import DictReader, writer as csv_writer
+from csv import DictReader, writer as csv_writer, QUOTE_NONNUMERIC
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from io import StringIO
@@ -8,19 +8,19 @@ class TinyDataFrame:
 
     Args:
         data: Dictionary of lists/arrays or list of dictionaries.
-        csv_file_path: Path to a CSV file.
+        csv_file_path: Path to a properly quoted CSV file.
 
     Example:
-        >>> df = TinyDataFrame(csv_file_path="https://gist.githubusercontent.com/seankross/a412dfbd88b3db70b74b/raw/5f23f993cd87c283ce766e7ac6b329ee7cc2e1d1/mtcars.csv")
+        >>> df = TinyDataFrame(csv_file_path="https://raw.githubusercontent.com/plotly/datasets/refs/heads/master/mtcars.csv")
         >>> print(df)
-        TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'model': 'Mazda RX4', 'mpg': '21', 'cyl': '6', 'disp': '160', 'hp': '110', 'drat': '3.9', 'wt': '2.62', 'qsec': '16.46', 'vs': '0', 'am': '1', 'gear': '4', 'carb': '4'}
-        >>> df[2:5][['model', 'hp']]
-        TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'model': 'Datsun 710', 'hp': '93'}
-        >>> print(df[2:5][['model', 'hp']].to_csv())  # doctest: +NORMALIZE_WHITESPACE
-        model,hp
-        Datsun 710,93
-        Hornet 4 Drive,110
-        Hornet Sportabout,175
+        TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'manufacturer': 'Mazda RX4', 'mpg': 21.0, 'cyl': 6.0, 'disp': 160.0, 'hp': 110.0, 'drat': 3.9, 'wt': 2.62, 'qsec': 16.46, 'vs': 0.0, 'am': 1.0, 'gear': 4.0, 'carb': 4.0}
+        >>> df[2:5][['manufacturer', 'hp']]
+        TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'manufacturer': 'Datsun 710', 'hp': 93.0}
+        >>> print(df[2:5][['manufacturer', 'hp']].to_csv())  # doctest: +NORMALIZE_WHITESPACE
+        "manufacturer","hp"
+        "Datsun 710",93.0
+        "Hornet 4 Drive",110.0
+        "Hornet Sportabout",175.0
     """
 
     def __init__(self, data=None, csv_file_path=None):
@@ -72,7 +72,7 @@ class TinyDataFrame:
             csv_source = open(csv_file_path, "r")
 
         try:
-            reader = DictReader(csv_source)
+            reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
             for row in reader:
                 results.append(row)
         finally:
@@ -111,6 +111,28 @@ class TinyDataFrame:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
+    def __setitem__(self, key, value):
+        """Set a column with the given key to the provided values.
+
+        Args:
+            key: Column name (string)
+            value: List of values for the column
+
+        Raises:
+            TypeError: If key is not a string
+            ValueError: If the length of values doesn't match the dataframe length
+        """
+        if not isinstance(key, str):
+            raise TypeError(f"Column name must be a string, got {type(key)}")
+
+        if len(self) > 0 and len(value) != len(self):
+            raise ValueError(f"Length of values ({len(value)}) must match dataframe length ({len(self)})")
+
+        if key not in self.columns:
+            self.columns.append(key)
+
+        self._data[key] = list(value)
+
     def head(self, n=5):
         """Return first n rows as a new TinyDataFrame."""
         return self[slice(0, n)]
@@ -135,7 +157,7 @@ class TinyDataFrame:
             f = StringIO(newline='')
 
         try:
-            writer = csv_writer(f)
+            writer = csv_writer(f, quoting=QUOTE_NONNUMERIC)
             writer.writerow(self.columns)
             for i in range(len(self)):
                 writer.writerow([self._data[col][i] for col in self.columns])

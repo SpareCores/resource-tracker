@@ -30,12 +30,15 @@ function legendFormatter(data) {
     return html;
 };
 
-function createGraph(divId, csvData, yLabel) {
+function createGraph(divId, csvData, labelsDivId) {
     return new Dygraph(
         document.getElementById(divId),
         csvData,
         {
+            labelsDiv: labelsDivId,
+            labelsKMG2: true,
             animatedZooms: true,
+            highlightSeriesBackgroundAlpha: 1,
             axes : {
                 x : {
                     valueFormatter: Dygraph.dateString_,
@@ -45,8 +48,10 @@ function createGraph(divId, csvData, yLabel) {
                     axisTickSize: 5,
                 }
             },
-            ylabel: yLabel,
             showRoller: true,
+            axisLineColor: '#082F49',
+            gridLineColor: '#fff',
+            gridLineWidth: 0.2,
             colors: ['#34D399', '#38BDF8'],
             strokeWidth: 2,
             legend: 'always',

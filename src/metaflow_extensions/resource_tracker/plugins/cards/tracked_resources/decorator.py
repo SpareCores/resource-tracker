@@ -1,4 +1,4 @@
-from os import path
+from os import listdir, path
 
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
@@ -30,6 +30,11 @@ class TrackedResourcesCard(MetaflowCard):
         ]:
             with open(path.join(root, *fname)) as f:
                 files[key] = f.read()
+        icon_path = path.join(path.dirname(__file__), "components", "icons")
+        for icon in listdir(icon_path):
+            with open(path.join(icon_path, icon), "r") as f:
+                icon_name = path.splitext(icon)[0]
+                files["icon_" + icon_name] = f.read()
         return files
 
     def render(self, task):

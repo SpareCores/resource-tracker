@@ -9,38 +9,41 @@ body {
     margin-bottom: 60px;
 }
 
-div.section {
-    h1 {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        background-color: #06263A;
-        color: #fff;
-        padding: 10px 20px 10px 20px;
-        margin: 30px 0px 30px 0px;
-    }
-    .header-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    .header-text {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-    .header-text .title {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    .header-text .description {
-        font-size: 14px;
-        margin: 0;
-        color: #ccc;
-    }
+div.section h1 {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #06263A;
+    color: #fff;
+    padding: 10px 20px 10px 20px;
+    margin: 30px 0px 30px 0px;
 }
+
+div.section .header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+div.section .header-text {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+div.section .header-text .title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+div.section .header-text .description {
+    font-size: 14px;
+    margin: 0;
+    color: #ccc;
+}
+
 .labels {
     margin-left: auto;
     font-size: 14px;
@@ -50,6 +53,7 @@ div.section {
 .dygraph-label, .dygraph-axis-label, .dygraph-legend {
     color: #fff;
 }
+
 .dygraph-roller {
     background-color: #06263A;
     color: #fff;

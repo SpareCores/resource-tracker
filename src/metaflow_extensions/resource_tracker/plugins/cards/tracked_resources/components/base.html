@@ -2,6 +2,7 @@
 <head>
     <script type="text/javascript">{{{dygraphs_js}}}</script>
     <script type="text/javascript">{{{dygraphs_crosshair_js}}}</script>
+    <script type="text/javascript">{{{dygraphs_synchronizer_js}}}</script>
     <style type="text/css">{{{dygraphs_css}}}</style>
     <script type="text/javascript">{{{helpers_js}}}</script>
     <style type="text/css">{{{custom_css}}}</style>
@@ -9,7 +10,6 @@
 <body>
     <div id="cpu" class="section">
         <h1>
-            <!-- icons are from https://icons.getbootstrap.com/icons/ -->
             <div class="header-icon">
                 {{{icon_cpu}}}
             </div>
@@ -36,10 +36,10 @@
     </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
-            createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu');
-            createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem');
+            var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
+                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem');
+            var sync = Dygraph.synchronize([cpuGraph, memGraph], {zoom: true, selection: true, range: false});
         });
-        // TODO use https://dygraphs.com/options.html#labelsDiv to move legend outside (maybe to title?)
     </script>
 </body>
 </html>

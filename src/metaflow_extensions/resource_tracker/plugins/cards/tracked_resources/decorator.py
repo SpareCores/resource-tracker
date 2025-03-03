@@ -21,10 +21,8 @@ class TrackedResourcesCard(MetaflowCard):
             ("base_html", ["base.html"]),
             ("dygraphs_js", ["dygraphs-2.2.1", "dygraphs.min.js"]),
             ("dygraphs_css", ["dygraphs-2.2.1", "dygraphs.min.css"]),
-            (
-                "dygraphs_crosshair_js",
-                ["dygraphs-2.2.1", "crosshair.min.js"],
-            ),
+            ("dygraphs_crosshair_js", ["dygraphs-2.2.1", "crosshair.min.js"]),
+            ("dygraphs_synchronizer_js", ["dygraphs-2.2.1", "synchronizer.min.js"]),
             ("helpers_js", ["helpers.js"]),
             ("custom_css", ["custom.css"]),
         ]:

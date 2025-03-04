@@ -1,9 +1,36 @@
 from contextlib import suppress
-from csv import writer as csv_writer, QUOTE_NONNUMERIC
+from csv import QUOTE_NONNUMERIC
+from csv import writer as csv_writer
+from functools import cache
+from glob import glob
 from os import getpid, sysconf
+from re import search
 from sys import stdout
 from time import sleep, time
 from typing import Optional
+
+
+@cache
+def is_partition(disk_name):
+    """
+    Determine if a disk name represents a partition rather than a whole disk.
+
+    Args:
+        disk_name (str): Name of the disk device (e.g., 'sda1', 'nvme0n1p1')
+
+    Returns:
+        bool: True if the device is likely a partition, False otherwise
+    """
+    # common partition name patterns: sdXN, nvmeXnYpZ, mmcblkXpY
+    if search(r"(sd[a-z]+|nvme\d+n\d+|mmcblk\d+)p?\d+$", disk_name):
+        # check if there's a parent device in /sys/block/
+        parent_devices = [d.split("/")[-2] for d in glob("/sys/block/*/")]
+        if any(
+            disk_name.startswith(parent) and disk_name != parent
+            for parent in parent_devices
+        ):
+            return True
+    return False
 
 
 def get_pid_children(pid):
@@ -146,7 +173,101 @@ def get_pid_stats(pid, children: bool = True):
     }
 
 
-# TODO add system-wide info, including network traffic
+def get_system_stats():
+    """Collect current system-wide stats from procfs.
+
+    Returns:
+        dict[str, int | float | dict]: A dictionary containing system stats.
+        - timestamp (float): The current timestamp.
+        - processes (int): Number of running processes.
+        - utime (int): Total user mode CPU time in clock ticks.
+        - stime (int): Total system mode CPU time in clock ticks.
+        - memory_used (int): Used physical memory in kB (excluding buffers/cache).
+        - memory_buffers (int): Memory used for buffers in kB.
+        - memory_cached (int): Memory used for cache in kB.
+        - disk_stats (dict): Dictionary mapping disk names to their stats:
+            - read_sectors (int): Sectors read from this disk.
+            - write_sectors (int): Sectors written to this disk.
+        - net_recv_bytes (int): Total bytes received over network.
+        - net_sent_bytes (int): Total bytes sent over network.
+    """
+    current_time = time()
+    stats = {
+        "timestamp": current_time,
+        "processes": 0,
+        "utime": 0,
+        "stime": 0,
+        "memory_used": 0,
+        "memory_buffers": 0,
+        "memory_cached": 0,
+        "disk_stats": {},
+        "net_recv_bytes": 0,
+        "net_sent_bytes": 0,
+    }
+
+    with suppress(FileNotFoundError):
+        with open("/proc/stat", "r") as f:
+            for line in f:
+                if line.startswith("cpu "):
+                    cpu_stats = line.split()
+                    # user + nice
+                    stats["utime"] = int(cpu_stats[1]) + int(cpu_stats[2])
+                    stats["stime"] = int(cpu_stats[3])
+                elif line.startswith("processes"):
+                    stats["processes"] = int(line.split()[1])
+
+    with suppress(FileNotFoundError):
+        with open("/proc/meminfo", "r") as f:
+            mem_info = {}
+            for line in f:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    key = parts[0].strip()
+                    value_parts = parts[1].strip().split()
+                    if len(value_parts) > 0:
+                        try:
+                            mem_info[key] = int(value_parts[0])
+                        except ValueError:
+                            pass
+
+            total = mem_info.get("MemTotal", 0)
+            stats["memory_free"] = mem_info.get("MemFree", 0)
+            stats["memory_buffers"] = mem_info.get("Buffers", 0)
+            stats["memory_cached"] = mem_info.get("Cached", 0)
+            stats["memory_used"] = (
+                total
+                - stats["memory_free"]
+                - stats["memory_buffers"]
+                - stats["memory_cached"]
+            )
+
+    with suppress(FileNotFoundError):
+        with open("/proc/diskstats", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 14:
+                    disk_name = parts[2]
+                    if not is_partition(disk_name):
+                        stats["disk_stats"][disk_name] = {
+                            "read_sectors": int(parts[5]),
+                            "write_sectors": int(parts[9]),
+                        }
+
+    with suppress(FileNotFoundError):
+        with open("/proc/net/dev", "r") as f:
+            # skip header lines
+            next(f)
+            next(f)
+            for line in f:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    interface = parts[0].strip()
+                    if interface != "lo":
+                        values = parts[1].strip().split()
+                        stats["net_recv_bytes"] += int(values[0])
+                        stats["net_sent_bytes"] += int(values[8])
+
+    return stats
 
 
 class PidTracker:
@@ -201,13 +322,11 @@ class PidTracker:
                 max(
                     0,
                     (
-                        (
-                            (self.stats["utime"] + self.stats["stime"])
-                            - (last_stats["utime"] + last_stats["stime"])
-                        )
-                        / (self.stats["timestamp"] - last_stats["timestamp"])
-                        / sysconf("SC_CLK_TCK")
-                    ),
+                        (self.stats["utime"] + self.stats["stime"])
+                        - (last_stats["utime"] + last_stats["stime"])
+                    )
+                    / (self.stats["timestamp"] - last_stats["timestamp"])
+                    / sysconf("SC_CLK_TCK"),
                 ),
                 4,
             ),
@@ -232,6 +351,130 @@ class PidTracker:
                     # the process has exited
                     self.status = "exited"
                     break
+                if self.cycle == 1 and print_header:
+                    file_writer.writerow(current_stats.keys())
+                else:
+                    file_writer.writerow(current_stats.values())
+                if output_file:
+                    file_handle.flush()
+                sleep(max(0, self.interval - (time() - current_time)))
+        finally:
+            if output_file and not file_handle.closed:
+                file_handle.close()
+
+
+class SystemTracker:
+    """Track system-wide resource usage.
+
+    This class monitors system resources like CPU time, memory usage, disk I/O,
+    and network traffic for the entire system.
+
+    Args:
+        interval (float, optional): Sampling interval in seconds. Defaults to 1.
+        autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
+        output_file (str, optional): File to write the output to. Defaults to None, print to stdout.
+    """
+
+    def __init__(
+        self,
+        interval: float = 1,
+        autostart: bool = True,
+        output_file: str = None,
+    ):
+        self.status = "running"
+        self.interval = interval
+        self.cycle = 0
+        self.start_time = time()
+
+        # get sector sizes for all disks
+        self.sector_sizes = {}
+        with suppress(FileNotFoundError):
+            for disk_path in glob("/sys/block/*/"):
+                disk_name = disk_path.split("/")[-2]
+                if is_partition(disk_name):
+                    continue
+                try:
+                    with open(f"{disk_path}queue/hw_sector_size", "r") as f:
+                        self.sector_sizes[disk_name] = int(f.read().strip())
+                except (FileNotFoundError, ValueError):
+                    self.sector_sizes[disk_name] = 512
+
+        self.stats = get_system_stats()
+        if autostart:
+            self.start_tracking(output_file)
+
+    def __call__(self):
+        """Dummy method to make this class callable."""
+        pass
+
+    def diff_stats(self):
+        """Calculate stats since last call."""
+        last_stats = self.stats
+        self.stats = get_system_stats()
+        self.cycle += 1
+
+        time_diff = self.stats["timestamp"] - last_stats["timestamp"]
+
+        # calculate total disk I/O in bytes using per-disk sector sizes
+        total_read_bytes = 0
+        total_write_bytes = 0
+        for disk_name in set(self.stats["disk_stats"]) & set(last_stats["disk_stats"]):
+            sector_size = self.sector_sizes.get(disk_name, 512)
+            read_sectors = max(
+                0,
+                self.stats["disk_stats"][disk_name]["read_sectors"]
+                - last_stats["disk_stats"][disk_name]["read_sectors"],
+            )
+            write_sectors = max(
+                0,
+                self.stats["disk_stats"][disk_name]["write_sectors"]
+                - last_stats["disk_stats"][disk_name]["write_sectors"],
+            )
+            total_read_bytes += read_sectors * sector_size
+            total_write_bytes += write_sectors * sector_size
+
+        return {
+            "timestamp": self.stats["timestamp"],
+            "processes": self.stats["processes"],
+            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
+            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "cpu_usage": round(
+                max(
+                    0,
+                    (
+                        (self.stats["utime"] + self.stats["stime"])
+                        - (last_stats["utime"] + last_stats["stime"])
+                    )
+                    / time_diff
+                    / sysconf("SC_CLK_TCK")
+                    * 100,
+                ),
+                2,
+            ),
+            "memory_free": self.stats["memory_free"],
+            "memory_used": self.stats["memory_used"],
+            "memory_buffers": self.stats["memory_buffers"],
+            "memory_cached": self.stats["memory_cached"],
+            "disk_read_bytes": total_read_bytes,
+            "disk_write_bytes": total_write_bytes,
+            "net_recv_bytes": max(
+                0, self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"]
+            ),
+            "net_sent_bytes": max(
+                0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
+            ),
+        }
+
+    def start_tracking(
+        self, output_file: Optional[str] = None, print_header: bool = True
+    ):
+        """Start an infinite loop tracking system resource usage."""
+        file_handle = open(output_file, "w") if output_file else stdout
+        file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
+        try:
+            while True:
+                current_time = time()
+                current_stats = self.diff_stats()
                 if self.cycle == 1 and print_header:
                     file_writer.writerow(current_stats.keys())
                 else:

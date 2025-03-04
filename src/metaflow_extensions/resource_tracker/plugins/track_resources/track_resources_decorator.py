@@ -1,11 +1,10 @@
-
 from multiprocessing import Process
 from os import getpid, unlink
 from tempfile import NamedTemporaryFile
 
 from metaflow.decorators import StepDecorator
 
-from .resource_tracker import PidTracker, TinyDataFrame
+from .resource_tracker import PidTracker, SystemTracker, TinyDataFrame
 
 
 def results_reader(file_name: str) -> list[dict]:
@@ -93,6 +92,17 @@ class ResourceTrackerDecorator(StepDecorator):
         )
         self.pid_tracker_process.start()
 
+        self.system_tracker_data_file = NamedTemporaryFile(delete=False)
+        self.system_tracker_process = Process(
+            target=SystemTracker,
+            kwargs={
+                "interval": self.attributes["interval"],
+                "output_file": self.system_tracker_data_file.name,
+            },
+            daemon=True,
+        )
+        self.system_tracker_process.start()
+
     def task_post_step(
         self,
         step_name,
@@ -104,7 +114,12 @@ class ResourceTrackerDecorator(StepDecorator):
         """Store collected data as an artifact for card/user to process."""
         try:
             data = {
-                "pid_tracker": TinyDataFrame(csv_file_path=self.pid_tracker_data_file.name),
+                "pid_tracker": TinyDataFrame(
+                    csv_file_path=self.pid_tracker_data_file.name
+                ),
+                "system_tracker": TinyDataFrame(
+                    csv_file_path=self.system_tracker_data_file.name
+                ),
             }
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:

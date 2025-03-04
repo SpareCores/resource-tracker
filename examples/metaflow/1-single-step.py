@@ -33,7 +33,7 @@ class ResourceTrackingFlow(FlowSpec):
 
 
 def get_tracker_artifact() -> str:
-    return Flow("ResourceTrackingFlow").latest_run.data.pid_tracker_log
+    return Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 
 
 if __name__ == "__main__":

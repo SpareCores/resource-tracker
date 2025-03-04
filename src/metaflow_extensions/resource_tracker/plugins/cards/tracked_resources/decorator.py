@@ -38,10 +38,62 @@ class TrackedResourcesCard(MetaflowCard):
     def render(self, task):
         data = getattr(task.data, self._artifact_name)
         pid = data["pid_tracker"]
-        pid["timestamp"] = [t * 1000 for t in pid["timestamp"]]
-        variables = self._read_component_files()
-        variables["csv_cpu"] = pid[["timestamp", "cpu_usage"]].to_csv(
-            quote_strings=False
+        system = data["system_tracker"]
+
+        # ensure both have the same length
+        if len(pid) > len(system):
+            pid = pid[: len(system)]
+        elif len(system) > len(pid):
+            system = system[: len(pid)]
+
+        joined = system[
+            [
+                "timestamp",
+                "cpu_usage",
+                "memory_active_anon",
+                "disk_read_bytes",
+                "disk_write_bytes",
+                "net_recv_bytes",
+                "net_sent_bytes",
+            ]
+        ]
+        joined.rename(
+            columns={
+                "cpu_usage": "System CPU usage",
+                "memory_active_anon": "System memory usage",
+                "disk_read_bytes": "System disk read",
+                "disk_write_bytes": "System disk write",
+                "net_recv_bytes": "Inbound network traffic",
+                "net_sent_bytes": "Outbound network traffic",
+            }
         )
-        variables["csv_mem"] = pid[["timestamp", "pss"]].to_csv(quote_strings=False)
+        # convert to JS milliseconds
+        joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
+        # dummy merge
+        joined["Task CPU usage"] = pid["cpu_usage"]
+        joined["Task memory usage"] = pid["pss"] / 1024
+        joined["Task disk read"] = pid["read_bytes"]
+        joined["Task disk write"] = pid["write_bytes"]
+        # memory usage in MBs
+        joined["System memory usage"] = pid["System memory usage"] / 1024
+
+        variables = self._read_component_files()
+        variables["csv_cpu"] = joined[
+            ["timestamp", "Task CPU usage", "System CPU usage"]
+        ].to_csv(quote_strings=False)
+        variables["csv_mem"] = joined[
+            ["timestamp", "Task memory usage", "System memory usage"]
+        ].to_csv(quote_strings=False)
+        variables["csv_disk"] = joined[
+            [
+                "timestamp",
+                "Task disk read",
+                "System disk read",
+                "Task disk write",
+                "System disk write",
+            ]
+        ].to_csv(quote_strings=False)
+        variables["csv_net"] = joined[
+            ["timestamp", "Inbound network traffic", "Outbound network traffic"]
+        ].to_csv(quote_strings=False)
         return chevron.render(variables["base_html"], variables)

@@ -227,3 +227,28 @@ class TinyDataFrame:
                 return f.getvalue()
         finally:
             f.close()
+
+    def rename(self, columns):
+        """Rename one or multiple columns.
+
+        Args:
+            columns: Dictionary mapping old column names to new column names.
+
+        Returns:
+            Self for method chaining.
+
+        Raises:
+            KeyError: If any old column name doesn't exist in the dataframe.
+        """
+        for old_name in columns.keys():
+            if old_name not in self.columns:
+                raise KeyError(f"Column '{old_name}' not found in dataframe")
+
+        for i, col in enumerate(self.columns):
+            if col in columns:
+                self.columns[i] = columns[col]
+        # note that order of columns might change, but self.columns matters anyway
+        for old_name, new_name in columns.items():
+            self._data[new_name] = self._data.pop(old_name)
+
+        return self

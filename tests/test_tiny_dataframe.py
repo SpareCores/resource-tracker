@@ -322,3 +322,56 @@ def test_str_representation(sample_data):
     # Test with a dataframe that has more than 10 rows
     # It should only show 10 rows and then an ellipsis
     assert "..." in str(df)
+
+
+def test_rename_columns(sample_data):
+    """Test renaming columns using the rename method"""
+    df = TinyDataFrame(sample_data)
+
+    # Original column order
+    original_columns = df.columns.copy()
+    assert original_columns == ["timestamp", "cpu", "memory"]
+
+    # Test renaming a single column
+    df_single = df.rename({"cpu": "processor"})
+
+    # Check that it returns self for chaining
+    assert df_single is df
+
+    # Check the column was renamed
+    assert "processor" in df.columns
+    assert "cpu" not in df.columns
+    assert df.columns == ["timestamp", "processor", "memory"]
+
+    # Check that data is preserved
+    assert df["processor"][5] == 92.7
+
+    # Test renaming multiple columns
+    df = TinyDataFrame(sample_data)  # Reset
+    df_multi = df.rename({"timestamp": "time", "memory": "ram"})
+
+    # Check columns were renamed
+    assert df_multi.columns == ["time", "cpu", "ram"]
+
+    # Check data integrity
+    assert df["time"][0] == 1737676800
+    assert df["ram"][11] == 2800
+
+    # Test column order preservation with multiple renames
+    df = TinyDataFrame(sample_data)  # Reset
+    df.rename({"timestamp": "time", "cpu": "processor", "memory": "ram"})
+
+    # Check order is preserved (just with new names)
+    assert df.columns == ["time", "processor", "ram"]
+
+    # Test error case - non-existent column
+    df = TinyDataFrame(sample_data)  # Reset
+    with pytest.raises(KeyError):
+        df.rename({"nonexistent": "new_name"})
+
+    # Test chaining operations
+    df = TinyDataFrame(sample_data)  # Reset
+    result = df.rename({"cpu": "processor"})[["timestamp", "processor"]][3:6][
+        "processor"
+    ]
+    assert result == [52.4, 78.2, 92.7]

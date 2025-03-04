@@ -185,6 +185,7 @@ def get_system_stats():
         - memory_used (int): Used physical memory in kB (excluding buffers/cache).
         - memory_buffers (int): Memory used for buffers in kB.
         - memory_cached (int): Memory used for cache in kB.
+        - memory_active_anon (int): Memory used for anonymous pages in kB.
         - disk_stats (dict): Dictionary mapping disk names to their stats:
             - read_sectors (int): Sectors read from this disk.
             - write_sectors (int): Sectors written to this disk.
@@ -200,6 +201,7 @@ def get_system_stats():
         "memory_used": 0,
         "memory_buffers": 0,
         "memory_cached": 0,
+        "memory_active_anon": 0,
         "disk_stats": {},
         "net_recv_bytes": 0,
         "net_sent_bytes": 0,
@@ -216,6 +218,7 @@ def get_system_stats():
                 elif line.startswith("processes"):
                     stats["processes"] = int(line.split()[1])
 
+    # memory stats reported in kB
     with suppress(FileNotFoundError):
         with open("/proc/meminfo", "r") as f:
             mem_info = {}
@@ -240,6 +243,7 @@ def get_system_stats():
                 - stats["memory_buffers"]
                 - stats["memory_cached"]
             )
+            stats["memory_active_anon"] = mem_info.get("Active(anon)", 0)
 
     with suppress(FileNotFoundError):
         with open("/proc/diskstats", "r") as f:
@@ -446,15 +450,15 @@ class SystemTracker:
                         - (last_stats["utime"] + last_stats["stime"])
                     )
                     / time_diff
-                    / sysconf("SC_CLK_TCK")
-                    * 100,
+                    / sysconf("SC_CLK_TCK"),
                 ),
-                2,
+                4,
             ),
             "memory_free": self.stats["memory_free"],
             "memory_used": self.stats["memory_used"],
             "memory_buffers": self.stats["memory_buffers"],
             "memory_cached": self.stats["memory_cached"],
+            "memory_active_anon": self.stats["memory_active_anon"],
             "disk_read_bytes": total_read_bytes,
             "disk_write_bytes": total_write_bytes,
             "net_recv_bytes": max(

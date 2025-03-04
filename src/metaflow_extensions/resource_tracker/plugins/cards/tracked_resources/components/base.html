@@ -15,7 +15,7 @@
             </div>
             <div class="header-text">
                 <div class="title">CPU Usage</div>
-                <p class="description">Measured by user and system CPU time (in clock ticks), normalized to CPU count by dividing by the total elapsed time * ticks per second. Task CPU usage includes all children processes.</p>
+                <p class="description">Both system-wide and task-wide CPU usage is measured by summing up the user+nice and system CPU times (in clock ticks), normalized to utilized CPU count by dividing by the total elapsed time * ticks per second. Task CPU usage includes all children processes.</p>
             </div>
             <div id="labels_cpu" class="labels"></div>
         </h1>
@@ -28,7 +28,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Memory Usage</div>
-                <p class="description">Task memory usage measured by summing up all Proportional Set Size (PSS) rollups of all subprocesses.</p>
+                <p class="description">System-wide application memory usage is tracked via the size of anonymous memory pages, while task memory usage measured by summing up all Proportional Set Size (PSS) rollups of all subprocesses.</p>
             </div>
             <div id="labels_mem" class="labels"></div>
         </h1>

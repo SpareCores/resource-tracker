@@ -14,10 +14,17 @@ class TinyDataFrame:
 
     Example:
         >>> df = TinyDataFrame(csv_file_path="https://raw.githubusercontent.com/plotly/datasets/refs/heads/master/mtcars.csv")
-        >>> print(df)
+        >>> df
         TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'manufacturer': 'Mazda RX4', 'mpg': 21.0, 'cyl': 6.0, 'disp': 160.0, 'hp': 110.0, 'drat': 3.9, 'wt': 2.62, 'qsec': 16.46, 'vs': 0.0, 'am': 1.0, 'gear': 4.0, 'carb': 4.0}
         >>> df[2:5][['manufacturer', 'hp']]
         TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'manufacturer': 'Datsun 710', 'hp': 93.0}
+        >>> print(df[2:5][['manufacturer', 'hp']])  # doctest: +NORMALIZE_WHITESPACE
+        TinyDataFrame with 3 rows and 2 columns:
+        manufacturer      | hp
+        ------------------+------
+        Datsun 710        |  93.0
+        Hornet 4 Drive    | 110.0
+        Hornet Sportabout | 175.0
         >>> print(df[2:5][['manufacturer', 'hp']].to_csv())  # doctest: +NORMALIZE_WHITESPACE
         "manufacturer","hp"
         "Datsun 710",93.0
@@ -156,6 +163,45 @@ class TinyDataFrame:
     def __repr__(self):
         """Return a string representation of the data-frame."""
         return f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns. First row as a dict: {self[0]}"
+
+    def __str__(self):
+        """Print the first 10 rows of the data-frame in a human-readable table."""
+        header = (
+            f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns:\n"
+        )
+        if len(self) == 0:
+            return header + "Empty dataframe"
+
+        max_rows = min(10, len(self))
+
+        col_widths = {}
+        for col in self.columns:
+            col_widths[col] = len(str(col))
+            for i in range(max_rows):
+                col_widths[col] = max(col_widths[col], len(str(self._data[col][i])))
+
+        rows = []
+        header_row = " | ".join(str(col).ljust(col_widths[col]) for col in self.columns)
+        rows.append(header_row)
+        separator = "-+-".join("-" * col_widths[col] for col in self.columns)
+        rows.append(separator)
+
+        for i in range(max_rows):
+            row_values = []
+            for col in self.columns:
+                value = str(self._data[col][i])
+                # right-align numbers, left-align strings
+                try:
+                    float(value)  # check if it's a number
+                    row_values.append(value.rjust(col_widths[col]))
+                except ValueError:
+                    row_values.append(value.ljust(col_widths[col]))
+            rows.append(" | ".join(row_values))
+
+        # add ellipsis if there are more rows
+        if len(self) > max_rows:
+            rows.append("..." + " " * (len(rows[0]) - 3))
+        return header + "\n".join(rows)
 
     def to_csv(self, csv_file_path=None, quote_strings=True):
         """Write the data-frame to a CSV file or return as string if no path is provided.

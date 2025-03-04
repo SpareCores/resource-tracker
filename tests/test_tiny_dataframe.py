@@ -1,5 +1,4 @@
 import pytest
-import csv
 
 from resource_tracker import TinyDataFrame
 
@@ -212,11 +211,13 @@ def test_csv(tmp_path, sample_data):
 def test_csv_numeric_types(tmp_path):
     """Test that numeric types are preserved when writing and reading CSV files"""
     # Create a dataframe with mixed types
-    original_df = TinyDataFrame({
-        "string_col": ["a", "b", "c", "d"],
-        "int_col": [1, 2, 3, 4],
-        "float_col": [1.1, 2.2, 3.3, 4.4]
-    })
+    original_df = TinyDataFrame(
+        {
+            "string_col": ["a", "b", "c", "d"],
+            "int_col": [1, 2, 3, 4],
+            "float_col": [1.1, 2.2, 3.3, 4.4],
+        }
+    )
 
     # Write to CSV
     csv_path = tmp_path / "numeric_test.csv"
@@ -236,13 +237,13 @@ def test_csv_numeric_types(tmp_path):
     assert loaded_df["float_col"] == [1.1, 2.2, 3.3, 4.4]
 
     # Verify the actual CSV format with proper quoting
-    with open(csv_path, 'r') as f:
+    with open(csv_path, "r") as f:
         content = f.read()
         # Strings should be quoted, numbers should not
         assert '"string_col"' in content
         assert '"a"' in content
-        assert '1,' in content  # Unquoted number
-        assert '1,1.1' in content  # Unquoted float
+        assert "1," in content  # Unquoted number
+        assert "1,1.1" in content  # Unquoted float
 
 
 def test_set_column(sample_data):
@@ -275,3 +276,49 @@ def test_set_column(sample_data):
     # Test sequential operations
     df["new_column"] = [99] * 12
     assert df["new_column"] == [99] * 12
+
+
+def test_str_representation(sample_data):
+    """Test the string representation of TinyDataFrame"""
+    df = TinyDataFrame(sample_data)
+
+    # Get the string representation
+    str_repr = str(df)
+
+    # Check that it contains the expected header information
+    assert (
+        f"TinyDataFrame with {len(df)} rows and {len(df.columns)} columns:" in str_repr
+    )
+
+    # Check that all column names are in the string representation
+    for col in df.columns:
+        assert col in str_repr
+
+    # Check that the separator line exists
+    assert "-+-" in str_repr
+
+    # Check that some data values are present
+    assert "15.5" in str_repr  # First CPU value
+    assert "92.7" in str_repr  # Peak CPU value
+
+    # Test with a smaller dataframe to check exact formatting
+    small_df = df.head(3)
+    small_str = str(small_df)
+
+    # Check the header row and separator are properly formatted
+    lines = small_str.split("\n")
+    assert "timestamp" in lines[1] and "cpu" in lines[1] and "memory" in lines[1]
+    assert "-+-" in lines[2]
+
+    # Check that the data rows contain the expected values
+    assert "15.5" in lines[3]  # First row
+    assert "25.3" in lines[4]  # Second row
+    assert "38.7" in lines[5]  # Third row
+
+    # Test with an empty dataframe
+    empty_df = TinyDataFrame([])
+    assert "Empty dataframe" in str(empty_df)
+
+    # Test with a dataframe that has more than 10 rows
+    # It should only show 10 rows and then an ellipsis
+    assert "..." in str(df)

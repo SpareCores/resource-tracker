@@ -37,7 +37,7 @@
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
             var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
-                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem');
+                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true });
             var sync = Dygraph.synchronize([cpuGraph, memGraph], {zoom: true, selection: true, range: false});
         });
     </script>

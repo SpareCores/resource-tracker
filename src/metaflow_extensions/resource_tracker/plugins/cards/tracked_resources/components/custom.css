@@ -48,6 +48,7 @@ div.section .header-text .description {
     margin-left: auto;
     font-size: 14px;
     font-weight: normal;
+    text-wrap-mode: nowrap;
 }
 
 .dygraph-label, .dygraph-axis-label, .dygraph-legend {

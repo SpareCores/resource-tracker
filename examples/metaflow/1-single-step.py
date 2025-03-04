@@ -22,6 +22,7 @@ class ResourceTrackingFlow(FlowSpec):
     @step
     def do_heavy_computation(self):
         heavy_computation()
+        big_array = bytearray(500 * 1024 * 1024)  # 500MB
         sleep(3)
         with Pool(6) as p:
             p.map(heavy_computation, [1e7] * 6)

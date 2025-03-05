@@ -3,7 +3,7 @@ from os import listdir, path
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
 
-from .helpers import pretty_number
+from .helpers import pretty_number, round_memory
 
 
 class TrackedResourcesCard(MetaflowCard):
@@ -121,4 +121,12 @@ class TrackedResourcesCard(MetaflowCard):
                 variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
                     variables[keys[0]][keys[1]] / 1024
                 )
+        # get recommended resources
+        rec_cpu = round(variables["stats"]["cpu_usage"]["mean"])
+        rec_mem = round_memory(
+            variables["historical_stats"]["avg_memory_max"] / 1024 * 1.2
+        )
+        variables["recommended_resources"] = (
+            f"@resources(cpu={rec_cpu}, memory={rec_mem})"
+        )
         return chevron.render(variables["base_html"], variables)

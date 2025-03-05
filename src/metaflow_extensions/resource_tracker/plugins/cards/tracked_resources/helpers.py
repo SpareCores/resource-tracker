@@ -24,3 +24,22 @@ def pretty_number(num):
         return ".".join(parts)
     except (ValueError, TypeError):
         return str(num)
+
+
+def round_memory(num):
+    """Round a number to the nearest meaningful memory amount."""
+    if num <= 128:
+        rec_mem = 128
+    elif num <= 256:
+        rec_mem = 256
+    elif num <= 512:
+        rec_mem = 512
+    elif num <= 1024:
+        rec_mem = 1024
+    elif num <= 2048:
+        rec_mem = 2048
+    else:
+        # round up to the next GB
+        rec_mem_gb = num / 1024
+        rec_mem = int(1024 * (rec_mem_gb // 1 + (1 if rec_mem_gb % 1 > 0 else 0)))
+    return rec_mem

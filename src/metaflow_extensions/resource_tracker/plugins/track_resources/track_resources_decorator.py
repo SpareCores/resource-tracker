@@ -120,6 +120,10 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         """Store collected data as an artifact for card/user to process."""
         try:
+            # wait for the cloud_info thread to complete
+            if self.cloud_info_thread.is_alive():
+                self.cloud_info_thread.join()
+
             data = {
                 "pid_tracker": TinyDataFrame(
                     csv_file_path=self.pid_tracker_data_file.name

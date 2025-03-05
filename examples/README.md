@@ -39,7 +39,7 @@ To load the collected data in Python, you can access the artifact of the step:
 from metaflow import Flow
 
 
-Flow("HelloFlow").latest_run.data.resource_tracker_data
+Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 ```
 
 This latter is a dictionary of `TinyDataFrame` objects, which are a thin wrapper
@@ -47,6 +47,6 @@ around a dictionary of column vectors. To get a quick overview of the data, you
 can use the `print` method, printing the first 10 rows in a human-readable table:
 
 ```python
-df = Flow("HelloFlow").latest_run.data.resource_tracker_data
+df = Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 print(df)
 ```

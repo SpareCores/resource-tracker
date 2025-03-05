@@ -1,19 +1,17 @@
 from multiprocessing import Process
 from os import getpid, unlink
 from tempfile import NamedTemporaryFile
+from threading import Thread
 
 from metaflow.decorators import StepDecorator
 
-from .resource_tracker import PidTracker, SystemTracker, TinyDataFrame
-
-
-def results_reader(file_name: str) -> list[dict]:
-    results = []
-    with open(file_name, "r") as f:
-        reader = DictReader(f)
-        for row in reader:
-            results.append(row)
-    return results
+from .resource_tracker import (
+    PidTracker,
+    SystemTracker,
+    TinyDataFrame,
+    get_cloud_info,
+    get_server_info,
+)
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -103,6 +101,15 @@ class ResourceTrackerDecorator(StepDecorator):
         )
         self.system_tracker_process.start()
 
+        self.cloud_info = None
+        self.cloud_info_thread = Thread(
+            target=lambda: setattr(self, "cloud_info", get_cloud_info()),
+            daemon=True,
+        )
+        self.cloud_info_thread.start()
+
+        self.server_info = get_server_info()
+
     def task_post_step(
         self,
         step_name,
@@ -120,6 +127,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 "system_tracker": TinyDataFrame(
                     csv_file_path=self.system_tracker_data_file.name
                 ),
+                "cloud_info": self.cloud_info,
+                "server_info": self.server_info,
             }
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:

@@ -103,4 +103,5 @@ class TrackedResourcesCard(MetaflowCard):
         ].to_csv(quote_strings=False)
         variables["cloud_info"] = data["cloud_info"]
         variables["server_info"] = data["server_info"]
+        variables["stats"] = data["stats"]
         return chevron.render(variables["base_html"], variables)

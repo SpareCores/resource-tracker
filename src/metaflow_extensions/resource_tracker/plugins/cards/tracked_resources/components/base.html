@@ -9,34 +9,7 @@
 </head>
 <body>
     <div style="display: flex; gap: 1rem;">
-        <div id="provider" class="section" style="flex: 1;">
-            <h1>
-                <div class="header-icon">
-                    {{{icon_clouds}}}
-                </div>
-                <div class="header-text">
-                    <div class="title">Cloud</div>
-                    <p class="description">The identified cloud provider, region, and instance type used for this step.</p>
-                </div>
-            </h1>
-            <div class="section-content">
-                <div class="section-content-cards">
-                    <div class="section-content-card">
-                        <div class="section-content-card-label">Cloud Provider</div>
-                        <div class="section-content-card-value">{{{cloud_info.vendor}}}</div>
-                    </div>
-                    <div class="section-content-card">
-                        <div class="section-content-card-label">Region/Datacenter</div>
-                        <div class="section-content-card-value">{{{cloud_info.region}}}</div>
-                    </div>
-                    <div class="section-content-card">
-                        <div class="section-content-card-label">Instance Type</div>
-                        <div class="section-content-card-value">{{{cloud_info.instance_type}}}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="server" class="section" style="flex: 1;">
+        <div id="server" class="section" style="flex: 0.6;">
             <h1>
                 <div class="header-icon">
                     {{{icon_motherboard}}}
@@ -65,6 +38,77 @@
                         <div class="section-content-card-value">{{{server_info.gpu_memory_mb}}} MB</div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div id="provider" class="section" style="flex: 0.4;">
+            <h1>
+                <div class="header-icon">
+                    {{{icon_clouds}}}
+                </div>
+                <div class="header-text">
+                    <div class="title">Cloud</div>
+                    <p class="description">The identified cloud provider, region, and instance type used for this step.</p>
+                </div>
+            </h1>
+            <div class="section-content">
+                <div class="section-content-cards">
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Cloud Provider</div>
+                        <div class="section-content-card-value">{{{cloud_info.vendor}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Region/Datacenter</div>
+                        <div class="section-content-card-value">{{{cloud_info.region}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Instance Type</div>
+                        <div class="section-content-card-value">{{{cloud_info.instance_type}}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+        <div id="stats" class="section" style="flex: 0.6;">
+            <h1>
+                <div class="header-icon">
+                    {{{icon_calculator}}}
+                </div>
+                <div class="header-text">
+                    <div class="title">Usage Statistics</div>
+                    <p class="description">Current averages and peaks for CPU and memory usage, followed by historical aggregates for the past 5 runs.</p>
+                </div>
+            </h1>
+            <div class="section-content">
+                <div class="section-content-cards">
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">CPU Usage</div>
+                        <div class="section-content-card-value"><span class="metric-highlight">{{{stats.cpu_usage.mean}}}</span> avg <span class="metric-separator">|</span> <span class="metric">{{{stats.cpu_usage.max}}}</span> peak</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Memory Usage</div>
+                        <div class="section-content-card-value"><span class="metric">{{{stats.memory_usage.mean}}}</span> avg <span class="metric-separator">|</span> <span class="metric-highlight">{{{stats.memory_usage.max}}}</span> peak</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Duration</div>
+                        <div class="section-content-card-value">{{{stats.duration}}} sec</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="recommendations" class="section" style="flex: 0.4;">
+            <h1>
+                <div class="header-icon">
+                    {{{icon_robot}}}
+                </div>
+                <div class="header-text">
+                    <div class="title">Recommendations</div>
+                    <p class="description">TODO</p>
+                </div>
+            </h1>
+            <div class="section-content">
+                <!-- TODO CTA @resources recommendation -->
+                <!-- TODO CTA interested in auto-tuning? -->
             </div>
         </div>
     </div>

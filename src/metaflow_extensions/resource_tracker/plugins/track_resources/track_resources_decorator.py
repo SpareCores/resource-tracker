@@ -1,7 +1,9 @@
 from multiprocessing import Process
 from os import getpid, unlink
+from statistics import mean
 from tempfile import NamedTemporaryFile
 from threading import Thread
+from time import time
 
 from metaflow.decorators import StepDecorator
 
@@ -110,6 +112,8 @@ class ResourceTrackerDecorator(StepDecorator):
 
         self.server_info = get_server_info()
 
+        self.start_time = time()
+
     def task_post_step(
         self,
         step_name,
@@ -124,15 +128,28 @@ class ResourceTrackerDecorator(StepDecorator):
             if self.cloud_info_thread.is_alive():
                 self.cloud_info_thread.join()
 
+            pid_tracker_data = TinyDataFrame(
+                csv_file_path=self.pid_tracker_data_file.name
+            )
+            system_tracker_data = TinyDataFrame(
+                csv_file_path=self.system_tracker_data_file.name
+            )
             data = {
-                "pid_tracker": TinyDataFrame(
-                    csv_file_path=self.pid_tracker_data_file.name
-                ),
-                "system_tracker": TinyDataFrame(
-                    csv_file_path=self.system_tracker_data_file.name
-                ),
+                "pid_tracker": pid_tracker_data,
+                "system_tracker": system_tracker_data,
                 "cloud_info": self.cloud_info,
                 "server_info": self.server_info,
+                "stats": {
+                    "cpu_usage": {
+                        "mean": round(mean(pid_tracker_data["cpu_usage"]), 2),
+                        "max": round(max(pid_tracker_data["cpu_usage"]), 2),
+                    },
+                    "memory_usage": {
+                        "mean": round(mean(pid_tracker_data["pss"]), 2),
+                        "max": round(max(pid_tracker_data["pss"]), 2),
+                    },
+                    "duration": round(time() - self.start_time, 2),
+                },
             }
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:

@@ -34,11 +34,34 @@
         </h1>
         <div id="plot_mem" class="plot"></div>
     </div>
+    <div id="disk" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_disk}}}
+            </div>
+            <div class="header-text">
+                <div class="title">Disk Usage</div>
+                <p class="description">Tracking task-specific disk usage is highly unreliable, so monitoring the system-wide disk usage is recommended, which includes all disks mounted on the system.</p>
+            </div>
+            <div id="labels_disk" class="labels"></div>
+        </h1>
+        <div id="plot_disk" class="plot"></div>
+    </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
             var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
-                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true });
-            var sync = Dygraph.synchronize([cpuGraph, memGraph], {zoom: true, selection: true, range: false});
+                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true }),
+                diskGraph = createGraph("plot_disk", `{{{csv_disk}}}`, 'labels_disk',
+                { 
+                    labelsKMG2: true,
+                    series: {
+                        "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
+                        "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
+                        "Task disk read": {strokePattern: null, color: '#34D399'},
+                        "System disk read": {strokePattern: null, color: '#38BDF8'}
+                    },
+                });
+            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph], {zoom: true, selection: true, range: false});
         });
     </script>
 </body>

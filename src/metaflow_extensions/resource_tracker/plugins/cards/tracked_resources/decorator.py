@@ -50,6 +50,7 @@ class TrackedResourcesCard(MetaflowCard):
             [
                 "timestamp",
                 "cpu_usage",
+                "memory_active_anon",
                 "disk_read_bytes",
                 "disk_write_bytes",
                 "net_recv_bytes",
@@ -59,21 +60,23 @@ class TrackedResourcesCard(MetaflowCard):
         joined.rename(
             columns={
                 "cpu_usage": "System CPU usage",
+                "memory_active_anon": "System memory usage",
                 "disk_read_bytes": "System disk read",
                 "disk_write_bytes": "System disk write",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
             }
         )
-        # convert to JS milliseconds
-        joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
         # dummy merge
         joined["Task CPU usage"] = pid["cpu_usage"]
+        joined["Task memory usage"] = pid["pss"]
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
         # convert memory usage to bytes so that we can pretty format on the client side
-        joined["Task memory usage"] = [m * 1024 for m in pid["pss"]]
-        joined["System memory usage"] = [m * 1024 for m in system["memory_active_anon"]]
+        for col in ["Task memory usage", "System memory usage"]:
+            joined[col] = [m * 1024 for m in joined[col]]
+        # convert to JS milliseconds
+        joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
 
         variables = self._read_component_files()
         variables["csv_cpu"] = joined[

@@ -8,9 +8,10 @@ import urllib.error
 import urllib.request
 from contextlib import suppress
 from functools import cache
+from time import time
 from typing import Dict
 
-METADATA_REQUEST_TIMEOUT = 2
+METADATA_REQUEST_TIMEOUT = 1
 
 
 @cache
@@ -24,6 +25,7 @@ def get_cloud_info() -> Dict[str, str]:
             - instance_type: The instance type/size/flavor
             - region: The region/zone where the instance is running
     """
+    start_time = time()
     for check_fn in [
         _check_aws,
         _check_gcp,
@@ -33,9 +35,14 @@ def get_cloud_info() -> Dict[str, str]:
     ]:
         info = check_fn()
         if info:
-            return info
+            return info | {"discovery_time": time() - start_time}
 
-    return {"vendor": "unknown", "instance_type": "unknown", "region": "unknown"}
+    return {
+        "vendor": "unknown",
+        "instance_type": "unknown",
+        "region": "unknown",
+        "discovery_time": time() - start_time,
+    }
 
 
 @cache

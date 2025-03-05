@@ -47,21 +47,42 @@
         </h1>
         <div id="plot_disk" class="plot"></div>
     </div>
+    <div id="net" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_router}}}
+            </div>
+            <div class="header-text">
+                <div class="title">Network Usage</div>
+                <p class="description">Network usage is only tracked system-wide on all interfaces.</p>
+            </div>
+            <div id="labels_net" class="labels"></div>
+        </h1>
+        <div id="plot_net" class="plot"></div>
+    </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
             var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
                 memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true }),
                 diskGraph = createGraph("plot_disk", `{{{csv_disk}}}`, 'labels_disk',
-                { 
-                    labelsKMG2: true,
-                    series: {
-                        "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
-                        "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
-                        "Task disk read": {strokePattern: null, color: '#34D399'},
-                        "System disk read": {strokePattern: null, color: '#38BDF8'}
-                    },
-                });
-            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph], {zoom: true, selection: true, range: false});
+                    {
+                        labelsKMG2: true,
+                        series: {
+                            "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
+                            "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
+                            "Task disk read": {strokePattern: null, color: '#34D399'},
+                            "System disk read": {strokePattern: null, color: '#38BDF8'}
+                        },
+                    }),
+                netGraph = createGraph("plot_net", `{{{csv_net}}}`, 'labels_net',
+                    {
+                        labelsKMG2: true,
+                        series: {
+                            "Inbound network traffic": {strokePattern: null, color: '#38BDF8'},
+                            "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
+                        },
+                    });
+            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph], {zoom: true, selection: true, range: false});
         });
     </script>
 </body>

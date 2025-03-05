@@ -214,7 +214,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     "available": True,
                     "runs_analyzed": len(cpu_means),
                     "avg_cpu_mean": round(mean(cpu_means), 2),
-                    "avg_memory_max": round(mean(memory_maxes), 2),
+                    "max_memory_max": round(max(memory_maxes), 2),
                     "avg_duration": round(mean(durations), 2),
                 }
             else:

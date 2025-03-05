@@ -111,7 +111,7 @@ class TrackedResourcesCard(MetaflowCard):
         for keys in [
             ["stats", "memory_usage", "mean"],
             ["stats", "memory_usage", "max"],
-            ["historical_stats", "avg_memory_max"],
+            ["historical_stats", "max_memory_max"],
         ]:
             if len(keys) == 3:
                 variables[keys[0]][keys[1]][keys[2] + "_pretty"] = pretty_number(
@@ -124,7 +124,7 @@ class TrackedResourcesCard(MetaflowCard):
         # get recommended resources
         rec_cpu = round(variables["stats"]["cpu_usage"]["mean"])
         rec_mem = round_memory(
-            variables["historical_stats"]["avg_memory_max"] / 1024 * 1.2
+            variables["historical_stats"]["max_memory_max"] / 1024 * 1.2
         )
         variables["recommended_resources"] = (
             f"@resources(cpu={rec_cpu}, memory={rec_mem})"

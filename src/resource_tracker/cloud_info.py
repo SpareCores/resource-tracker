@@ -6,6 +6,7 @@ and returns standardized information about the cloud provider and instance.
 import json
 import urllib.error
 import urllib.request
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextlib import suppress
 from functools import cache
 from time import time
@@ -26,16 +27,28 @@ def get_cloud_info() -> Dict[str, str]:
             - region: The region/zone where the instance is running
     """
     start_time = time()
-    for check_fn in [
+    check_functions = [
         _check_aws,
         _check_gcp,
         _check_azure,
         _check_hetzner,
         _check_upcloud,
-    ]:
-        info = check_fn()
-        if info:
-            return info | {"discovery_time": time() - start_time}
+    ]
+
+    # run checks in parallel, return early if any check succeeds
+    with ThreadPoolExecutor(max_workers=len(check_functions)) as executor:
+        futures = {executor.submit(check_fn): check_fn for check_fn in check_functions}
+        pending = set(futures.keys())
+        while pending:
+            done, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for future in done:
+                with suppress(Exception):
+                    info = future.result()
+                    if info:
+                        # stop all remaining checks early
+                        for f in pending:
+                            f.cancel()
+                        return info | {"discovery_time": time() - start_time}
 
     return {
         "vendor": "unknown",

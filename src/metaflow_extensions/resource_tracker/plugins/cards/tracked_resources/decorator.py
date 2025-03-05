@@ -46,6 +46,10 @@ class TrackedResourcesCard(MetaflowCard):
         elif len(system) > len(pid):
             system = system[: len(pid)]
 
+        # nothing to report on
+        if len(pid) == 0:
+            return "The tracker did not collect any data. Please check if the step run for longer than the specified interval."
+
         joined = system[
             [
                 "timestamp",

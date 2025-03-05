@@ -4,7 +4,7 @@ from time import sleep
 from metaflow import Flow, FlowSpec, step, track_resources
 
 
-def heavy_computation(n=1e8):
+def heavy_computation(n=1e7):
     """Dummy heavy task."""
     total = 0
     for i in range(int(n)):
@@ -25,7 +25,10 @@ class ResourceTrackingFlow(FlowSpec):
         big_array = bytearray(500 * 1024 * 1024)  # 500MB
         sleep(3)
         with Pool(6) as p:
-            p.map(heavy_computation, [1e7] * 6)
+            p.map(heavy_computation, [2e7] * 6)
+        del big_array
+        sleep(3)
+        heavy_computation()
         self.next(self.end)
 
     @step

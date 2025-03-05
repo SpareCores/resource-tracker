@@ -116,8 +116,7 @@ div.section .plot-container {
     font-weight: 500;
 }
 .metric-highlight {
-    font-weight: 500;
-    color: #34D399;
+    font-weight: 900;
 }
 .metric-separator {
     color: #9ca3af; /* gray-400 */

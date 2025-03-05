@@ -7,11 +7,25 @@ function prettyTimestamp(unixTimestamp) {
     return date.toLocaleString('sv-SE', options);
 };
 
-// source: https://dygraphs.com/tests/legend-formatter.html
+// based on https://dygraphs.com/tests/legend-formatter.html + support for dashed lines
 function legendFormatter(data) {
     if (data.x == null) {
-        return '<br>' + data.series.map(function(series) { return series.dashHTML + ' ' + series.labelHTML }).join('<br>');
+        let html = '';
+        data.series.forEach(function(series) {
+            if (!series.isVisible) return;
+            const seriesOptions = data.dygraph.getOption('series') || {};
+            const seriesOpts = seriesOptions[series.label] || {};
+            let dashStyle = '';
+            if (seriesOpts.strokePattern && seriesOpts.strokePattern.length) {
+                dashStyle = '<span style="display: inline-block; width: 30px; border-bottom: 3px dashed ' + series.color + '; margin-right: 5px;"></span>';
+            } else {
+                dashStyle = '<span style="display: inline-block; width: 30px; border-bottom: 3px solid ' + series.color + '; margin-right: 5px;"></span>';
+            }
+            html += dashStyle + ' ' + series.labelHTML + '<br/>';
+        });
+        return html;
     }
+
     var html = data.xHTML;
     data.series.forEach(function(series) {
         if (!series.isVisible) return;
@@ -19,7 +33,15 @@ function legendFormatter(data) {
         if (series.isHighlighted) {
             labeledData = '<b>' + labeledData + '</b>';
         }
-        html += '<br>' + series.dashHTML + ' ' + labeledData;
+        const seriesOptions = data.dygraph.getOption('series') || {};
+        const seriesOpts = seriesOptions[series.label] || {};
+        let dashStyle = '';
+        if (seriesOpts.strokePattern && seriesOpts.strokePattern.length) {
+            dashStyle = '<span style="display: inline-block; width: 30px; border-bottom: 3px dashed ' + series.color + '; margin-right: 5px;"></span>';
+        } else {
+            dashStyle = '<span style="display: inline-block; width: 30px; border-bottom: 3px solid ' + series.color + '; margin-right: 5px;"></span>';
+        }
+        html += '<br>' + dashStyle + ' ' + labeledData;
     });
     return html;
 };

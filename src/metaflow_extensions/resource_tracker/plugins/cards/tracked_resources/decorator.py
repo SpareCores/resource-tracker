@@ -63,10 +63,10 @@ class TrackedResourcesCard(MetaflowCard):
         ]
         joined.rename(
             columns={
-                "cpu_usage": "System CPU usage",
-                "memory_active_anon": "System memory usage",
-                "disk_read_bytes": "System disk read",
-                "disk_write_bytes": "System disk write",
+                "cpu_usage": "Server CPU usage",
+                "memory_active_anon": "Server memory usage",
+                "disk_read_bytes": "Server disk read",
+                "disk_write_bytes": "Server disk write",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
             }
@@ -77,28 +77,30 @@ class TrackedResourcesCard(MetaflowCard):
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
         # convert memory usage to bytes so that we can pretty format on the client side
-        for col in ["Task memory usage", "System memory usage"]:
+        for col in ["Task memory usage", "Server memory usage"]:
             joined[col] = [m * 1024 for m in joined[col]]
         # convert to JS milliseconds
         joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
 
         variables = self._read_component_files()
         variables["csv_cpu"] = joined[
-            ["timestamp", "Task CPU usage", "System CPU usage"]
+            ["timestamp", "Task CPU usage", "Server CPU usage"]
         ].to_csv(quote_strings=False)
         variables["csv_mem"] = joined[
-            ["timestamp", "Task memory usage", "System memory usage"]
+            ["timestamp", "Task memory usage", "Server memory usage"]
         ].to_csv(quote_strings=False)
         variables["csv_disk"] = joined[
             [
                 "timestamp",
                 "Task disk read",
-                "System disk read",
+                "Server disk read",
                 "Task disk write",
-                "System disk write",
+                "Server disk write",
             ]
         ].to_csv(quote_strings=False)
         variables["csv_net"] = joined[
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
         ].to_csv(quote_strings=False)
+        variables["cloud_info"] = data["cloud_info"]
+        variables["server_info"] = data["server_info"]
         return chevron.render(variables["base_html"], variables)

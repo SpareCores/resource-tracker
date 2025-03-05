@@ -8,6 +8,66 @@
     <style type="text/css">{{{custom_css}}}</style>
 </head>
 <body>
+    <div style="display: flex; gap: 1rem;">
+        <div id="provider" class="section" style="flex: 1;">
+            <h1>
+                <div class="header-icon">
+                    {{{icon_clouds}}}
+                </div>
+                <div class="header-text">
+                    <div class="title">Cloud</div>
+                    <p class="description">The identified cloud provider, region, and instance type used for this step.</p>
+                </div>
+            </h1>
+            <div class="section-content">
+                <div class="section-content-cards">
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Cloud Provider</div>
+                        <div class="section-content-card-value">{{{cloud_info.vendor}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Region/Datacenter</div>
+                        <div class="section-content-card-value">{{{cloud_info.region}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Instance Type</div>
+                        <div class="section-content-card-value">{{{cloud_info.instance_type}}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="server" class="section" style="flex: 1;">
+            <h1>
+                <div class="header-icon">
+                    {{{icon_motherboard}}}
+                </div>
+                <div class="header-text">
+                    <div class="title">Server</div>
+                    <p class="description">Most important hardware information about the server.</p>
+                </div>
+            </h1>
+            <div class="section-content">
+                <div class="section-content-cards">
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">vCPUs</div>
+                        <div class="section-content-card-value">{{{server_info.vcpus}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Memory</div>
+                        <div class="section-content-card-value">{{{server_info.memory_mb}}} MB</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">GPUs</div>
+                        <div class="section-content-card-value">{{{server_info.gpu_count}}}</div>
+                    </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">VRAM</div>
+                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb}}} MB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="cpu" class="section">
         <h1>
             <div class="header-icon">
@@ -15,7 +75,7 @@
             </div>
             <div class="header-text">
                 <div class="title">CPU Usage</div>
-                <p class="description">Both system-wide and task-wide CPU usage is measured by summing up the user+nice and system CPU times (in clock ticks), normalized to utilized CPU count by dividing by the total elapsed time * ticks per second. Task CPU usage includes all children processes.</p>
+                <p class="description">Both the server and task-specific CPU usage is measured by summing up the user+nice and system CPU times (in clock ticks), normalized to utilized CPU count by dividing by the total elapsed time * ticks per second. Task CPU usage includes all children processes.</p>
             </div>
             <div id="labels_cpu" class="labels"></div>
         </h1>
@@ -28,7 +88,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Memory Usage</div>
-                <p class="description">System-wide application memory usage is tracked via the size of anonymous memory pages, while task memory usage measured by summing up all Proportional Set Size (PSS) rollups of all subprocesses.</p>
+                <p class="description">The server's application memory usage is tracked via the size of anonymous memory pages, while task memory usage measured by summing up all Proportional Set Size (PSS) rollups of all subprocesses.</p>
             </div>
             <div id="labels_mem" class="labels"></div>
         </h1>
@@ -41,7 +101,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Disk Usage</div>
-                <p class="description">Tracking task-specific disk usage is highly unreliable, so monitoring the system-wide disk usage is recommended, which includes all disks mounted on the system.</p>
+                <p class="description">Tracking task-specific disk usage is highly unreliable, so monitoring the disk usage at the server level is recommended, which includes all disks mounted on the system.</p>
             </div>
             <div id="labels_disk" class="labels"></div>
         </h1>
@@ -54,7 +114,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Network Usage</div>
-                <p class="description">Network usage is only tracked system-wide on all interfaces.</p>
+                <p class="description">Network usage is only tracked at the server level on all interfaces.</p>
             </div>
             <div id="labels_net" class="labels"></div>
         </h1>
@@ -69,9 +129,9 @@
                         labelsKMG2: true,
                         series: {
                             "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
-                            "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
+                            "Server disk write": {strokePattern: [7, 3], color: '#38BDF8'},
                             "Task disk read": {strokePattern: null, color: '#34D399'},
-                            "System disk read": {strokePattern: null, color: '#38BDF8'}
+                            "Server disk read": {strokePattern: null, color: '#38BDF8'}
                         },
                     }),
                 netGraph = createGraph("plot_net", `{{{csv_net}}}`, 'labels_net',

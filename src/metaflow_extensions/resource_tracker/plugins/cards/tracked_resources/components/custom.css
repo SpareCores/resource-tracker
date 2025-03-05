@@ -25,23 +25,64 @@ div.section .header-icon {
     justify-content: center;
     flex-shrink: 0;
 }
-
 div.section .header-text {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
 }
-
 div.section .header-text .title {
     font-size: 24px;
     font-weight: bold;
     margin-bottom: 5px;
 }
-
 div.section .header-text .description {
     font-size: 14px;
     margin: 0;
     color: #ccc;
+}
+
+div.section .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-left: 20px;
+    margin-right: 20px;
+    color: #fff;
+}
+div.section .section-content .section-content-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+div.section .section-content-cards {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+div.section .section-content-card {
+    background-color: #06263A;
+    padding: 15px;
+    min-width: 120px;
+    flex: 0 1 auto;
+    border-left: 3px solid #38BDF8;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+div.section .section-content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+div.section .section-content-card-label {
+    font-size: 14px;
+    color: #ccc;
+    margin-bottom: 8px;
+}
+div.section .section-content-card-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
 }
 
 .labels {
@@ -59,4 +100,3 @@ div.section .header-text .description {
     background-color: #06263A;
     color: #fff;
 }
-

@@ -3,6 +3,8 @@ from os import listdir, path
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
 
+from .helpers import pretty_number
+
 
 class TrackedResourcesCard(MetaflowCard):
     """Card called by the track_resources step decorator, not for direct use."""
@@ -104,4 +106,19 @@ class TrackedResourcesCard(MetaflowCard):
         variables["cloud_info"] = data["cloud_info"]
         variables["server_info"] = data["server_info"]
         variables["stats"] = data["stats"]
+        variables["historical_stats"] = data["historical_stats"]
+        # convert memory usage stats to MB and make it pretty
+        for keys in [
+            ["stats", "memory_usage", "mean"],
+            ["stats", "memory_usage", "max"],
+            ["historical_stats", "avg_memory_max"],
+        ]:
+            if len(keys) == 3:
+                variables[keys[0]][keys[1]][keys[2] + "_pretty"] = pretty_number(
+                    variables[keys[0]][keys[1]][keys[2]] / 1024
+                )
+            elif len(keys) == 2:
+                variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
+                    variables[keys[0]][keys[1]] / 1024
+                )
         return chevron.render(variables["base_html"], variables)

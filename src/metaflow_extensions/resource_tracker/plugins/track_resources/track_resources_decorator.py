@@ -134,6 +134,8 @@ class ResourceTrackerDecorator(StepDecorator):
             system_tracker_data = TinyDataFrame(
                 csv_file_path=self.system_tracker_data_file.name
             )
+            historical_stats = self._get_historical_stats(flow, step_name)
+
             data = {
                 "pid_tracker": pid_tracker_data,
                 "system_tracker": system_tracker_data,
@@ -150,7 +152,9 @@ class ResourceTrackerDecorator(StepDecorator):
                     },
                     "duration": round(time() - self.start_time, 2),
                 },
+                "historical_stats": historical_stats,
             }
+
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
             self.logger(
@@ -160,3 +164,65 @@ class ResourceTrackerDecorator(StepDecorator):
             )
         finally:
             unlink(self.pid_tracker_data_file.name)
+
+    def _get_historical_stats(self, flow, step_name):
+        """Fetch historical resource stats from previous runs' artifacts."""
+        try:
+            from metaflow import Flow
+
+            # Get the flow name from the current flow object
+            flow_name = flow.__class__.__name__
+
+            # get the current + last 5 successful runs
+            runs = list(Flow(flow_name).runs())
+            runs.sort(key=lambda run: run.created_at, reverse=True)
+            previous_runs = [run for run in runs[0:6] if run.successful]
+
+            if not previous_runs:
+                return {
+                    "available": False,
+                    "message": "No previous successful runs found",
+                }
+
+            cpu_means = []
+            memory_maxes = []
+            durations = []
+
+            for run in previous_runs:
+                try:
+                    step = next((s for s in run.steps() if s.id == step_name), None)
+                    if not step:
+                        continue
+                    # usually there's only one task per step
+                    task = next(iter(step.tasks()), None)
+                    if not task:
+                        continue
+                    if not hasattr(task.data, self.attributes["artifact_name"]):
+                        continue
+                    resource_data = getattr(task.data, self.attributes["artifact_name"])
+                    cpu_means.append(resource_data["stats"]["cpu_usage"]["mean"])
+                    memory_maxes.append(resource_data["stats"]["memory_usage"]["max"])
+                    durations.append(resource_data["stats"]["duration"])
+                except Exception as e:
+                    self.logger(
+                        f"Warning: Could not process historical data for run {run.id}: {e}"
+                    )
+                    continue
+
+            if cpu_means and memory_maxes and durations:
+                return {
+                    "available": True,
+                    "runs_analyzed": len(cpu_means),
+                    "avg_cpu_mean": round(mean(cpu_means), 2),
+                    "avg_memory_max": round(mean(memory_maxes), 2),
+                    "avg_duration": round(mean(durations), 2),
+                }
+            else:
+                return {
+                    "available": False,
+                    "message": "No resource data found in previous runs",
+                }
+
+        except Exception as e:
+            self.logger(f"Warning: Failed to retrieve historical stats: {e}")
+            return {"available": False, "error": str(e)}

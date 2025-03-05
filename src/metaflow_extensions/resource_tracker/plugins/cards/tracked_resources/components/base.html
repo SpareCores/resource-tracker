@@ -76,20 +76,30 @@
                 </div>
                 <div class="header-text">
                     <div class="title">Usage Statistics</div>
-                    <p class="description">Current averages and peaks for CPU and memory usage, followed by historical aggregates for the past 5 runs.</p>
+                    <p class="description">Current and historical (last successful 5 runs) averages and peaks for CPU and memory usage.</p>
                 </div>
             </h1>
             <div class="section-content">
                 <div class="section-content-cards">
-                    <div class="section-content-card">
+                    <div class="section-content-card-task">
                         <div class="section-content-card-label">CPU Usage</div>
-                        <div class="section-content-card-value"><span class="metric-highlight">{{{stats.cpu_usage.mean}}}</span> avg <span class="metric-separator">|</span> <span class="metric">{{{stats.cpu_usage.max}}}</span> peak</div>
+                        <div class="section-content-card-value">
+                            <span class="metric-highlight">{{{stats.cpu_usage.mean}}}</span> avg
+                            <span class="metric-separator">|</span>
+                            <span class="metric">{{{historical_stats.avg_cpu_mean}}}</span> hist avg
+                            <span class="metric-separator">|</span>
+                            <span class="metric">{{{stats.cpu_usage.max}}}</span> peak</div>
                     </div>
-                    <div class="section-content-card">
+                    <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory Usage</div>
-                        <div class="section-content-card-value"><span class="metric">{{{stats.memory_usage.mean}}}</span> avg <span class="metric-separator">|</span> <span class="metric-highlight">{{{stats.memory_usage.max}}}</span> peak</div>
+                        <div class="section-content-card-value">
+                            <span class="metric">{{{stats.memory_usage.mean_pretty}}} MiB</span> avg
+                            <span class="metric-separator">|</span>
+                            <span class="metric">{{{stats.memory_usage.max_pretty}}} MiB</span> peak
+                            <span class="metric-separator">|</span>
+                            <span class="metric-highlight">{{{historical_stats.avg_memory_max_pretty}}} MiB</span> hist peak</div>
                     </div>
-                    <div class="section-content-card">
+                    <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
                         <div class="section-content-card-value">{{{stats.duration}}} sec</div>
                     </div>

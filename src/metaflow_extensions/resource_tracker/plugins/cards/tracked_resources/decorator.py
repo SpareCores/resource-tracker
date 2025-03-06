@@ -107,26 +107,45 @@ class TrackedResourcesCard(MetaflowCard):
         variables["server_info"] = data["server_info"]
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]
+        # strikethrough in HTML if no historical data
+        if not variables["historical_stats"]["available"]:
+            variables["historical_stats"]["avg_cpu_mean"] = "-"
+            variables["historical_stats"]["max_memory_max_pretty"] = "-"
         # convert memory usage stats to MB and make it pretty
         for keys in [
+            ["server_info", "memory_mb"],
+            ["server_info", "gpu_memory_mb"],
             ["stats", "memory_usage", "mean"],
             ["stats", "memory_usage", "max"],
             ["historical_stats", "max_memory_max"],
         ]:
             if len(keys) == 3:
-                variables[keys[0]][keys[1]][keys[2] + "_pretty"] = pretty_number(
-                    variables[keys[0]][keys[1]][keys[2]] / 1024
-                )
+                if variables.get(keys[0], {}).get(keys[1], {}).get(keys[2], {}):
+                    if not keys[2].endswith("_mb"):
+                        variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
+                            pretty_number(variables[keys[0]][keys[1]][keys[2]] / 1024)
+                        )
+                    else:
+                        variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
+                            pretty_number(variables[keys[0]][keys[1]][keys[2]])
+                        )
             elif len(keys) == 2:
-                variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
-                    variables[keys[0]][keys[1]] / 1024
-                )
+                if variables.get(keys[0], {}).get(keys[1], {}):
+                    if not keys[1].endswith("_mb"):
+                        variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
+                            variables[keys[0]][keys[1]] / 1024
+                        )
+                    else:
+                        variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
+                            variables[keys[0]][keys[1]]
+                        )
         # get recommended resources
         rec_cpu = round(variables["stats"]["cpu_usage"]["mean"])
-        rec_mem = round_memory(
-            variables["historical_stats"]["max_memory_max"] / 1024 * 1.2
-        )
+        if variables["historical_stats"]["available"]:
+            rec_mem = variables["historical_stats"]["max_memory_max"]
+        else:
+            rec_mem = variables["stats"]["memory_usage"]["max"]
         variables["recommended_resources"] = (
-            f"@resources(cpu={rec_cpu}, memory={rec_mem})"
+            f"@resources(cpu={rec_cpu}, memory={round_memory(rec_mem / 1024 * 1.2)})"
         )
         return chevron.render(variables["base_html"], variables)

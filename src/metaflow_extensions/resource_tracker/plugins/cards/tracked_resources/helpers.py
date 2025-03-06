@@ -26,20 +26,29 @@ def pretty_number(num):
         return str(num)
 
 
-def round_memory(num):
-    """Round a number to the nearest meaningful memory amount."""
-    if num <= 128:
-        rec_mem = 128
-    elif num <= 256:
-        rec_mem = 256
-    elif num <= 512:
-        rec_mem = 512
-    elif num <= 1024:
-        rec_mem = 1024
-    elif num <= 2048:
-        rec_mem = 2048
+def round_memory(mb):
+    """Round a number to the nearest meaningful memory amount.
+
+    Example:
+        >>> round_memory(68)
+        128
+        >>> round_memory(896)
+        1024
+        >>> round_memory(3863)
+        4096
+    """
+    if mb <= 128:
+        rounded = 128
+    elif mb <= 256:
+        rounded = 256
+    elif mb <= 512:
+        rounded = 512
+    elif mb <= 1024:
+        rounded = 1024
+    elif mb <= 2048:
+        rounded = 2048
     else:
         # round up to the next GB
-        rec_mem_gb = num / 1024
-        rec_mem = int(1024 * (rec_mem_gb // 1 + (1 if rec_mem_gb % 1 > 0 else 0)))
-    return rec_mem
+        rounded_gb = mb / 1024
+        rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
+    return rounded

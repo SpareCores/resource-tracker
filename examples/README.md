@@ -31,7 +31,7 @@ Once the script finished, you can visualize the resource usage by checking the
 Metaflow UI, or search for the generated HTML in your local enviromment, e.g.:
 
 ```sh
-xdg-open .metaflow/mf.cards/ResourceTrackingFlow/runs/$(cat .metaflow/ResourceTrackingFlow/latest_run)/steps/do_heavy_computation/tasks/2/cards/tracked_resources-resource_tracker_do_heavy_computation*.html
+python 1-single-step.py card view do_heavy_computation
 ```
 
 To load the collected data in Python, you can access the artifact of the step:
@@ -54,11 +54,13 @@ print(df)
 
 ### 2-gpu.py
 
-This script demonstrates the monitoring of GPU usage using the `track_resources`
-decorator. It runs two ~heavy computations on the GPU for a few seconds.
+This script demonstrates the monitoring of GPU utilization using the
+`track_resources` decorator. It runs two ~heavy computations on the GPU for a
+few seconds.
 
 Example run:
 
 ```sh
 python 2-gpu.py --environment=pypi run
+python 2-gpu.py card view do_heavy_computation
 ```

@@ -17,13 +17,13 @@ def get_total_memory_mb():
 
 def get_gpu_info():
     """Get GPU information using nvidia-smi command."""
-    result = {"count": 0, "memory_mb": 0}
+    result = {"count": 0, "memory_mb": 0, "gpu_names": []}
 
     with suppress(Exception):
         nvidia_smi_output = check_output(
             [
                 "nvidia-smi",
-                "--query-gpu=count,memory.total",
+                "--query-gpu=gpu_name,memory.total",
                 "--format=csv,noheader,nounits",
             ],
             universal_newlines=True,
@@ -35,11 +35,10 @@ def get_gpu_info():
         total_memory_mb = 0
         for line in lines:
             if line.strip():
-                # Format is: count, memory.total
                 parts = line.split(",")
-                if len(parts) >= 2:
-                    memory_mb = float(parts[1].strip())
-                    total_memory_mb += memory_mb
+                memory_mb = float(parts[1].strip())
+                total_memory_mb += memory_mb
+                result["gpu_names"].append(parts[0].strip())
 
         result["memory_mb"] = total_memory_mb
 
@@ -62,6 +61,7 @@ def get_server_info():
         "vcpus": cpu_count(),
         "memory_mb": get_total_memory_mb(),
         "gpu_count": gpu_info["count"],
+        "gpu_names": gpu_info["gpu_names"],
         "gpu_memory_mb": gpu_info["memory_mb"],
     }
     return info

@@ -1,3 +1,4 @@
+from collections import Counter
 from os import listdir, path
 
 from metaflow.cards import MetaflowCard
@@ -105,6 +106,12 @@ class TrackedResourcesCard(MetaflowCard):
         ].to_csv(quote_strings=False)
         variables["cloud_info"] = data["cloud_info"]
         variables["server_info"] = data["server_info"]
+        if variables["server_info"]["gpu_names"]:
+            variables["server_info"]["gpu_name"] = Counter(
+                variables["server_info"]["gpu_names"]
+            ).most_common(1)[0][0]
+        else:
+            variables["server_info"]["gpu_name"] = ""
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]
         # strikethrough in HTML if no historical data

@@ -150,6 +150,18 @@ class ResourceTrackerDecorator(StepDecorator):
                         "mean": round(mean(pid_tracker_data["pss"]), 2),
                         "max": round(max(pid_tracker_data["pss"]), 2),
                     },
+                    "gpu_usage": {
+                        "mean": round(mean(pid_tracker_data["gpu_usage"]), 2),
+                        "max": round(max(pid_tracker_data["gpu_usage"]), 2),
+                    },
+                    "gpu_vram": {
+                        "mean": round(mean(pid_tracker_data["gpu_vram"]), 2),
+                        "max": round(max(pid_tracker_data["gpu_vram"]), 2),
+                    },
+                    "gpu_utilized": {
+                        "mean": round(mean(pid_tracker_data["gpu_utilized"]), 2),
+                        "max": round(max(pid_tracker_data["gpu_utilized"]), 2),
+                    },
                     "duration": round(time() - self.start_time, 2),
                 },
                 "historical_stats": historical_stats,
@@ -187,6 +199,9 @@ class ResourceTrackerDecorator(StepDecorator):
             cpu_means = []
             memory_maxes = []
             durations = []
+            gpu_means = []
+            vram_maxes = []
+            gpu_counts = []
 
             for run in previous_runs:
                 try:
@@ -203,6 +218,9 @@ class ResourceTrackerDecorator(StepDecorator):
                     cpu_means.append(resource_data["stats"]["cpu_usage"]["mean"])
                     memory_maxes.append(resource_data["stats"]["memory_usage"]["max"])
                     durations.append(resource_data["stats"]["duration"])
+                    gpu_means.append(resource_data["stats"]["gpu_usage"]["mean"])
+                    vram_maxes.append(resource_data["stats"]["gpu_vram"]["max"])
+                    gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
                     self.logger(
                         f"Warning: Could not process historical data for run {run.id}: {e}"
@@ -215,6 +233,9 @@ class ResourceTrackerDecorator(StepDecorator):
                     "runs_analyzed": len(cpu_means),
                     "avg_cpu_mean": round(mean(cpu_means), 2),
                     "max_memory_max": round(max(memory_maxes), 2),
+                    "avg_gpu_mean": round(mean(gpu_means), 2),
+                    "max_vram_max": round(max(vram_maxes), 2),
+                    "max_gpu_count": round(max(gpu_counts), 2),
                     "avg_duration": round(mean(durations), 2),
                 }
             else:

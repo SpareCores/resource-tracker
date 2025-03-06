@@ -62,6 +62,9 @@ class TrackedResourcesCard(MetaflowCard):
                 "disk_write_bytes",
                 "net_recv_bytes",
                 "net_sent_bytes",
+                "gpus_utilization",
+                "gpus_memory_used",
+                "gpus_utilization_count",
             ]
         ]
         joined.rename(
@@ -72,6 +75,9 @@ class TrackedResourcesCard(MetaflowCard):
                 "disk_write_bytes": "Server disk write",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
+                "gpus_utilization": "Server GPU utilization",
+                "gpus_utilization_count": "Server GPUs utilized",
+                "gpus_memory_used": "Server VRAM used",
             }
         )
         # dummy merge
@@ -79,6 +85,9 @@ class TrackedResourcesCard(MetaflowCard):
         joined["Task memory usage"] = pid["pss"]
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
+        joined["Task GPU utilization"] = pid["gpus_utilization"]
+        joined["Task GPUs utilized"] = pid["gpus_utilization_count"]
+        joined["Task VRAM used"] = pid["gpus_memory_used"]
         # convert memory usage to bytes so that we can pretty format on the client side
         for col in ["Task memory usage", "Server memory usage"]:
             joined[col] = [m * 1024 for m in joined[col]]
@@ -104,6 +113,16 @@ class TrackedResourcesCard(MetaflowCard):
         variables["csv_net"] = joined[
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
         ].to_csv(quote_strings=False)
+        variables["csv_gpu_utilization"] = joined[
+            ["timestamp", "Server GPU utilization", "Task GPU utilization"]
+        ].to_csv(quote_strings=False)
+        variables["csv_vram"] = joined[
+            ["timestamp", "Server VRAM used", "Task VRAM used"]
+        ].to_csv(quote_strings=False)
+        variables["csv_gpus_utilized"] = joined[
+            ["timestamp", "Server GPUs utilized", "Task GPUs utilized"]
+        ].to_csv(quote_strings=False)
+
         variables["cloud_info"] = data["cloud_info"]
         variables["server_info"] = data["server_info"]
         if variables["server_info"]["gpu_names"]:
@@ -112,6 +131,7 @@ class TrackedResourcesCard(MetaflowCard):
             ).most_common(1)[0][0]
         else:
             variables["server_info"]["gpu_name"] = ""
+
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]
         # strikethrough in HTML if no historical data

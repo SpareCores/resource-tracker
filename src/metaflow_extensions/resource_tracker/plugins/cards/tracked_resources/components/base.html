@@ -193,6 +193,51 @@
             <div id="plot_net" class="plot"></div>
         </div>
     </div>
+    <div id="gpu_utilization" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_gpu}}}
+            </div>
+            <div class="header-text">
+                <div class="title">GPU Utilization</div>
+                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized.</p>
+            </div>
+            <div id="labels_gpu_utilization" class="labels"></div>
+        </h1>
+        <div class="plot-container">
+            <div id="plot_gpu_utilization" class="plot"></div>
+        </div>
+    </div>
+    <div id="gpu_utilized" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_gpu}}}
+            </div>
+            <div class="header-text">
+                <div class="title">GPUs in Use</div>
+                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0.</p>
+            </div>
+            <div id="labels_gpu_utilized" class="labels"></div>
+        </h1>
+        <div class="plot-container">
+            <div id="plot_gpu_utilized" class="plot"></div>
+        </div>
+    </div>
+    <div id="gpu_vram" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_gpu}}}
+            </div>
+            <div class="header-text">
+                <div class="title">VRAM Usage</div>
+                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs.</p>
+            </div>
+            <div id="labels_gpu_vram" class="labels"></div>
+        </h1>
+        <div class="plot-container">
+            <div id="plot_gpu_vram" class="plot"></div>
+        </div>
+    </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
             var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
@@ -214,8 +259,11 @@
                             "Inbound network traffic": {strokePattern: null, color: '#38BDF8'},
                             "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
                         },
-                    });
-            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph], {zoom: true, selection: true, range: false});
+                    }),
+                gpuUtilizationGraph = createGraph("plot_gpu_utilization", `{{{csv_gpu_utilization}}}`, 'labels_gpu_utilization'),
+                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpus_utilized}}}`, 'labels_gpu_utilized'),
+                gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram');
+            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph, gpuUtilizationGraph, gpuUtilizedGraph, gpuVramGraph], {zoom: true, selection: true, range: false});
         });
     </script>
 </body>

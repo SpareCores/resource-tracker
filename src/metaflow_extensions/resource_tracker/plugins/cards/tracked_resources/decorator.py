@@ -89,8 +89,10 @@ class TrackedResourcesCard(MetaflowCard):
         joined["Task GPUs utilized"] = pid["gpus_utilization_count"]
         joined["Task VRAM used"] = pid["gpus_memory_used"]
         # convert memory usage to bytes so that we can pretty format on the client side
-        for col in ["Task memory usage", "Server memory usage"]:
+        for col in ["Task memory usage", "Server memory usage"]:  # KiB -> B
             joined[col] = [m * 1024 for m in joined[col]]
+        for col in ["Task VRAM used", "Server VRAM used"]:  # MiB -> B
+            joined[col] = [m * 1024 * 1024 for m in joined[col]]
         # convert to JS milliseconds
         joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
 

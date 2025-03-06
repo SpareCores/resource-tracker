@@ -262,7 +262,7 @@
                     }),
                 gpuUtilizationGraph = createGraph("plot_gpu_utilization", `{{{csv_gpu_utilization}}}`, 'labels_gpu_utilization'),
                 gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpus_utilized}}}`, 'labels_gpu_utilized'),
-                gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram');
+                gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram', { labelsKMG2: true });
             var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph, gpuUtilizationGraph, gpuUtilizedGraph, gpuVramGraph], {zoom: true, selection: true, range: false});
         });
     </script>

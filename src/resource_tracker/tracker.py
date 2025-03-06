@@ -5,6 +5,7 @@ from functools import cache
 from glob import glob
 from os import getpid, sysconf
 from re import search
+from subprocess import PIPE, Popen, TimeoutExpired
 from sys import stdout
 from time import sleep, time
 from typing import Optional
@@ -133,7 +134,7 @@ def get_pid_stats(pid, children: bool = True):
         children (bool, optional): Whether to include child processes. Defaults to True.
 
     Returns:
-        dict[str, int | float | None]: A dictionary containing process stats.
+        dict[str, int | float | None | set[int]]: A dictionary containing process stats.
         - timestamp (float): The current timestamp.
         - pid (int): The process ID.
         - children (int | None): The current number of child processes.
@@ -142,8 +143,19 @@ def get_pid_stats(pid, children: bool = True):
         - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
         - read_bytes (int): The total number of bytes read.
         - write_bytes (int): The total number of bytes written.
+        - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
+        - gpus_memory_used (float): The current GPU memory used in MiB.
+        - gpus_utilization_count (int): The number of GPUs with utilization > 0.
+        - gpus_utilized (set[int]): The set of GPU indexes that are being utilized.
     """
     current_time = time()
+
+    # NOTE pmon is limited to monitoring max. 4 GPUs
+    nvidia_process = Popen(
+        ["nvidia-smi", "pmon", "-c", "1", "-s", "um", "-d", "1"],
+        stdout=PIPE,
+    )
+
     current_children = get_pid_children(pid)
     current_pss = get_pid_pss_rollup(pid)
     if children:
@@ -160,7 +172,37 @@ def get_pid_stats(pid, children: bool = True):
             child_io = get_pid_proc_io(child)
             for key in set(current_io) & set(child_io):
                 current_io[key] += child_io[key]
-    # TODO add nvidia-smi pmon query with supress
+
+    gpu_stats = {
+        "gpus_utilization": 0,  # between 0 and GPU count
+        "gpus_memory_used": 0,  # MiB
+        "gpus_utilization_count": 0,  # number of GPUs with utilization > 0
+        "gpus_utilized": set(),  # set of GPU indexes
+    }
+    try:
+        stdout, _ = nvidia_process.communicate(timeout=0.5)
+        if nvidia_process.returncode == 0:
+            for index, line in enumerate(stdout.splitlines()):
+                if index < 2:
+                    continue  # skip the header lines
+                parts = line.decode().split()
+                # skip unmonitored processes
+                if int(parts[1]) == int(pid) or (
+                    children and int(parts[1]) in current_children
+                ):
+                    utilization = 0
+                    if parts[4] != "-":
+                        utilization = float(parts[4])
+                        gpu_stats["gpus_utilized"].add(int(parts[0]))
+                    memory_used = float(parts[9])
+                    gpu_stats["gpus_utilization"] += utilization / 100
+                    gpu_stats["gpus_memory_used"] += memory_used
+            gpu_stats["gpus_utilization_count"] = len(gpu_stats["gpus_utilized"])
+    except TimeoutExpired:
+        nvidia_process.kill()
+    except Exception:
+        pass
+
     return {
         "timestamp": current_time,
         "pid": pid,
@@ -170,6 +212,7 @@ def get_pid_stats(pid, children: bool = True):
         "pss": current_pss,
         "read_bytes": current_io["read_bytes"],
         "write_bytes": current_io["write_bytes"],
+        **gpu_stats,
     }
 
 
@@ -206,6 +249,11 @@ def get_system_stats():
         "net_recv_bytes": 0,
         "net_sent_bytes": 0,
     }
+
+    nvidia_process = Popen(
+        ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv"],
+        stdout=PIPE,
+    )
 
     with suppress(FileNotFoundError):
         with open("/proc/stat", "r") as f:
@@ -271,14 +319,53 @@ def get_system_stats():
                         stats["net_recv_bytes"] += int(values[0])
                         stats["net_sent_bytes"] += int(values[8])
 
+    stats["gpus_utilization"] = 0  # between 0 and GPU count
+    stats["gpus_memory_used"] = 0  # MiB
+    stats["gpus_utilization_count"] = 0  # number of GPUs with utilization > 0
+    try:
+        stdout, _ = nvidia_process.communicate(timeout=0.5)
+        if nvidia_process.returncode == 0:
+            for index, line in enumerate(stdout.splitlines()):
+                if index == 0:
+                    continue  # skip the header
+                parts = line.decode().split(", ")
+                if len(parts) == 2:
+                    utilization = float(parts[0].rstrip(" %"))
+                    memory_used = float(parts[1].rstrip(" MiB"))
+                    stats["gpus_utilization"] += utilization / 100
+                    stats["gpus_memory_used"] += memory_used
+                    stats["gpus_utilization_count"] += utilization > 0
+    except TimeoutExpired:
+        nvidia_process.kill()
+    except Exception:
+        pass
+
     return stats
 
 
 class PidTracker:
     """Track resource usage of a process and optionally its children.
 
-    This class monitors system resources like CPU time, memory usage, and I/O operations
-    for a given process ID and optionally its child processes.
+    This class monitors system resources like CPU times and usage, memory usage,
+    GPU and VRAM utilization, I/O operations for a given process ID and
+    optionally its child processes.
+
+    Data is collected every `interval` seconds and written to the stdout or
+    `output_file` (if provided) as CSV. Currently, the following columns are
+    tracked:
+
+    - timestamp (float): The current timestamp.
+    - pid (int): The monitored process ID.
+    - children (int | None): The current number of child processes.
+    - utime (int): The total user+nice mode CPU time in clock ticks.
+    - stime (int): The total system mode CPU time in clock ticks.
+    - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
+    - pss (int): The current PSS (Proportional Set Size) in kB.
+    - read_bytes (int): The total number of bytes read from disk.
+    - write_bytes (int): The total number of bytes written to disk.
+    - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
+    - gpus_memory_used (float): The current GPU memory used in MiB.
+    - gpus_utilization_count (int): The number of GPUs with utilization > 0.
 
     Args:
         pid (int, optional): Process ID to track. Defaults to current process ID.
@@ -339,6 +426,9 @@ class PidTracker:
             "write_bytes": max(
                 0, self.stats["write_bytes"] - last_stats["write_bytes"]
             ),
+            "gpus_utilization": self.stats["gpus_utilization"],
+            "gpus_memory_used": self.stats["gpus_memory_used"],
+            "gpus_utilization_count": self.stats["gpus_utilization_count"],
         }
 
     def start_tracking(
@@ -370,8 +460,30 @@ class PidTracker:
 class SystemTracker:
     """Track system-wide resource usage.
 
-    This class monitors system resources like CPU time, memory usage, disk I/O,
-    and network traffic for the entire system.
+    This class monitors system resources like CPU times and usage, memory usage,
+    GPU and VRAM utilization, disk I/O, and network traffic for the entire system.
+
+    Data is collected every `interval` seconds and written to the stdout or
+    `output_file` (if provided) as CSV. Currently, the following columns are
+    tracked:
+
+    - timestamp (float): The current timestamp.
+    - processes (int): The number of running processes.
+    - utime (int): The total user+nice mode CPU time in clock ticks.
+    - stime (int): The total system mode CPU time in clock ticks.
+    - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
+    - memory_free (int): The amount of free memory in kB.
+    - memory_used (int): The amount of used memory in kB.
+    - memory_buffers (int): The amount of memory used for buffers in kB.
+    - memory_cached (int): The amount of memory used for caching in kB.
+    - memory_active_anon (int): The amount of memory used for anonymous pages in kB.
+    - disk_read_bytes (int): The total number of bytes read from disk.
+    - disk_write_bytes (int): The total number of bytes written to disk.
+    - net_recv_bytes (int): The total number of bytes received over network.
+    - net_sent_bytes (int): The total number of bytes sent over network.
+    - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
+    - gpus_memory_used (float): The current GPU memory used in MiB.
+    - gpus_utilization_count (int): The number of GPUs with utilization > 0.
 
     Args:
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
@@ -467,6 +579,9 @@ class SystemTracker:
             "net_sent_bytes": max(
                 0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
             ),
+            "gpus_utilization": self.stats["gpus_utilization"],
+            "gpus_memory_used": self.stats["gpus_memory_used"],
+            "gpus_utilization_count": self.stats["gpus_utilization_count"],
         }
 
     def start_tracking(

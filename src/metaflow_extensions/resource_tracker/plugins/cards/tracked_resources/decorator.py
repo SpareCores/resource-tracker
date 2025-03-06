@@ -62,9 +62,9 @@ class TrackedResourcesCard(MetaflowCard):
                 "disk_write_bytes",
                 "net_recv_bytes",
                 "net_sent_bytes",
-                "gpus_utilization",
-                "gpus_memory_used",
-                "gpus_utilization_count",
+                "gpu_usage",
+                "gpu_vram",
+                "gpu_utilized",
             ]
         ]
         joined.rename(
@@ -75,9 +75,9 @@ class TrackedResourcesCard(MetaflowCard):
                 "disk_write_bytes": "Server disk write",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
-                "gpus_utilization": "Server GPU utilization",
-                "gpus_utilization_count": "Server GPUs utilized",
-                "gpus_memory_used": "Server VRAM used",
+                "gpu_usage": "Server GPU usage",
+                "gpu_vram": "Server VRAM used",
+                "gpu_utilized": "Server GPUs in use",
             }
         )
         # dummy merge
@@ -85,9 +85,9 @@ class TrackedResourcesCard(MetaflowCard):
         joined["Task memory usage"] = pid["pss"]
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
-        joined["Task GPU utilization"] = pid["gpus_utilization"]
-        joined["Task GPUs utilized"] = pid["gpus_utilization_count"]
-        joined["Task VRAM used"] = pid["gpus_memory_used"]
+        joined["Task GPU usage"] = pid["gpu_usage"]
+        joined["Task GPUs in use"] = pid["gpu_utilized"]
+        joined["Task VRAM used"] = pid["gpu_vram"]
         # convert memory usage to bytes so that we can pretty format on the client side
         for col in ["Task memory usage", "Server memory usage"]:  # KiB -> B
             joined[col] = [m * 1024 for m in joined[col]]
@@ -115,14 +115,14 @@ class TrackedResourcesCard(MetaflowCard):
         variables["csv_net"] = joined[
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
         ].to_csv(quote_strings=False)
-        variables["csv_gpu_utilization"] = joined[
-            ["timestamp", "Server GPU utilization", "Task GPU utilization"]
+        variables["csv_gpu_usage"] = joined[
+            ["timestamp", "Server GPU usage", "Task GPU usage"]
         ].to_csv(quote_strings=False)
         variables["csv_vram"] = joined[
             ["timestamp", "Server VRAM used", "Task VRAM used"]
         ].to_csv(quote_strings=False)
-        variables["csv_gpus_utilized"] = joined[
-            ["timestamp", "Server GPUs utilized", "Task GPUs utilized"]
+        variables["csv_gpu_utilized"] = joined[
+            ["timestamp", "Server GPUs in use", "Task GPUs in use"]
         ].to_csv(quote_strings=False)
 
         variables["cloud_info"] = data["cloud_info"]

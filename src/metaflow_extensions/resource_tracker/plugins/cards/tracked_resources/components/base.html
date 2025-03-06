@@ -193,19 +193,19 @@
             <div id="plot_net" class="plot"></div>
         </div>
     </div>
-    <div id="gpu_utilization" class="section">
+    <div id="gpu_usage" class="section">
         <h1 class="section-header">
             <div class="header-icon">
                 {{{icon_gpu}}}
             </div>
             <div class="header-text">
-                <div class="title">GPU Utilization</div>
+                <div class="title">GPU Usage</div>
                 <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized.</p>
             </div>
-            <div id="labels_gpu_utilization" class="labels"></div>
+            <div id="labels_gpu_usage" class="labels"></div>
         </h1>
         <div class="plot-container">
-            <div id="plot_gpu_utilization" class="plot"></div>
+            <div id="plot_gpu_usage" class="plot"></div>
         </div>
     </div>
     <div id="gpu_utilized" class="section">
@@ -260,10 +260,10 @@
                             "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
                         },
                     }),
-                gpuUtilizationGraph = createGraph("plot_gpu_utilization", `{{{csv_gpu_utilization}}}`, 'labels_gpu_utilization'),
-                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpus_utilized}}}`, 'labels_gpu_utilized'),
+                gpuUsageGraph = createGraph("plot_gpu_usage", `{{{csv_gpu_usage}}}`, 'labels_gpu_usage'),
+                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpu_utilized}}}`, 'labels_gpu_utilized'),
                 gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram', { labelsKMG2: true });
-            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph, gpuUtilizationGraph, gpuUtilizedGraph, gpuVramGraph], {zoom: true, selection: true, range: false});
+            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph, gpuUsageGraph, gpuUtilizedGraph, gpuVramGraph], {zoom: true, selection: true, range: false});
         });
     </script>
 </body>

@@ -143,10 +143,9 @@ def get_pid_stats(pid, children: bool = True):
         - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
         - read_bytes (int): The total number of bytes read.
         - write_bytes (int): The total number of bytes written.
-        - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
-        - gpus_memory_used (float): The current GPU memory used in MiB.
-        - gpus_utilization_count (int): The number of GPUs with utilization > 0.
-        - gpus_utilized (set[int]): The set of GPU indexes that are being utilized.
+        - gpu_usage (float): The current GPU utilization between 0 and GPU count.
+        - gpu_vram (float): The current GPU memory used in MiB.
+        - gpu_utilized (int): The number of GPUs with utilization > 0.
     """
     current_time = time()
 
@@ -174,10 +173,10 @@ def get_pid_stats(pid, children: bool = True):
                 current_io[key] += child_io[key]
 
     gpu_stats = {
-        "gpus_utilization": 0,  # between 0 and GPU count
-        "gpus_memory_used": 0,  # MiB
-        "gpus_utilization_count": 0,  # number of GPUs with utilization > 0
-        "gpus_utilized": set(),  # set of GPU indexes
+        "gpu_usage": 0,  # between 0 and GPU count
+        "gpu_vram": 0,  # MiB
+        "gpu_utilized": 0,  # number of GPUs with utilization > 0
+        "gpu_utilized_indexes": set(),  # set of GPU indexes
     }
     try:
         stdout, _ = nvidia_process.communicate(timeout=0.5)
@@ -190,14 +189,13 @@ def get_pid_stats(pid, children: bool = True):
                 if int(parts[1]) == int(pid) or (
                     children and int(parts[1]) in current_children
                 ):
-                    utilization = 0
+                    usage = 0
                     if parts[4] != "-":
-                        utilization = float(parts[4])
-                        gpu_stats["gpus_utilized"].add(int(parts[0]))
-                    memory_used = float(parts[9])
-                    gpu_stats["gpus_utilization"] += utilization / 100
-                    gpu_stats["gpus_memory_used"] += memory_used
-            gpu_stats["gpus_utilization_count"] = len(gpu_stats["gpus_utilized"])
+                        usage = float(parts[4])
+                        gpu_stats["gpu_utilized_indexes"].add(int(parts[0]))
+                    gpu_stats["gpu_usage"] += usage / 100
+                    gpu_stats["gpu_vram"] += float(parts[9])
+            gpu_stats["gpu_utilized"] = len(gpu_stats["gpu_utilized_indexes"])
     except TimeoutExpired:
         nvidia_process.kill()
     except Exception:
@@ -319,9 +317,9 @@ def get_system_stats():
                         stats["net_recv_bytes"] += int(values[0])
                         stats["net_sent_bytes"] += int(values[8])
 
-    stats["gpus_utilization"] = 0  # between 0 and GPU count
-    stats["gpus_memory_used"] = 0  # MiB
-    stats["gpus_utilization_count"] = 0  # number of GPUs with utilization > 0
+    stats["gpu_usage"] = 0  # between 0 and GPU count
+    stats["gpu_vram"] = 0  # MiB
+    stats["gpu_utilized"] = 0  # number of GPUs with utilization > 0
     try:
         stdout, _ = nvidia_process.communicate(timeout=0.5)
         if nvidia_process.returncode == 0:
@@ -330,11 +328,10 @@ def get_system_stats():
                     continue  # skip the header
                 parts = line.decode().split(", ")
                 if len(parts) == 2:
-                    utilization = float(parts[0].rstrip(" %"))
-                    memory_used = float(parts[1].rstrip(" MiB"))
-                    stats["gpus_utilization"] += utilization / 100
-                    stats["gpus_memory_used"] += memory_used
-                    stats["gpus_utilization_count"] += utilization > 0
+                    usage = float(parts[0].rstrip(" %"))
+                    stats["gpu_usage"] += usage / 100
+                    stats["gpu_vram"] += float(parts[1].rstrip(" MiB"))
+                    stats["gpu_utilized"] += usage > 0
     except TimeoutExpired:
         nvidia_process.kill()
     except Exception:
@@ -363,9 +360,9 @@ class PidTracker:
     - pss (int): The current PSS (Proportional Set Size) in kB.
     - read_bytes (int): The total number of bytes read from disk.
     - write_bytes (int): The total number of bytes written to disk.
-    - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
-    - gpus_memory_used (float): The current GPU memory used in MiB.
-    - gpus_utilization_count (int): The number of GPUs with utilization > 0.
+    - gpu_usage (float): The current GPU utilization between 0 and GPU count.
+    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
         pid (int, optional): Process ID to track. Defaults to current process ID.
@@ -426,9 +423,9 @@ class PidTracker:
             "write_bytes": max(
                 0, self.stats["write_bytes"] - last_stats["write_bytes"]
             ),
-            "gpus_utilization": self.stats["gpus_utilization"],
-            "gpus_memory_used": self.stats["gpus_memory_used"],
-            "gpus_utilization_count": self.stats["gpus_utilization_count"],
+            "gpu_usage": self.stats["gpu_usage"],
+            "gpu_vram": self.stats["gpu_vram"],
+            "gpu_utilized": self.stats["gpu_utilized"],
         }
 
     def start_tracking(
@@ -481,9 +478,9 @@ class SystemTracker:
     - disk_write_bytes (int): The total number of bytes written to disk.
     - net_recv_bytes (int): The total number of bytes received over network.
     - net_sent_bytes (int): The total number of bytes sent over network.
-    - gpus_utilization (float): The current GPU utilization between 0 and GPU count.
-    - gpus_memory_used (float): The current GPU memory used in MiB.
-    - gpus_utilization_count (int): The number of GPUs with utilization > 0.
+    - gpu_usage (float): The current GPU utilization between 0 and GPU count.
+    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
@@ -579,9 +576,9 @@ class SystemTracker:
             "net_sent_bytes": max(
                 0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
             ),
-            "gpus_utilization": self.stats["gpus_utilization"],
-            "gpus_memory_used": self.stats["gpus_memory_used"],
-            "gpus_utilization_count": self.stats["gpus_utilization_count"],
+            "gpu_usage": self.stats["gpu_usage"],
+            "gpu_vram": self.stats["gpu_vram"],
+            "gpu_utilized": self.stats["gpu_utilized"],
         }
 
     def start_tracking(

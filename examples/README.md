@@ -16,8 +16,9 @@ resources of a running process (and its children) or system-wide resources.
 
 ### 1-single-step.py
 
-This script demonstrates the use of the `track_resources` decorator on a
-single step, which burns CPU on a single core, then on 6 cores, and also reserves 500 MB of memory.
+This script demonstrates the use of the `track_resources` decorator on a single
+step, which burns CPU on a single core, then on 6 cores, and also reserves 500
+MB of memory.
 
 Example run:
 
@@ -49,4 +50,15 @@ can use the `print` method, printing the first 10 rows in a human-readable table
 ```python
 df = Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 print(df)
+```
+
+### 2-gpu.py
+
+This script demonstrates the monitoring of GPU usage using the `track_resources`
+decorator. It runs two ~heavy computations on the GPU for a few seconds.
+
+Example run:
+
+```sh
+python 2-gpu.py --environment=pypi run
 ```

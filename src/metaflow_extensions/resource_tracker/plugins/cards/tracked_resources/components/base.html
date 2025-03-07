@@ -29,6 +29,7 @@
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">{{{server_info.memory_mb_pretty}}} MiB</div>
                     </div>
+                    {{#server_info.gpu_names}}
                     <div class="section-content-card">
                         <div class="section-content-card-label">GPUs</div>
                         <div class="section-content-card-value">{{{server_info.gpu_count}}} {{server_info.gpu_name}}</div>
@@ -37,6 +38,7 @@
                         <div class="section-content-card-label">VRAM</div>
                         <div class="section-content-card-value">{{{server_info.gpu_memory_mb_pretty}}} MiB</div>
                     </div>
+                    {{/server_info.gpu_names}}
                 </div>
             </div>
         </div>
@@ -213,6 +215,7 @@
             <div id="plot_net" class="plot"></div>
         </div>
     </div>
+    {{#server_info.gpu_names}}
     <div id="gpu_usage" class="section">
         <h1 class="section-header">
             <div class="header-icon">
@@ -258,6 +261,7 @@
             <div id="plot_gpu_vram" class="plot"></div>
         </div>
     </div>
+    {{/server_info.gpu_names}}
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
             var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
@@ -279,11 +283,18 @@
                             "Inbound network traffic": {strokePattern: null, color: '#38BDF8'},
                             "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
                         },
-                    }),
-                gpuUsageGraph = createGraph("plot_gpu_usage", `{{{csv_gpu_usage}}}`, 'labels_gpu_usage'),
+                    });
+            {{#server_info.gpu_names}}
+            var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{csv_gpu_usage}}}`, 'labels_gpu_usage'),
                 gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpu_utilized}}}`, 'labels_gpu_utilized'),
                 gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram', { labelsKMG2: true });
-            var sync = Dygraph.synchronize([cpuGraph, memGraph, diskGraph, netGraph, gpuUsageGraph, gpuUtilizedGraph, gpuVramGraph], {zoom: true, selection: true, range: false});
+            {{/server_info.gpu_names}}
+            var sync = Dygraph.synchronize([
+                cpuGraph, memGraph, diskGraph, netGraph,
+                {{#server_info.gpu_names}}
+                gpuUsageGraph, gpuUtilizedGraph, gpuVramGraph,
+                {{/server_info.gpu_names}}
+            ], {zoom: true, selection: true, range: false});
         });
     </script>
 </body>

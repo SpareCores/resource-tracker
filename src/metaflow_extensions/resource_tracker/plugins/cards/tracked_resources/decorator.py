@@ -151,17 +151,22 @@ class TrackedResourcesCard(MetaflowCard):
         if not variables["historical_stats"]["available"]:
             variables["historical_stats"]["avg_cpu_mean"] = "-"
             variables["historical_stats"]["max_memory_max_pretty"] = "-"
+            variables["historical_stats"]["max_vram_max_pretty"] = "-"
         # convert memory usage stats to MB and make it pretty
         for keys in [
             ["server_info", "memory_mb"],
             ["server_info", "gpu_memory_mb"],
             ["stats", "memory_usage", "mean"],
             ["stats", "memory_usage", "max"],
+            ["stats", "gpu_vram", "mean"],
+            ["stats", "gpu_vram", "max"],
             ["historical_stats", "max_memory_max"],
+            ["historical_stats", "max_vram_max"],
         ]:
             if len(keys) == 3:
                 if variables.get(keys[0], {}).get(keys[1], {}).get(keys[2], {}):
-                    if not keys[2].endswith("_mb"):
+                    # some are already in MB (e.g. VRAM)
+                    if not keys[2].endswith("_mb") and "vram" not in keys[1]:
                         variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
                             pretty_number(variables[keys[0]][keys[1]][keys[2]] / 1024)
                         )
@@ -171,7 +176,7 @@ class TrackedResourcesCard(MetaflowCard):
                         )
             elif len(keys) == 2:
                 if variables.get(keys[0], {}).get(keys[1], {}):
-                    if not keys[1].endswith("_mb"):
+                    if not keys[1].endswith("_mb") and "vram" not in keys[1]:
                         variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
                             variables[keys[0]][keys[1]] / 1024
                         )

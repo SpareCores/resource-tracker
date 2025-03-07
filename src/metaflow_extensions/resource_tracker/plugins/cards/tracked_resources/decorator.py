@@ -1,4 +1,5 @@
 from collections import Counter
+from math import ceil
 from os import listdir, path
 
 from metaflow.cards import MetaflowCard
@@ -169,12 +170,20 @@ class TrackedResourcesCard(MetaflowCard):
                             variables[keys[0]][keys[1]]
                         )
         # get recommended resources
-        rec_cpu = round(variables["stats"]["cpu_usage"]["mean"])
-        if variables["historical_stats"]["available"]:
-            rec_mem = variables["historical_stats"]["max_memory_max"]
-        else:
-            rec_mem = variables["stats"]["memory_usage"]["max"]
-        variables["recommended_resources"] = (
-            f"@resources(cpu={rec_cpu}, memory={round_memory(rec_mem / 1024 * 1.2)})"
-        )
+        rec = {
+            "cpu": round(variables["stats"]["cpu_usage"]["mean"]),
+            "memory": round_memory(variables["stats"]["memory_usage"]["max"]),
+        }
+        if variables["historical_stats"]["available"] and (
+            variables["historical_stats"]["max_memory_max"]
+            > variables["stats"]["memory_usage"]["max"]
+        ):
+            rec["memory"] = round_memory(
+                variables["historical_stats"]["max_memory_max"]
+            )
+        if variables["stats"]["gpu_usage"]["mean"] > 0:
+            rec["gpu"] = ceil(variables["stats"]["gpu_usage"]["max"])
+        rec["memory"] = round_memory(rec["memory"] / 1024 * 1.2)
+        rec_str = ", ".join(f"{key}={value}" for key, value in rec.items())
+        variables["recommended_resources"] = f"@resources({rec_str})"
         return chevron.render(variables["base_html"], variables)

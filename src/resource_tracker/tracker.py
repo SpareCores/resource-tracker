@@ -150,10 +150,11 @@ def get_pid_stats(pid, children: bool = True):
     current_time = time()
 
     # NOTE pmon is limited to monitoring max. 4 GPUs
-    nvidia_process = Popen(
-        ["nvidia-smi", "pmon", "-c", "1", "-s", "um", "-d", "1"],
-        stdout=PIPE,
-    )
+    with suppress(FileNotFoundError):
+        nvidia_process = Popen(
+            ["nvidia-smi", "pmon", "-c", "1", "-s", "um", "-d", "1"],
+            stdout=PIPE,
+        )
 
     current_children = get_pid_children(pid)
     current_pss = get_pid_pss_rollup(pid)
@@ -248,10 +249,11 @@ def get_system_stats():
         "net_sent_bytes": 0,
     }
 
-    nvidia_process = Popen(
-        ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv"],
-        stdout=PIPE,
-    )
+    with suppress(FileNotFoundError):
+        nvidia_process = Popen(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv"],
+            stdout=PIPE,
+        )
 
     with suppress(FileNotFoundError):
         with open("/proc/stat", "r") as f:

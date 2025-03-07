@@ -62,7 +62,7 @@
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Instance Type</div>
-                        <div class="section-content-card-value">{{{cloud_info.instance_type}}}</div>
+                        <div class="section-content-card-value">{{{cloud_info.instance_type_html}}}</div>
                     </div>
                 </div>
             </div>
@@ -200,7 +200,7 @@
             </div>
             <div class="header-text">
                 <div class="title">GPU Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized.</p>
+                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as server-level GPU usage.</p>
             </div>
             <div id="labels_gpu_usage" class="labels"></div>
         </h1>

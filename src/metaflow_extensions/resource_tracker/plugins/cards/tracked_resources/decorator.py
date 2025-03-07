@@ -127,6 +127,16 @@ class TrackedResourcesCard(MetaflowCard):
         ].to_csv(quote_strings=False)
 
         variables["cloud_info"] = data["cloud_info"]
+        if variables["cloud_info"]["instance_type"] == "unknown":
+            variables["cloud_info"]["instance_type_html"] = "unknown"
+        else:
+            variables["cloud_info"]["instance_type_url"] = (
+                f"https://sparecores.com/server/{variables['cloud_info']['vendor']}/{variables['cloud_info']['instance_type']}"
+            )
+            variables["cloud_info"]["instance_type_html"] = (
+                f"<a href='{variables['cloud_info']['instance_type_url']}' target='_blank' style='color: #34D399;'>{variables['cloud_info']['instance_type']}</a>"
+            )
+
         variables["server_info"] = data["server_info"]
         if variables["server_info"]["gpu_names"]:
             variables["server_info"]["gpu_name"] = Counter(

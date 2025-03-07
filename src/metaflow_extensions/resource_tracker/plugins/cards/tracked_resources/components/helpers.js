@@ -95,6 +95,7 @@ function createGraph(divId, csvData, labelsDivId, additionalOptions = {}) {
         labelsDiv: labelsDivId,
         animatedZooms: true,
         highlightSeriesBackgroundAlpha: 1,
+        valueRange: [0, null],
         axes : {
             x : {
                 valueFormatter: Dygraph.dateString_,
@@ -102,7 +103,7 @@ function createGraph(divId, csvData, labelsDivId, additionalOptions = {}) {
                 axisLabelFormatter: prettyTimestamp,
                 axisLabelWidth: 70,
                 axisTickSize: 5,
-            }
+            },
         },
         showRoller: true,
         axisLineColor: '#082F49',

@@ -134,7 +134,7 @@ class TrackedResourcesCard(MetaflowCard):
                 f"https://sparecores.com/server/{variables['cloud_info']['vendor']}/{variables['cloud_info']['instance_type']}"
             )
             variables["cloud_info"]["instance_type_html"] = (
-                f"<a href='{variables['cloud_info']['instance_type_url']}' target='_blank' style='color: #34D399;'>{variables['cloud_info']['instance_type']}</a>"
+                f"<a href='{variables['cloud_info']['instance_type_url']}' target='_blank' style='color: #34D399;'>{variables['cloud_info']['instance_type']} {{{variables['icon_external_link']}}}</a>"
             )
 
         variables["server_info"] = data["server_info"]

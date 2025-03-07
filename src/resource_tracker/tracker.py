@@ -190,8 +190,8 @@ def get_pid_stats(pid, children: bool = True):
                     children and int(parts[1]) in current_children
                 ):
                     usage = 0
-                    if parts[4] != "-":
-                        usage = float(parts[4])
+                    if parts[3] != "-":  # sm%
+                        usage = float(parts[3])
                         gpu_stats["gpu_utilized_indexes"].add(int(parts[0]))
                     gpu_stats["gpu_usage"] += usage / 100
                     gpu_stats["gpu_vram"] += float(parts[9])

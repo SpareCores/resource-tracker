@@ -66,6 +66,12 @@
                         <div class="section-content-card-label">Instance Type</div>
                         <div class="section-content-card-value">{{{cloud_info.instance_type_html}}}</div>
                     </div>
+                    {{#cloud_info.compute_costs}}
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Compute Costs</div>
+                        <div class="section-content-card-value">${{{cloud_info.compute_costs}}}</div>
+                    </div>
+                    {{/cloud_info.compute_costs}}
                 </div>
             </div>
         </div>

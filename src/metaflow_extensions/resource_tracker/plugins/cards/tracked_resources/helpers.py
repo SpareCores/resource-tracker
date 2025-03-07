@@ -1,3 +1,7 @@
+from json import loads
+from urllib.request import urlopen
+
+
 def pretty_number(num):
     """Format a number with comma big marks and keep up to 2 decimal places."""
     if num is None:
@@ -52,3 +56,40 @@ def round_memory(mb):
         rounded_gb = mb / 1024
         rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
     return rounded
+
+
+def get_instance_price(vendor_id, region_id, instance_type) -> float | None:
+    """Get the on-demand price for a specific instance type in a region.
+
+    Args:
+        vendor_id: The ID of the vendor (e.g. "aws", "azure", "gcp")
+        region_id: The ID of the region (e.g. "us-east-1", "us-west-2")
+        instance_type: The type of instance (e.g. "t3.micro", "m5.large")
+
+    Returns:
+        The on-demand price for the instance type in the region, or None if no price is found.
+    """
+    try:
+        url = f"https://keeper.sparecores.net/server/{vendor_id}/{instance_type}/prices"
+        with urlopen(url, timeout=2) as response:
+            pricing_data = loads(response.read().decode("utf-8"))
+
+        for item in pricing_data:
+            if (
+                item.get("region_id") == region_id
+                and item.get("allocation") == "ondemand"
+                and item.get("operating_system") == "Linux"
+            ):
+                return item.get("price")
+
+        # fallback to the first on-demand price in other regions
+        for item in pricing_data:
+            if (
+                item.get("allocation") == "ondemand"
+                and item.get("operating_system") == "Linux"
+            ):
+                return item.get("price")
+
+        return None
+    except Exception:
+        return None

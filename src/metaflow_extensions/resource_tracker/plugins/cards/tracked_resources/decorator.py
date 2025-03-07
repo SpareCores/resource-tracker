@@ -5,7 +5,7 @@ from os import listdir, path
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
 
-from .helpers import pretty_number, round_memory
+from .helpers import get_instance_price, pretty_number, round_memory
 
 
 class TrackedResourcesCard(MetaflowCard):
@@ -131,11 +131,20 @@ class TrackedResourcesCard(MetaflowCard):
             variables["cloud_info"]["instance_type_html"] = "unknown"
         else:
             variables["cloud_info"]["instance_type_url"] = (
-                f"https://sparecores.com/server/{variables['cloud_info']['vendor']}/{variables['cloud_info']['instance_type']}"
+                f"https://sparecores.com/server/{data['cloud_info']['vendor']}/{data['cloud_info']['instance_type']}"
             )
             variables["cloud_info"]["instance_type_html"] = (
-                f"<a href='{variables['cloud_info']['instance_type_url']}' target='_blank' style='color: #34D399;'>{variables['cloud_info']['instance_type']} {variables['icon_external_link']}</a>"
+                f"<a href='{data['cloud_info']['instance_type_url']}' target='_blank' style='color: #34D399;'>{data['cloud_info']['instance_type']} {variables['icon_external_link']}</a>"
             )
+            compute_costs = get_instance_price(
+                data["cloud_info"]["vendor"],
+                data["cloud_info"]["region"],
+                data["cloud_info"]["instance_type"],
+            )
+            if compute_costs:
+                variables["cloud_info"]["compute_costs"] = round(
+                    compute_costs / 60 / 60 * data["stats"]["duration"], 4
+                )
 
         variables["server_info"] = data["server_info"]
         if variables["server_info"]["gpu_names"]:

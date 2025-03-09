@@ -3,7 +3,7 @@ from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
 from functools import cache
 from glob import glob
-from os import getpid, sysconf
+from os import getpid, statvfs, sysconf
 from re import search
 from subprocess import PIPE, Popen, TimeoutExpired
 from sys import stdout
@@ -231,6 +231,10 @@ def get_system_stats():
         - disk_stats (dict): Dictionary mapping disk names to their stats:
             - read_sectors (int): Sectors read from this disk.
             - write_sectors (int): Sectors written to this disk.
+        - disk_spaces (dict): Dictionary mapping mount points to their space stats:
+            - total (int): Total space in bytes.
+            - used (int): Used space in bytes.
+            - free (int): Free space in bytes.
         - net_recv_bytes (int): Total bytes received over network.
         - net_sent_bytes (int): Total bytes sent over network.
     """
@@ -245,6 +249,7 @@ def get_system_stats():
         "memory_cached": 0,
         "memory_active_anon": 0,
         "disk_stats": {},
+        "disk_spaces": {},
         "net_recv_bytes": 0,
         "net_sent_bytes": 0,
     }
@@ -318,6 +323,61 @@ def get_system_stats():
                         values = parts[1].strip().split()
                         stats["net_recv_bytes"] += int(values[0])
                         stats["net_sent_bytes"] += int(values[8])
+
+    check_zfs = False
+    with suppress(FileNotFoundError):
+        with open("/proc/mounts", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    mount_point = parts[1]
+                    filesystem = parts[2]
+                    # skip known virtual filesystems
+                    if mount_point.startswith(("/proc", "/sys", "/dev", "/run")):
+                        continue
+                    # skip zfs, will count later due to overlapping partitions
+                    if filesystem == "zfs":
+                        check_zfs = True
+                        continue
+                    try:
+                        fs_stats = statvfs(mount_point)
+                        # skip pseudo filesystems
+                        if fs_stats.f_blocks == 0:
+                            continue
+                        block_size = fs_stats.f_frsize
+                        total_space = fs_stats.f_blocks * block_size
+                        free_space = fs_stats.f_bavail * block_size
+                        used_space = total_space - free_space
+                        stats["disk_spaces"][mount_point] = {
+                            "total": total_space,
+                            "used": used_space,
+                            "free": free_space,
+                        }
+                    except (OSError, PermissionError):
+                        pass
+
+    if check_zfs:
+        with suppress(FileNotFoundError, OSError):
+            zpool_process = Popen(
+                ["zpool", "list", "-Hp", "-o", "name,size,allocated,free"],
+                stdout=PIPE,
+            )
+            try:
+                stdout, _ = zpool_process.communicate(timeout=0.25)
+                if zpool_process.returncode == 0:
+                    stats["zfs_pools"] = {}
+                    for line in stdout.splitlines():
+                        parts = line.decode().split("\t")
+                        if len(parts) >= 4:
+                            stats["disk_spaces"][f"zfs:{parts[0]}"] = {
+                                "total": int(parts[1]),
+                                "used": int(parts[2]),
+                                "free": int(parts[3]),
+                            }
+            except TimeoutExpired:
+                zpool_process.kill()
+            except Exception:
+                pass
 
     stats["gpu_usage"] = 0  # between 0 and GPU count
     stats["gpu_vram"] = 0  # MiB
@@ -478,6 +538,9 @@ class SystemTracker:
     - memory_active_anon (int): The amount of memory used for anonymous pages in kB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
+    - disk_space_total_gb (float): The total disk space in GB.
+    - disk_space_used_gb (float): The used disk space in GB.
+    - disk_space_free_gb (float): The free disk space in GB.
     - net_recv_bytes (int): The total number of bytes received over network.
     - net_sent_bytes (int): The total number of bytes sent over network.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
@@ -548,6 +611,15 @@ class SystemTracker:
             total_read_bytes += read_sectors * sector_size
             total_write_bytes += write_sectors * sector_size
 
+        # Get disk usage information for reporting
+        disk_space_total = 0
+        disk_space_used = 0
+        disk_space_free = 0
+        for disk_space in self.stats["disk_spaces"].values():
+            disk_space_total += disk_space["total"]
+            disk_space_used += disk_space["used"]
+            disk_space_free += disk_space["free"]
+
         return {
             "timestamp": self.stats["timestamp"],
             "processes": self.stats["processes"],
@@ -572,6 +644,9 @@ class SystemTracker:
             "memory_active_anon": self.stats["memory_active_anon"],
             "disk_read_bytes": total_read_bytes,
             "disk_write_bytes": total_write_bytes,
+            "disk_space_total_gb": round(disk_space_total / (1024**3), 2),
+            "disk_space_used_gb": round(disk_space_used / (1024**3), 2),
+            "disk_space_free_gb": round(disk_space_free / (1024**3), 2),
             "net_recv_bytes": max(
                 0, self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"]
             ),

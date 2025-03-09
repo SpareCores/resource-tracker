@@ -160,6 +160,9 @@ class TrackedResourcesCard(MetaflowCard):
             ).most_common(1)[0][0]
         else:
             variables["server_info"]["gpu_name"] = ""
+        variables["server_info"]["disk_space_total_gb"] = pretty_number(
+            system["disk_space_total_gb"][0]
+        )
 
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]

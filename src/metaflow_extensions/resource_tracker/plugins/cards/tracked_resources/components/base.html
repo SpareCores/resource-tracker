@@ -29,6 +29,10 @@
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">{{{server_info.memory_mb_pretty}}} MiB</div>
                     </div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Storage</div>
+                        <div class="section-content-card-value">{{{server_info.disk_space_total_gb}}} GiB</div>
+                    </div>
                     {{#server_info.gpu_names}}
                     <div class="section-content-card">
                         <div class="section-content-card-label">GPUs</div>

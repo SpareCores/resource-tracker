@@ -59,6 +59,7 @@ class TrackedResourcesCard(MetaflowCard):
                 "timestamp",
                 "cpu_usage",
                 "memory_active_anon",
+                "memory_inactive_anon",
                 "disk_read_bytes",
                 "disk_write_bytes",
                 "net_recv_bytes",
@@ -68,10 +69,16 @@ class TrackedResourcesCard(MetaflowCard):
                 "gpu_utilized",
             ]
         ]
+        joined["memory_usage"] = [
+            memory_active_anon + memory_inactive_anon
+            for memory_active_anon, memory_inactive_anon in zip(
+                joined["memory_active_anon"], joined["memory_inactive_anon"]
+            )
+        ]
         joined.rename(
             columns={
                 "cpu_usage": "Server CPU usage",
-                "memory_active_anon": "Server memory usage",
+                "memory_usage": "Server memory usage",
                 "disk_read_bytes": "Server disk read",
                 "disk_write_bytes": "Server disk write",
                 "net_recv_bytes": "Inbound network traffic",

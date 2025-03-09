@@ -228,6 +228,7 @@ def get_system_stats():
         - memory_buffers (int): Memory used for buffers in kB.
         - memory_cached (int): Memory used for cache in kB.
         - memory_active_anon (int): Memory used for anonymous pages in kB.
+        - memory_inactive_anon (int): Memory used for inactive anonymous pages in kB.
         - disk_stats (dict): Dictionary mapping disk names to their stats:
             - read_sectors (int): Sectors read from this disk.
             - write_sectors (int): Sectors written to this disk.
@@ -248,6 +249,7 @@ def get_system_stats():
         "memory_buffers": 0,
         "memory_cached": 0,
         "memory_active_anon": 0,
+        "memory_inactive_anon": 0,
         "disk_stats": {},
         "disk_spaces": {},
         "net_recv_bytes": 0,
@@ -297,7 +299,7 @@ def get_system_stats():
                 - stats["memory_cached"]
             )
             stats["memory_active_anon"] = mem_info.get("Active(anon)", 0)
-
+            stats["memory_inactive_anon"] = mem_info.get("Inactive(anon)", 0)
     with suppress(FileNotFoundError):
         with open("/proc/diskstats", "r") as f:
             for line in f:
@@ -536,6 +538,7 @@ class SystemTracker:
     - memory_buffers (int): The amount of memory used for buffers in kB.
     - memory_cached (int): The amount of memory used for caching in kB.
     - memory_active_anon (int): The amount of memory used for anonymous pages in kB.
+    - memory_inactive_anon (int): The amount of memory used for inactive anonymous pages in kB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
     - disk_space_total_gb (float): The total disk space in GB.
@@ -642,6 +645,7 @@ class SystemTracker:
             "memory_buffers": self.stats["memory_buffers"],
             "memory_cached": self.stats["memory_cached"],
             "memory_active_anon": self.stats["memory_active_anon"],
+            "memory_inactive_anon": self.stats["memory_inactive_anon"],
             "disk_read_bytes": total_read_bytes,
             "disk_write_bytes": total_write_bytes,
             "disk_space_total_gb": round(disk_space_total / (1024**3), 2),

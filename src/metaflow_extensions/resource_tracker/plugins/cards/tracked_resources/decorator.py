@@ -131,13 +131,13 @@ class TrackedResourcesCard(MetaflowCard):
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
         ].to_csv(quote_strings=False)
         variables["csv_gpu_usage"] = joined[
-            ["timestamp", "Server GPU usage", "Task GPU usage"]
+            ["timestamp", "Task GPU usage", "Server GPU usage"]
         ].to_csv(quote_strings=False)
         variables["csv_vram"] = joined[
-            ["timestamp", "Server VRAM used", "Task VRAM used"]
+            ["timestamp", "Task VRAM used", "Server VRAM used"]
         ].to_csv(quote_strings=False)
         variables["csv_gpu_utilized"] = joined[
-            ["timestamp", "Server GPUs in use", "Task GPUs in use"]
+            ["timestamp", "Task GPUs in use", "Server GPUs in use"]
         ].to_csv(quote_strings=False)
 
         variables["cloud_info"] = data["cloud_info"]

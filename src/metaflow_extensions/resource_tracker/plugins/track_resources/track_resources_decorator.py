@@ -162,6 +162,9 @@ class ResourceTrackerDecorator(StepDecorator):
                         "mean": round(mean(pid_tracker_data["gpu_utilized"]), 2),
                         "max": round(max(pid_tracker_data["gpu_utilized"]), 2),
                     },
+                    "disk_usage": {
+                        "max": round(max(system_tracker_data["disk_space_used_gb"]), 2),
+                    },
                     "duration": round(time() - self.start_time, 2),
                 },
                 "historical_stats": historical_stats,

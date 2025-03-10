@@ -62,6 +62,7 @@ class TrackedResourcesCard(MetaflowCard):
                 "memory_inactive_anon",
                 "disk_read_bytes",
                 "disk_write_bytes",
+                "disk_space_used_gb",
                 "net_recv_bytes",
                 "net_sent_bytes",
                 "gpu_usage",
@@ -81,6 +82,7 @@ class TrackedResourcesCard(MetaflowCard):
                 "memory_usage": "Server memory usage",
                 "disk_read_bytes": "Server disk read",
                 "disk_write_bytes": "Server disk write",
+                "disk_space_used_gb": "Server disk space used",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
                 "gpu_usage": "Server GPU usage",
@@ -101,6 +103,8 @@ class TrackedResourcesCard(MetaflowCard):
             joined[col] = [m * 1024 for m in joined[col]]
         for col in ["Task VRAM used", "Server VRAM used"]:  # MiB -> B
             joined[col] = [m * 1024 * 1024 for m in joined[col]]
+        for col in ["Server disk space used"]:  # GiB -> B
+            joined[col] = [m * 1024 * 1024 * 1024 for m in joined[col]]
         # convert to JS milliseconds
         joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
 
@@ -119,6 +123,9 @@ class TrackedResourcesCard(MetaflowCard):
                 "Task disk write",
                 "Server disk write",
             ]
+        ].to_csv(quote_strings=False)
+        variables["csv_disk_space"] = joined[
+            ["timestamp", "Server disk space used"]
         ].to_csv(quote_strings=False)
         variables["csv_net"] = joined[
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
@@ -179,13 +186,18 @@ class TrackedResourcesCard(MetaflowCard):
             ["stats", "memory_usage", "max"],
             ["stats", "gpu_vram", "mean"],
             ["stats", "gpu_vram", "max"],
+            ["stats", "disk_usage", "max"],
             ["historical_stats", "max_memory_max"],
             ["historical_stats", "max_vram_max"],
         ]:
             if len(keys) == 3:
                 if variables.get(keys[0], {}).get(keys[1], {}).get(keys[2], {}):
                     # some are already in MB (e.g. VRAM)
-                    if not keys[2].endswith("_mb") and "vram" not in keys[1]:
+                    if (
+                        not keys[2].endswith("_mb")
+                        and "vram" not in keys[1]
+                        and "disk_usage" != keys[1]
+                    ):
                         variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
                             pretty_number(variables[keys[0]][keys[1]][keys[2]] / 1024)
                         )

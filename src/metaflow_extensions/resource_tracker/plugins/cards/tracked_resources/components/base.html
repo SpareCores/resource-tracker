@@ -111,9 +111,11 @@
                             <span class="metric-separator">|</span>
                             <span class="metric-highlight">{{{historical_stats.max_memory_max_pretty}}} MiB</span> hist peak</div>
                     </div>
-                    <div class="section-content-card-task">
-                        <div class="section-content-card-label">Duration</div>
-                        <div class="section-content-card-value">{{{stats.duration}}} sec</div>
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">Disk Space Usage</div>
+                        <div class="section-content-card-value">
+                            <span class="metric">{{{stats.disk_usage.max_pretty}}} GiB</span> peak
+                        </div>
                     </div>
                     {{#server_info.gpu_names}}
                     <div class="section-content-card-task">
@@ -134,6 +136,10 @@
                             <span class="metric-highlight">{{{historical_stats.max_vram_max_pretty}}} MiB</span> hist peak</div>
                     </div>
                     {{/server_info.gpu_names}}
+                    <div class="section-content-card-task">
+                        <div class="section-content-card-label">Duration</div>
+                        <div class="section-content-card-value">{{{stats.duration}}} sec</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,6 +214,21 @@
         </h1>
         <div class="plot-container">
             <div id="plot_disk" class="plot"></div>
+        </div>
+    </div>
+    <div id="disk_space" class="section">
+        <h1 class="section-header">
+            <div class="header-icon">
+                {{{icon_disk}}}
+            </div>
+            <div class="header-text">
+                <div class="title">Disk Space Usage</div>
+                <p class="description">Server-level disk space usage on all mounted disks.</p>
+            </div>
+            <div id="labels_disk_space" class="labels"></div>
+        </h1>
+        <div class="plot-container">
+            <div id="plot_disk_space" class="plot"></div>
         </div>
     </div>
     <div id="net" class="section">
@@ -285,6 +306,12 @@
                             "Task disk read": {strokePattern: null, color: '#34D399'},
                             "Server disk read": {strokePattern: null, color: '#38BDF8'}
                         },
+                    }),
+                diskSpaceGraph = createGraph("plot_disk_space", `{{{csv_disk_space}}}`, 'labels_disk_space',
+                    {
+                        labelsKMG2: true,
+                        color: '#38BDF8',
+                        valueRange: [null, null],
                     }),
                 netGraph = createGraph("plot_net", `{{{csv_net}}}`, 'labels_net',
                     {

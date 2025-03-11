@@ -2,8 +2,8 @@ from json import loads
 from urllib.request import urlopen
 
 
-def pretty_number(num):
-    """Format a number with comma big marks and keep up to 2 decimal places."""
+def pretty_number(num, digits=2):
+    """Format a number with comma as big marks and keep up to 2 decimal places."""
     if num is None:
         return ""
 
@@ -15,7 +15,7 @@ def pretty_number(num):
             return f"{int(num):,}"
 
         # numbers with decimal places, limit to 2 decimal places
-        formatted = f"{num:.2f}"
+        formatted = f"{num:.{digits}f}"
         # drop trailing zeros after decimal point
         if "." in formatted:
             formatted = (

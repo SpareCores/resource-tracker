@@ -215,6 +215,10 @@ class TrackedResourcesCard(MetaflowCard):
                         variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
                             variables[keys[0]][keys[1]]
                         )
+        for key in ["inbound", "outbound"]:
+            variables["stats"]["traffic"][key + "_pretty"] = pretty_number(
+                variables["stats"]["traffic"][key] / 1000**3, digits=3
+            )
         # get recommended resources
         rec = {
             "cpu": round(variables["stats"]["cpu_usage"]["mean"]),

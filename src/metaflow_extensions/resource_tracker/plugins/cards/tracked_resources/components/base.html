@@ -143,9 +143,9 @@
                     <div class="section-content-card">
                         <div class="section-content-card-label">Traffic</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{pretty_number(stats.traffic.inbound / 1024 ** 3)}} GiB</span> inbound
+                            <span class="metric">{{stats.traffic.inbound_pretty}} GB</span> in
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{pretty_number(stats.traffic.outbound / 1024 ** 3)}} GiB</span> outbound
+                            <span class="metric">{{stats.traffic.outbound_pretty}} GB</span> out
                         </div>
                     </div>
                 </div>

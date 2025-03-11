@@ -55,7 +55,7 @@ print(df)
 ### 2-gpu.py
 
 This script demonstrates the monitoring of GPU utilization using the
-`track_resources` decorator. It runs two ~heavy computations on the GPU for a
+`track_resources` decorator. It runs two math operations on the GPU for a
 few seconds.
 
 Example run:
@@ -63,4 +63,19 @@ Example run:
 ```sh
 python 2-gpu.py --environment=pypi run
 python 2-gpu.py card view do_heavy_computation
+```
+
+### 3-gbm.py
+
+This script implements a more realistic example of a machine learning pipeline
+using XGBoost, by downloading training data then training a model using either
+CPU or GPU depending on whether the machine has a GPU available.
+
+Example run and checking the resource usage both for the data loading and model
+training steps:
+
+```sh
+python 3-gbm.py --environment=pypi run
+python 3-gbm.py card view start
+python 3-gbm.py card view train_model
 ```

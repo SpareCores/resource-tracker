@@ -114,14 +114,19 @@ def get_instance_price(vendor_id, region_id, instance_type) -> float | None:
 
 
 def get_recommended_cloud_servers(
-    cpu: int, memory: int, gpu: Optional[int] = None, n: int = 10
+    cpu: int,
+    memory: int,
+    gpu: Optional[int] = None,
+    vram: Optional[int] = None,
+    n: int = 10,
 ) -> list[dict]:
     """Get the cheapest cloud servers for the given resources from Spare Cores.
 
     Args:
-        cpu: The number of vCPUs.
-        memory: The amount of memory in MB.
-        gpu: The number of GPUs.
+        cpu: The minimum number of vCPUs.
+        memory: The minimum amount of memory in MB.
+        gpu: The minimum number of GPUs.
+        vram: The minimum amount of VRAM in GB.
         n: The number of recommended servers to return.
 
     Returns:
@@ -140,6 +145,8 @@ def get_recommended_cloud_servers(
         }
         if gpu and gpu > 0:
             params["gpu_min"] = gpu
+        if vram and vram > 0:
+            params["gpu_memory_total"] = vram
         base_url = "https://keeper.sparecores.net/servers"
         url = f"{base_url}?{urlencode(params)}"
         with urlopen(url, timeout=5) as response:

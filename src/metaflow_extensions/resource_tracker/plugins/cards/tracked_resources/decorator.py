@@ -248,6 +248,8 @@ class TrackedResourcesCard(MetaflowCard):
         rec_str = ", ".join(f"{key}={value}" for key, value in rec.items())
         variables["recommended_resources"] = f"@resources({rec_str})"
         # get recommended cloud servers
+        if variables["stats"]["gpu_vram"]["max"] > 0:
+            rec["vram"] = ceil(variables["stats"]["gpu_vram"]["max"] / 1024)
         variables["recommended_cloud_servers"] = get_recommended_cloud_servers(
             **rec, n=1
         )

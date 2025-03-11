@@ -1,12 +1,24 @@
 from json import loads
+from typing import Optional
+from urllib.parse import urlencode
 from urllib.request import urlopen
 
 
-def pretty_number(num, digits=2):
-    """Format a number with comma as big marks and keep up to 2 decimal places."""
-    if num is None:
-        return ""
+def pretty_number(num: float | int | None, digits: int = 2) -> str:
+    """Format a number for HTML display.
 
+    Non-numeric values are returned as a string.
+    Integers are returned as-is.
+    Numbers with decimal places are rounded to the specified number of digits and trailing zeros are removed.
+    Big marks for thousands are added.
+
+    Args:
+        num: The number to format.
+        digits: The number of decimal places to display.
+
+    Returns:
+        A string representation of the number.
+    """
     try:
         num = float(num)
 
@@ -14,7 +26,7 @@ def pretty_number(num, digits=2):
         if num.is_integer():
             return f"{int(num):,}"
 
-        # numbers with decimal places, limit to 2 decimal places
+        # numbers with decimal places, limit to the specified number of digits
         formatted = f"{num:.{digits}f}"
         # drop trailing zeros after decimal point
         if "." in formatted:
@@ -30,8 +42,14 @@ def pretty_number(num, digits=2):
         return str(num)
 
 
-def round_memory(mb):
+def round_memory(mb: float | int) -> int:
     """Round a number to the nearest meaningful memory amount.
+
+    Args:
+        mb: The number of MB to round.
+
+    Returns:
+        The rounded number of MB.
 
     Example:
         >>> round_memory(68)
@@ -93,3 +111,39 @@ def get_instance_price(vendor_id, region_id, instance_type) -> float | None:
         return None
     except Exception:
         return None
+
+
+def get_recommended_cloud_servers(
+    cpu: int, memory: int, gpu: Optional[int] = None, n: int = 10
+) -> list[dict]:
+    """Get the cheapest cloud servers for the given resources from Spare Cores.
+
+    Args:
+        cpu: The number of vCPUs.
+        memory: The amount of memory in MB.
+        gpu: The number of GPUs.
+        n: The number of recommended servers to return.
+
+    Returns:
+        A list of recommended server configurations ordered by price.
+
+    References:
+        - https://sparecores.com/servers
+    """
+    try:
+        params = {
+            "vcpus_min": cpu,
+            "memory_min": round(memory / 1024),  # convert MiB to GiB
+            "order_by": "min_price_ondemand",
+            "order_dir": "asc",
+            "limit": n,
+        }
+        if gpu and gpu > 0:
+            params["gpu_min"] = gpu
+        base_url = "https://keeper.sparecores.net/servers"
+        url = f"{base_url}?{urlencode(params)}"
+        with urlopen(url, timeout=5) as response:
+            servers_data = loads(response.read().decode("utf-8"))
+        return servers_data
+    except Exception:
+        return []

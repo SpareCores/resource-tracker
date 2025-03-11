@@ -5,7 +5,12 @@ from os import listdir, path
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
 
-from .helpers import get_instance_price, pretty_number, round_memory
+from .helpers import (
+    get_instance_price,
+    get_recommended_cloud_servers,
+    pretty_number,
+    round_memory,
+)
 
 
 class TrackedResourcesCard(MetaflowCard):
@@ -224,6 +229,7 @@ class TrackedResourcesCard(MetaflowCard):
             variables["stats"]["traffic"][key + "_pretty"] = pretty_number(
                 variables["stats"]["traffic"][key] / 1000**3, digits=3
             )
+
         # get recommended resources
         rec = {
             "cpu": round(variables["stats"]["cpu_usage"]["mean"]),
@@ -241,4 +247,17 @@ class TrackedResourcesCard(MetaflowCard):
         rec["memory"] = round_memory(rec["memory"] / 1024 * 1.2)
         rec_str = ", ".join(f"{key}={value}" for key, value in rec.items())
         variables["recommended_resources"] = f"@resources({rec_str})"
+        # get recommended cloud servers
+        variables["recommended_cloud_servers"] = get_recommended_cloud_servers(
+            **rec, n=1
+        )
+        for server in variables["recommended_cloud_servers"]:
+            server["price_task"] = pretty_number(
+                server.get("min_price_ondemand", 0)
+                / 60
+                / 60
+                * data["stats"]["duration"],
+                6,
+            )
+
         return chevron.render(variables["base_html"], variables)

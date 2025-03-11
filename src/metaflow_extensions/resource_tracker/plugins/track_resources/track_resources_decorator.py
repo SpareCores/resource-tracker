@@ -165,6 +165,10 @@ class ResourceTrackerDecorator(StepDecorator):
                     "disk_usage": {
                         "max": round(max(system_tracker_data["disk_space_used_gb"]), 2),
                     },
+                    "traffic": {
+                        "inbound": sum(system_tracker_data["net_recv_bytes"]),
+                        "outbound": sum(system_tracker_data["net_sent_bytes"]),
+                    },
                     "duration": round(time() - self.start_time, 2),
                 },
                 "historical_stats": historical_stats,

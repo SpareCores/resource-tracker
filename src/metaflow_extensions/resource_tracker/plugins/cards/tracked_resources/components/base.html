@@ -215,7 +215,7 @@
                 {{{icon_disk}}}
             </div>
             <div class="header-text">
-                <div class="title">Disk Usage</div>
+                <div class="title">Disk I/O Usage</div>
                 <p class="description">Task-specific disk usage tracking is unreliable; therefore, it is recommended to monitor disk usage at the server level, encompassing all mounted disks.</p>
             </div>
             <div id="labels_disk" class="labels"></div>
@@ -262,7 +262,7 @@
             </div>
             <div class="header-text">
                 <div class="title">GPU Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as server-level GPU usage.</p>
+                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_usage" class="labels"></div>
         </h1>
@@ -277,7 +277,7 @@
             </div>
             <div class="header-text">
                 <div class="title">GPUs in Use</div>
-                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0.</p>
+                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_utilized" class="labels"></div>
         </h1>
@@ -292,7 +292,7 @@
             </div>
             <div class="header-text">
                 <div class="title">VRAM Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_vram" class="labels"></div>
         </h1>

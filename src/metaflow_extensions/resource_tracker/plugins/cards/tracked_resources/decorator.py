@@ -168,7 +168,7 @@ class TrackedResourcesCard(MetaflowCard):
         else:
             variables["server_info"]["gpu_name"] = ""
         variables["server_info"]["disk_space_total_gb"] = pretty_number(
-            system["disk_space_total_gb"][0]
+            system["disk_space_total_gb"][0], 0
         )
 
         variables["stats"] = data["stats"]
@@ -191,7 +191,10 @@ class TrackedResourcesCard(MetaflowCard):
             ["historical_stats", "max_vram_max"],
         ]:
             if len(keys) == 3:
-                if variables.get(keys[0], {}).get(keys[1], {}).get(keys[2], {}):
+                if (
+                    variables.get(keys[0], {}).get(keys[1], {}).get(keys[2], None)
+                    is not None
+                ):
                     # some are already in MB (e.g. VRAM)
                     if (
                         not keys[2].endswith("_mb")
@@ -199,21 +202,23 @@ class TrackedResourcesCard(MetaflowCard):
                         and "disk_usage" != keys[1]
                     ):
                         variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
-                            pretty_number(variables[keys[0]][keys[1]][keys[2]] / 1024)
+                            pretty_number(
+                                variables[keys[0]][keys[1]][keys[2]] / 1024, 0
+                            )
                         )
                     else:
                         variables[keys[0]][keys[1]][keys[2] + "_pretty"] = (
-                            pretty_number(variables[keys[0]][keys[1]][keys[2]])
+                            pretty_number(variables[keys[0]][keys[1]][keys[2]], 0)
                         )
             elif len(keys) == 2:
-                if variables.get(keys[0], {}).get(keys[1], {}):
+                if variables.get(keys[0], {}).get(keys[1], None) is not None:
                     if not keys[1].endswith("_mb") and "vram" not in keys[1]:
                         variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
-                            variables[keys[0]][keys[1]] / 1024
+                            variables[keys[0]][keys[1]] / 1024, 0
                         )
                     else:
                         variables[keys[0]][keys[1] + "_pretty"] = pretty_number(
-                            variables[keys[0]][keys[1]]
+                            variables[keys[0]][keys[1]], 0
                         )
         for key in ["inbound", "outbound"]:
             variables["stats"]["traffic"][key + "_pretty"] = pretty_number(

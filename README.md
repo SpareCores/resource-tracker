@@ -1,7 +1,7 @@
 # resource-tracker
 
-A Python package for tracking resource usage of processes and system-wide,
-with a focus on batch jobs like Metaflow steps.
+A no-dependency Python package for tracking resource usage of processes and
+system-wide, with a focus on batch jobs like Metaflow steps.
 
 ## Installation
 
@@ -51,7 +51,7 @@ Helpers functions are also provided for tracking memory usage, e.g.
 `get_pid_stats` and `get_system_stats` for current process and system-wide stats
 -- which are used internally by the above classes after diffing values between
 subsequent calls. See more details in the
-[API References](https://sparecores.github.io/resource-tracker/reference/resource_tracker/tracker/.
+[API References](https://sparecores.github.io/resource-tracker/reference/resource_tracker/tracker/).
 
 ## Discovery Helpers
 

@@ -2,7 +2,6 @@
 
 Initial PyPI release of `resource-tracker` with the following features:
 
-
 - Detect if the system is running on a cloud provider, and if so, detect the provider, region, and instance type.
 - Detect main server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount)
 - Track system-wide resource usage:

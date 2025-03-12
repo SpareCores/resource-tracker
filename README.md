@@ -159,4 +159,11 @@ pp(artifact)
 ```
 Find more examples in the [examples](https://github.com/SpareCores/resource-tracker/tree/main/examples) directory, including multiple Metaflow flows with different resource usage patterns, e.g. GPU jobs as well.
 
+## References
+
+- Documentation: <https://sparecores.github.io/resource-tracker>
+- Source code: <https://github.com/SpareCores/resource-tracker>
+- PyPI: <https://pypi.org/project/resource-tracker>
+- Spare Cores: <https://sparecores.com>
+
 

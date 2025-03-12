@@ -4,7 +4,7 @@ This folder includes example scripts demonstrating the use of the
 `resource_tracker` Python package in general and the `track_resources` decorator
 in Metaflow.
 
-## Standalone 
+## Standalone
 
 The `resource_tracker` package provides the following classes that can be used to track
 resources of a running process (and its children) or system-wide resources.

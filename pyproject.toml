@@ -5,16 +5,22 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resource-tracker"
 version = "0.1.0"
-description = "Resource usage tracker and cloud server comparison/suggestion tool."
+description = "Process and server-level resource usage tracker and cloud server suggestion tool."
 readme = "README.md"
 authors = [
     {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}
 ]
+keywords = ["resource-monitor", "metaflow"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
   "Operating System :: POSIX :: Linux",
 ]
+
+[project.urls]
+repository = "https://github.com/SpareCores/resource-tracker"
+issues = "https://github.com/SpareCores/resource-tracker/issues"
+documentation = "https://sparecores.github.io/resource-tracker/"
 
 [project.optional-dependencies]
 dev = ["pytest"]

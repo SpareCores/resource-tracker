@@ -15,8 +15,8 @@ The package comes with helper functions and classes for tracking resource usage,
 such as `PidTracker` and `SystemTracker`:
 
 ```python
->>> from resource_tracker import SystemTracker
->>> tracker = SystemTracker()
+from resource_tracker import SystemTracker
+tracker = SystemTracker()
 ```
 
 Would track system-wide resource usage, including CPU, memory, GPU, network
@@ -51,11 +51,11 @@ The packages also comes with helpers for discovering the cloud environment and
 basic server hardware specs. Quick example on an AWS EC2 instance:
 
 ```python
->>> from resource_tracker import get_cloud_info, get_server_info
->>> get_cloud_info()
-{'vendor': 'aws', 'instance_type': 'g4dn.xlarge', 'region': 'us-west-2', 'discovery_time': 0.1330404281616211}
->>> get_server_info()
-{'vcpus': 4, 'memory_mb': 15788.21, 'gpu_count': 1, 'gpu_names': ['Tesla T4'], 'gpu_memory_mb': 15360.0}
+from resource_tracker import get_cloud_info, get_server_info
+get_cloud_info()
+# {'vendor': 'aws', 'instance_type': 'g4dn.xlarge', 'region': 'us-west-2', 'discovery_time': 0.1330404281616211}
+get_server_info()
+# {'vcpus': 4, 'memory_mb': 15788.21, 'gpu_count': 1, 'gpu_names': ['Tesla T4'], 'gpu_memory_mb': 15360.0}
 ```
 
 ## Metaflow Integration

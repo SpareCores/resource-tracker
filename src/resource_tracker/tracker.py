@@ -1,3 +1,7 @@
+"""
+Track resource usage of a process or server.
+"""
+
 from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
@@ -73,7 +77,7 @@ def get_pid_rss(pid: int) -> int:
 
 
 def get_pid_pss_rollup(pid: int) -> int:
-    """Reads the total PSS from /proc/[pid]/smaps_rollup.
+    """Reads the total PSS from `/proc/{pid}/smaps_rollup`.
 
     Args:
         pid: The process ID to get the total PSS for.
@@ -90,19 +94,19 @@ def get_pid_pss_rollup(pid: int) -> int:
 
 
 def get_pid_proc_times(pid: int, children: bool = True) -> dict[str, int]:
-    """Get the current user and system times of a process from /proc/<pid>/stat.
+    """Get the current user and system times of a process from `/proc/{pid}/stat`.
 
-    Note that cannot use cutime/cstime for real-time monitoring, as they need to
-    wait for the children to exit.
+    Note that cannot use `cutime`/`cstime` for real-time monitoring,
+    as they need to wait for the children to exit.
 
     Args:
         pid: Process ID to track
         children: Whether to include stats from exited child processes
 
     Returns:
-        dict[str, int]: A dictionary containing process time information:
-            - utime (int): User mode CPU time in clock ticks
-            - stime (int): System mode CPU time in clock ticks
+        A dictionary containing process time information:
+            - `utime` (int): User mode CPU time in clock ticks
+            - `stime` (int): System mode CPU time in clock ticks
     """
     try:
         with open(f"/proc/{pid}/stat", "r") as f:
@@ -117,7 +121,7 @@ def get_pid_proc_times(pid: int, children: bool = True) -> dict[str, int]:
 
 
 def get_pid_proc_io(pid: int) -> dict[str, int]:
-    """Get the total bytes read and written by a process from /proc/<pid>/io.
+    """Get the total bytes read and written by a process from `/proc/{pid}/io`.
 
     Note that it is not tracking reading from memory-mapped objects,
     and is fairly limited in what it can track. E.g. the process might
@@ -127,7 +131,7 @@ def get_pid_proc_io(pid: int) -> dict[str, int]:
         pid: The process ID to get the total bytes read and written for.
 
     Returns:
-        dict[str, int]: A dictionary containing the total bytes read and written by the process.
+        A dictionary containing the total bytes read and written by the process.
     """
     try:
         with open(f"/proc/{pid}/io", "r") as f:
@@ -148,18 +152,19 @@ def get_pid_stats(
         children: Whether to include child processes.
 
     Returns:
-        dict[str, int | float | None | set[int]]: A dictionary containing process stats.
-        - timestamp (float): The current timestamp.
-        - pid (int): The process ID.
-        - children (int | None): The current number of child processes.
-        - utime (int): The total user mode CPU time in clock ticks.
-        - stime (int): The total system mode CPU time in clock ticks.
-        - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
-        - read_bytes (int): The total number of bytes read.
-        - write_bytes (int): The total number of bytes written.
-        - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-        - gpu_vram (float): The current GPU memory used in MiB.
-        - gpu_utilized (int): The number of GPUs with utilization > 0.
+        A dictionary containing process stats:
+
+            - timestamp (float): The current timestamp.
+            - pid (int): The process ID.
+            - children (int | None): The current number of child processes.
+            - utime (int): The total user mode CPU time in clock ticks.
+            - stime (int): The total system mode CPU time in clock ticks.
+            - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
+            - read_bytes (int): The total number of bytes read.
+            - write_bytes (int): The total number of bytes written.
+            - gpu_usage (float): The current GPU utilization between 0 and GPU count.
+            - gpu_vram (float): The current GPU memory used in MiB.
+            - gpu_utilized (int): The number of GPUs with utilization > 0.
     """
     current_time = time()
 
@@ -233,25 +238,30 @@ def get_system_stats() -> dict[str, int | float | dict]:
     """Collect current system-wide stats from procfs.
 
     Returns:
-        dict[str, int | float | dict]: A dictionary containing system stats.
-        - timestamp (float): The current timestamp.
-        - processes (int): Number of running processes.
-        - utime (int): Total user mode CPU time in clock ticks.
-        - stime (int): Total system mode CPU time in clock ticks.
-        - memory_used (int): Used physical memory in kB (excluding buffers/cache).
-        - memory_buffers (int): Memory used for buffers in kB.
-        - memory_cached (int): Memory used for cache in kB.
-        - memory_active_anon (int): Memory used for anonymous pages in kB.
-        - memory_inactive_anon (int): Memory used for inactive anonymous pages in kB.
-        - disk_stats (dict): Dictionary mapping disk names to their stats:
-            - read_sectors (int): Sectors read from this disk.
-            - write_sectors (int): Sectors written to this disk.
-        - disk_spaces (dict): Dictionary mapping mount points to their space stats:
-            - total (int): Total space in bytes.
-            - used (int): Used space in bytes.
-            - free (int): Free space in bytes.
-        - net_recv_bytes (int): Total bytes received over network.
-        - net_sent_bytes (int): Total bytes sent over network.
+        A dictionary containing system stats:
+
+            - timestamp (float): The current timestamp.
+            - processes (int): Number of running processes.
+            - utime (int): Total user mode CPU time in clock ticks.
+            - stime (int): Total system mode CPU time in clock ticks.
+            - memory_used (int): Used physical memory in kB (excluding buffers/cache).
+            - memory_buffers (int): Memory used for buffers in kB.
+            - memory_cached (int): Memory used for cache in kB.
+            - memory_active_anon (int): Memory used for anonymous pages in kB.
+            - memory_inactive_anon (int): Memory used for inactive anonymous pages in kB.
+            - disk_stats (dict): Dictionary mapping disk names to their stats:
+
+                - read_sectors (int): Sectors read from this disk.
+                - write_sectors (int): Sectors written to this disk.
+
+            - disk_spaces (dict): Dictionary mapping mount points to their space stats:
+
+                - total (int): Total space in bytes.
+                - used (int): Used space in bytes.
+                - free (int): Free space in bytes.
+
+            - net_recv_bytes (int): Total bytes received over network.
+            - net_sent_bytes (int): Total bytes sent over network.
     """
     current_time = time()
     stats = {
@@ -572,9 +582,9 @@ class SystemTracker:
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
-        interval (float, optional): Sampling interval in seconds. Defaults to 1.
-        autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
-        output_file (str, optional): File to write the output to. Defaults to None, print to stdout.
+        interval: Sampling interval in seconds. Defaults to 1.
+        autostart: Whether to start tracking immediately. Defaults to True.
+        output_file: File to write the output to. Defaults to None, print to stdout.
     """
 
     def __init__(

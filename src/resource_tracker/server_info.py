@@ -1,10 +1,14 @@
+"""
+Detect server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount) via `procfs` and `nvidia-smi`.
+"""
+
 from contextlib import suppress
 from os import cpu_count
 from subprocess import check_output
 
 
 def get_total_memory_mb() -> float:
-    """Get total system memory in MB from /proc/meminfo."""
+    """Get total system memory in MB from `/proc/meminfo`."""
     with suppress(Exception):
         with open("/proc/meminfo", "r") as f:
             for line in f:
@@ -16,13 +20,14 @@ def get_total_memory_mb() -> float:
 
 
 def get_gpu_info() -> dict:
-    """Get GPU information using nvidia-smi command.
+    """Get GPU information using `nvidia-smi` command.
 
     Returns:
-        dict: A dictionary containing GPU information:
-            - count: Number of GPUs
-            - memory_mb: Total VRAM in MB
-            - gpu_names: List of GPU names
+        A dictionary containing GPU information:
+
+            - `count`: Number of GPUs
+            - `memory_mb`: Total VRAM in MB
+            - `gpu_names`: List of GPU names
     """
     result = {"count": 0, "memory_mb": 0, "gpu_names": []}
 
@@ -57,11 +62,12 @@ def get_server_info() -> dict:
     Collects important information about the Linux server.
 
     Returns:
-        dict: A dictionary containing server information:
-            - vcpus: Number of virtual CPUs
-            - memory_mb: Total memory in MB
-            - gpu_count: Number of GPUs (if available)
-            - gpu_memory_mb: Total VRAM in MB (if available)
+        A dictionary containing server information:
+
+            - `vcpus`: Number of virtual CPUs
+            - `memory_mb`: Total memory in MB
+            - `gpu_count`: Number of GPUs (`0` if not available)
+            - `gpu_memory_mb`: Total VRAM in MB (`0` if not available)
     """
     gpu_info = get_gpu_info()
     info = {

@@ -1,6 +1,11 @@
+"""
+A very inefficient data-frame implementation for manipulating resource usage data.
+"""
+
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
 from csv import writer as csv_writer
 from io import StringIO
+from typing import Optional
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -9,6 +14,7 @@ class TinyDataFrame:
     """A very inefficient data-frame implementation with a few features.
 
     Supported features:
+
     - reading CSV files from a remote URL
     - reading CSV files from a local file
     - converting a dictionary of lists/arrays to a data-frame
@@ -26,6 +32,7 @@ class TinyDataFrame:
         csv_file_path: Path to a properly quoted CSV file.
 
     Example:
+
         >>> df = TinyDataFrame(csv_file_path="https://raw.githubusercontent.com/plotly/datasets/refs/heads/master/mtcars.csv")
         >>> df
         TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'manufacturer': 'Mazda RX4', 'mpg': 21.0, 'cyl': 6.0, 'disp': 160.0, 'hp': 110.0, 'drat': 3.9, 'wt': 2.62, 'qsec': 16.46, 'vs': 0.0, 'am': 1.0, 'gear': 4.0, 'carb': 4.0}
@@ -45,9 +52,12 @@ class TinyDataFrame:
         "Hornet Sportabout",175.0
     """
 
-    def __init__(self, data=None, csv_file_path=None):
+    def __init__(
+        self, data: Optional[dict | list] = None, csv_file_path: Optional[str] = None
+    ):
         """
         Initialize with either:
+
         - Dictionary of lists/arrays
         - List of dictionaries
         - CSV file path
@@ -85,7 +95,7 @@ class TinyDataFrame:
                         seen_columns.add(col)
             self._data = {col: [row.get(col) for row in data] for col in self.columns}
 
-    def _read_csv(self, csv_file_path):
+    def _read_csv(self, csv_file_path: str) -> list[dict]:
         """Read a CSV file and return a list of dictionaries.
 
         Args:
@@ -115,7 +125,7 @@ class TinyDataFrame:
         """Return the number of rows in the data-frame"""
         return len(next(iter(self._data.values()))) if self.columns else 0
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str | list[str] | int | slice) -> list | "TinyDataFrame":
         """Get a single column or multiple columns or a row or a slice of rows. Can be chained.
 
         Args:
@@ -141,7 +151,7 @@ class TinyDataFrame:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: list) -> None:
         """Set a column with the given key to the provided values.
 
         Args:
@@ -165,19 +175,19 @@ class TinyDataFrame:
 
         self._data[key] = list(value)
 
-    def head(self, n=5):
+    def head(self, n: int = 5) -> "TinyDataFrame":
         """Return first n rows as a new TinyDataFrame."""
         return self[slice(0, n)]
 
-    def tail(self, n=5):
+    def tail(self, n: int = 5) -> "TinyDataFrame":
         """Return last n rows as a new TinyDataFrame."""
         return self[slice(-n, None)]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of the data-frame."""
         return f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns. First row as a dict: {self[0]}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Print the first 10 rows of the data-frame in a human-readable table."""
         header = (
             f"TinyDataFrame with {len(self)} rows and {len(self.columns)} columns:\n"
@@ -216,7 +226,9 @@ class TinyDataFrame:
             rows.append("..." + " " * (len(rows[0]) - 3))
         return header + "\n".join(rows)
 
-    def to_csv(self, csv_file_path=None, quote_strings=True):
+    def to_csv(
+        self, csv_file_path: Optional[str] = None, quote_strings: bool = True
+    ) -> str:
         """Write the data-frame to a CSV file or return as string if no path is provided.
 
         Args:
@@ -241,7 +253,7 @@ class TinyDataFrame:
         finally:
             f.close()
 
-    def rename(self, columns):
+    def rename(self, columns: dict) -> "TinyDataFrame":
         """Rename one or multiple columns.
 
         Args:

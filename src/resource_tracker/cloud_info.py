@@ -1,6 +1,5 @@
 """
-This module attempts to determine if the code is running on a cloud server,
-and returns standardized information about the cloud provider and instance.
+Detect cloud environment (provider, region, instance type) via VM metadata services.
 """
 
 import json
@@ -10,21 +9,21 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextlib import suppress
 from functools import cache
 from time import time
-from typing import Dict
 
 METADATA_REQUEST_TIMEOUT = 1
 
 
 @cache
-def get_cloud_info() -> Dict[str, str]:
+def get_cloud_info() -> dict:
     """
-    Detect cloud environment and return standardized information.
+    Detect cloud environment and return standardized information on provider, region, and instance type.
 
     Returns:
-        Dict[str, str]: A dictionary containing standardized cloud information:
-            - vendor: The cloud provider (aws, gcp, azure, hcloud, upcloud), or "unknown"
-            - instance_type: The instance type/size/flavor, or "unknown"
-            - region: The region/zone where the instance is running, or "unknown"
+        A dictionary containing standardized cloud information:
+
+            - `vendor`: The cloud provider (aws, gcp, azure, hcloud, upcloud), or "unknown"
+            - `instance_type`: The instance type/size/flavor, or "unknown"
+            - `region`: The region/zone where the instance is running, or "unknown"
     """
     start_time = time()
     check_functions = [
@@ -59,7 +58,7 @@ def get_cloud_info() -> Dict[str, str]:
 
 
 @cache
-def _check_aws() -> Dict[str, str]:
+def _check_aws() -> dict:
     """Check if running on AWS and return standardized info.
 
     References: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html>"""
@@ -104,7 +103,7 @@ def _check_aws() -> Dict[str, str]:
 
 
 @cache
-def _check_gcp() -> Dict[str, str]:
+def _check_gcp() -> dict:
     """Check if running on Google Cloud Platform and return standardized info.
 
     References: <https://cloud.google.com/compute/docs/metadata/overview>"""
@@ -141,7 +140,7 @@ def _check_gcp() -> Dict[str, str]:
 
 
 @cache
-def _check_azure() -> Dict[str, str]:
+def _check_azure() -> dict:
     """Check if running on Microsoft Azure and return standardized info.
 
     References: <https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service>"""
@@ -165,7 +164,7 @@ def _check_azure() -> Dict[str, str]:
 
 
 @cache
-def _check_hetzner() -> Dict[str, str]:
+def _check_hetzner() -> dict:
     """Check if running on Hetzner Cloud and return standardized info.
 
     References: <https://docs.hetzner.cloud/#server-metadata>"""
@@ -199,7 +198,7 @@ def _check_hetzner() -> Dict[str, str]:
 
 
 @cache
-def _check_upcloud() -> Dict[str, str]:
+def _check_upcloud() -> dict:
     """Check if running on UpCloud and return standardized info.
 
     References: <https://upcloud.com/docs/products/cloud-servers/features/metadata-service/>"""

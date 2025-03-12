@@ -100,7 +100,7 @@ if __name__ == "__main__":
     ResourceTrackingFlow()
 ```
 
-Example output in the means of a Metaflow card:
+Example output of an auto-generated Metaflow card:
 
 ![Resource Tracking Card in Metaflow](https://sparecores.github.io/resource-tracker/track_resources-card-example.png)
 
@@ -157,6 +157,7 @@ pp(artifact)
 #     }
 # }
 ```
+
 Find more examples in the [examples](https://github.com/SpareCores/resource-tracker/tree/main/examples) directory, including multiple Metaflow flows with different resource usage patterns, e.g. GPU jobs as well.
 
 ## References
@@ -165,5 +166,3 @@ Find more examples in the [examples](https://github.com/SpareCores/resource-trac
 - Source code: <https://github.com/SpareCores/resource-tracker>
 - PyPI: <https://pypi.org/project/resource-tracker>
 - Spare Cores: <https://sparecores.com>
-
-

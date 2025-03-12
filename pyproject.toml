@@ -20,7 +20,7 @@ classifiers = [
 dev = ["pytest"]
 metaflow = ["metaflow"]
 mkdocs = [
-  "markdown==3.5.2", # https://github.com/mkdocstrings/mkdocstrings/issues/662
+  "markdown",
   "mkdocs",
   "mkdocs-material[imaging]==9.5.13", "mkdocs-material-extensions",
   "mkdocs-autorefs", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-section-index",

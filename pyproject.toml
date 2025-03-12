@@ -22,7 +22,7 @@ metaflow = ["metaflow"]
 mkdocs = [
   "markdown",
   "mkdocs",
-  "mkdocs-material[imaging]==9.5.13", "mkdocs-material-extensions",
+  "mkdocs-material[imaging]", "mkdocs-material-extensions",
   "mkdocs-autorefs", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-section-index",
   "mkdocstrings[python]>=0.18",
   "mkdocs-api-autonav",

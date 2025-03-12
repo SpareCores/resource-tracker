@@ -102,8 +102,8 @@ if __name__ == "__main__":
 
 Example output in the means of a Metaflow card:
 
-![Resource Tracking Card](./track_resources-card-example.png)
+![Resource Tracking Card in Metaflow](https://sparecores.github.io/resource-tracker/track_resources-card-example.png)
 
-Find more examples in the [examples](./examples) directory, including multiple Metaflow flows with different resource usage patterns, e.g. GPU jobs as well.
+Find more examples in the [examples](https://github.com/SpareCores/resource-tracker/tree/main/examples) directory, including multiple Metaflow flows with different resource usage patterns, e.g. GPU jobs as well.
 
 

@@ -5,8 +5,16 @@ with a focus on batch jobs like Metaflow steps.
 
 ## Installation
 
+You can install the stable version of the package from PyPI:
+
 ```sh
 pip install resource-tracker
+```
+
+Development version can be installed directly from the repository:
+
+```sh
+pip install git+https://github.com/sparecores/resource-tracker.git
 ```
 
 ## Standalone Usage
@@ -92,4 +100,10 @@ if __name__ == "__main__":
     ResourceTrackingFlow()
 ```
 
-Find more examples ...
+Example output in the means of a Metaflow card:
+
+![Resource Tracking Card](./track_resources-card-example.png)
+
+Find more examples in the [examples](./examples) directory, including multiple Metaflow flows with different resource usage patterns, e.g. GPU jobs as well.
+
+

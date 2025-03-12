@@ -5,7 +5,7 @@ A very inefficient data-frame implementation for manipulating resource usage dat
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
 from csv import writer as csv_writer
 from io import StringIO
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -125,7 +125,9 @@ class TinyDataFrame:
         """Return the number of rows in the data-frame"""
         return len(next(iter(self._data.values()))) if self.columns else 0
 
-    def __getitem__(self, key: str | list[str] | int | slice) -> list | "TinyDataFrame":
+    def __getitem__(
+        self, key: Union[str, list[str], int, slice]
+    ) -> Union[list, dict, "TinyDataFrame"]:
         """Get a single column or multiple columns or a row or a slice of rows. Can be chained.
 
         Args:

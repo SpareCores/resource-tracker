@@ -232,7 +232,7 @@ class TrackedResourcesCard(MetaflowCard):
 
         # get recommended resources
         rec = {
-            "cpu": round(variables["stats"]["cpu_usage"]["mean"]),
+            "cpu": ceil(variables["stats"]["cpu_usage"]["mean"]),
             "memory": round_memory(variables["stats"]["memory_usage"]["max"]),
         }
         if variables["historical_stats"]["available"] and (

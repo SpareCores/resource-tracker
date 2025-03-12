@@ -32,7 +32,7 @@ class ResourceTrackerDecorator(StepDecorator):
     }
 
     def __init__(self, attributes=None, statically_defined=False):
-        """Support overriding default attributes."""
+        """Override default attributes."""
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
         )

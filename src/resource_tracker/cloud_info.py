@@ -22,9 +22,9 @@ def get_cloud_info() -> Dict[str, str]:
 
     Returns:
         Dict[str, str]: A dictionary containing standardized cloud information:
-            - vendor: The cloud provider (aws, gcp, azure, hcloud, upcloud) or None
-            - instance_type: The instance type/size/flavor
-            - region: The region/zone where the instance is running
+            - vendor: The cloud provider (aws, gcp, azure, hcloud, upcloud), or "unknown"
+            - instance_type: The instance type/size/flavor, or "unknown"
+            - region: The region/zone where the instance is running, or "unknown"
     """
     start_time = time()
     check_functions = [

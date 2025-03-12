@@ -12,15 +12,15 @@ from typing import Optional
 
 
 @cache
-def is_partition(disk_name):
+def is_partition(disk_name: str) -> bool:
     """
     Determine if a disk name represents a partition rather than a whole disk.
 
     Args:
-        disk_name (str): Name of the disk device (e.g., 'sda1', 'nvme0n1p1')
+        disk_name: Name of the disk device (e.g., 'sda1', 'nvme0n1p1')
 
     Returns:
-        bool: True if the device is likely a partition, False otherwise
+        True if the device is likely a partition, False otherwise
     """
     # common partition name patterns: sdXN, nvmeXnYpZ, mmcblkXpY
     if search(r"(sd[a-z]+|nvme\d+n\d+|mmcblk\d+)p?\d+$", disk_name):
@@ -34,11 +34,14 @@ def is_partition(disk_name):
     return False
 
 
-def get_pid_children(pid):
+def get_pid_children(pid: int) -> set[int]:
     """Get all descendant processes recursively.
 
+    Args:
+        pid: The process ID to get descendant processes for.
+
     Returns:
-        set[int]: All descendant process ids.
+        All descendant process ids.
     """
     try:
         with open(f"/proc/{pid}/task/{pid}/children", "r") as f:
@@ -51,11 +54,14 @@ def get_pid_children(pid):
         return set()
 
 
-def get_pid_rss(pid):
+def get_pid_rss(pid: int) -> int:
     """Get the current resident set size of a process.
 
+    Args:
+        pid: The process ID to get the resident set size for.
+
     Returns:
-        int: The current resident set size of the process in kB.
+        The current resident set size of the process in kB.
     """
     try:
         with open(f"/proc/{pid}/status", "r") as f:
@@ -66,11 +72,14 @@ def get_pid_rss(pid):
         return 0
 
 
-def get_pid_pss_rollup(pid):
+def get_pid_pss_rollup(pid: int) -> int:
     """Reads the total PSS from /proc/[pid]/smaps_rollup.
 
+    Args:
+        pid: The process ID to get the total PSS for.
+
     Returns:
-        int: The total PSS in kB.
+        The total PSS in kB.
     """
     with suppress(ProcessLookupError, FileNotFoundError):
         with open(f"/proc/{pid}/smaps_rollup", "r") as f:
@@ -80,15 +89,15 @@ def get_pid_pss_rollup(pid):
     return 0
 
 
-def get_pid_proc_times(pid: int, children: bool = True):
+def get_pid_proc_times(pid: int, children: bool = True) -> dict[str, int]:
     """Get the current user and system times of a process from /proc/<pid>/stat.
 
     Note that cannot use cutime/cstime for real-time monitoring, as they need to
     wait for the children to exit.
 
     Args:
-        pid (int): Process ID to track
-        children (bool, optional): Whether to include stats from exited child processes. Defaults to True.
+        pid: Process ID to track
+        children: Whether to include stats from exited child processes
 
     Returns:
         dict[str, int]: A dictionary containing process time information:
@@ -107,12 +116,15 @@ def get_pid_proc_times(pid: int, children: bool = True):
         return {"utime": 0, "stime": 0}
 
 
-def get_pid_proc_io(pid):
+def get_pid_proc_io(pid: int) -> dict[str, int]:
     """Get the total bytes read and written by a process from /proc/<pid>/io.
 
     Note that it is not tracking reading from memory-mapped objects,
     and is fairly limited in what it can track. E.g. the process might
     not even have permissions to read its own `/proc/self/io`.
+
+    Args:
+        pid: The process ID to get the total bytes read and written for.
 
     Returns:
         dict[str, int]: A dictionary containing the total bytes read and written by the process.
@@ -126,12 +138,14 @@ def get_pid_proc_io(pid):
         return {"read_bytes": 0, "write_bytes": 0}
 
 
-def get_pid_stats(pid, children: bool = True):
+def get_pid_stats(
+    pid: int, children: bool = True
+) -> dict[str, int | float | None | set[int]]:
     """Collect current/cumulative stats of a process from procfs.
 
     Args:
-        pid (int): The process ID to track.
-        children (bool, optional): Whether to include child processes. Defaults to True.
+        pid: The process ID to track.
+        children: Whether to include child processes.
 
     Returns:
         dict[str, int | float | None | set[int]]: A dictionary containing process stats.
@@ -215,7 +229,7 @@ def get_pid_stats(pid, children: bool = True):
     }
 
 
-def get_system_stats():
+def get_system_stats() -> dict[str, int | float | dict]:
     """Collect current system-wide stats from procfs.
 
     Returns:
@@ -495,7 +509,14 @@ class PidTracker:
     def start_tracking(
         self, output_file: Optional[str] = None, print_header: bool = True
     ):
-        """Start an infinite loop tracking resource usage of the process until it exits."""
+        """Start an infinite loop tracking resource usage of the process until it exits.
+
+        A CSV line is written every `interval` seconds.
+
+        Args:
+            output_file: File to write the output to. Defaults to None, printing to stdout.
+            print_header: Whether to print the header of the CSV. Defaults to True.
+        """
         file_handle = open(output_file, "w") if output_file else stdout
         file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
@@ -665,7 +686,14 @@ class SystemTracker:
     def start_tracking(
         self, output_file: Optional[str] = None, print_header: bool = True
     ):
-        """Start an infinite loop tracking system resource usage."""
+        """Start an infinite loop tracking system resource usage.
+
+        A CSV line is written every `interval` seconds.
+
+        Args:
+            output_file: File to write the output to. Defaults to None, printing to stdout.
+            print_header: Whether to print the header of the CSV. Defaults to True.
+        """
         file_handle = open(output_file, "w") if output_file else stdout
         file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:

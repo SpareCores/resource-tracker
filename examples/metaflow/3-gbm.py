@@ -69,7 +69,7 @@ class GbmFlow(FlowSpec):
         self.model = xgb.train(
             params,
             dtrain,
-            num_boost_round=50,
+            num_boost_round=1500,
             evals=[(dtrain, "train"), (dtest, "test")],
             early_stopping_rounds=50,
         )

@@ -3,7 +3,7 @@ from os import cpu_count
 from subprocess import check_output
 
 
-def get_total_memory_mb():
+def get_total_memory_mb() -> float:
     """Get total system memory in MB from /proc/meminfo."""
     with suppress(Exception):
         with open("/proc/meminfo", "r") as f:
@@ -15,8 +15,15 @@ def get_total_memory_mb():
     return 0
 
 
-def get_gpu_info():
-    """Get GPU information using nvidia-smi command."""
+def get_gpu_info() -> dict:
+    """Get GPU information using nvidia-smi command.
+
+    Returns:
+        dict: A dictionary containing GPU information:
+            - count: Number of GPUs
+            - memory_mb: Total VRAM in MB
+            - gpu_names: List of GPU names
+    """
     result = {"count": 0, "memory_mb": 0, "gpu_names": []}
 
     with suppress(Exception):
@@ -45,7 +52,7 @@ def get_gpu_info():
     return result
 
 
-def get_server_info():
+def get_server_info() -> dict:
     """
     Collects important information about the Linux server.
 
@@ -54,7 +61,7 @@ def get_server_info():
             - vcpus: Number of virtual CPUs
             - memory_mb: Total memory in MB
             - gpu_count: Number of GPUs (if available)
-            - gpu_memory_mb: Total GPU memory in MB (if available)
+            - gpu_memory_mb: Total VRAM in MB (if available)
     """
     gpu_info = get_gpu_info()
     info = {

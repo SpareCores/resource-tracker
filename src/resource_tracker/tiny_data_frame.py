@@ -8,6 +8,19 @@ from urllib.request import urlopen
 class TinyDataFrame:
     """A very inefficient data-frame implementation with a few features.
 
+    Supported features:
+    - reading CSV files from a remote URL
+    - reading CSV files from a local file
+    - converting a dictionary of lists/arrays to a data-frame
+    - converting a list of dictionaries to a data-frame
+    - slicing rows
+    - slicing columns
+    - slicing rows and columns
+    - printing a summary of the data-frame
+    - printing the data-frame as a human-readable (grid) table
+    - renaming columns
+    - writing to a CSV file
+
     Args:
         data: Dictionary of lists/arrays or list of dictionaries.
         csv_file_path: Path to a properly quoted CSV file.

@@ -13,7 +13,7 @@ jobs:
       - name: Install tox
         run: pip install tox
       - name: Install local pkg
-        run: pip install .
+        run: pip install ".[dev]"
       - name: Tests
         run: tox
       - name: Linters

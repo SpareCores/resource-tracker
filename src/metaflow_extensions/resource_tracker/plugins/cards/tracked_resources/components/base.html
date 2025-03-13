@@ -164,7 +164,15 @@
             <div class="section-content">
                 <div class="section-content-cards">
                     <div class="section-content-card-task">
-                        <div class="section-content-card-label">Recommended Resources for Next Run</div>
+                        <div class="section-content-card-label">
+                            Recommended Resources for Next Run
+                            <span class="info-icon">
+                                {{{icon_info}}}
+                                <div class="tooltip-content">
+                                    The Metaflow <code>@resources</code> decorator is limited to specifying the number of vCPUs, memory, and number of GPUs, so e.g. no way to specify the minimum amount of VRAM.
+                                </div>
+                            </span>
+                        </div>
                         <div class="section-content-card-value">{{{recommended_resources}}}</div>
                     </div>
                     <div class="section-content-card-task">
@@ -175,7 +183,15 @@
                         </div>
                     </div>
                     <div class="section-content-card">
-                        <div class="section-content-card-label">Cheapest Cloud Server to Run This Step</div>
+                        <div class="section-content-card-label">
+                            Cheapest Cloud Server to Run This Step
+                            <span class="info-icon">
+                                {{{icon_info}}}
+                                <div class="tooltip-content">
+                                    Evaluated 2000+ servers options accross AWS, GCP, Azure, Hetzner and UpCloud by filtering for the required number of vCPUs, memory, GPUs and min VRAM, then ordered descending by ondemand price, and selected the first one. The price per execution is calculated by multiplying the ondemand price by the number of vCPUs. The price per execution is based on the current ondemand price of the server and current duration of the step, and does not include any storage, network traffic, IPV4 prices or discounts. If interested in more advanced recommendations, please get in touch!
+                                </div>
+                            </span>
+                        </div>
                         <div class="section-content-card-value">
                             <ol class="recommended-cloud-servers">
                                 {{#recommended_cloud_servers}}

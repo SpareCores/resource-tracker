@@ -79,6 +79,10 @@ div.section .section-content-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
 }
+div.section .section-content-card-task:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
 div.section .section-content-card-label {
     font-size: 14px;
     color: #ccc;
@@ -147,4 +151,47 @@ ol.recommended-cloud-servers li img {
     border-radius: 5px;
 }
 
-
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    margin-left: 4px;
+    position: relative;
+    vertical-align: middle;
+}
+.info-icon svg {
+    width: 16px;
+    height: 16px;
+    color: #9CA3AF;
+    display: block;
+}
+.info-icon .tooltip-content {
+    display: none;
+    position: absolute;
+    background: #1F2937;
+    color: #F9FAFB;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    max-width: 400px;
+    width: max-content;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    line-height: 1.4;
+    text-align: left;
+}
+.info-icon:hover .tooltip-content {
+    display: block;
+}
+.info-icon .tooltip-content code {
+    background-color: #374151;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}

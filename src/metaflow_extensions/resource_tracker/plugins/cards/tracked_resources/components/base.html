@@ -43,6 +43,18 @@
                         <div class="section-content-card-value">{{{server_info.gpu_memory_mb_pretty}}} MiB</div>
                     </div>
                     {{/server_info.gpu_names}}
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">
+                            Allocation
+                            <span class="info-icon">
+                                {{{icon_info}}}
+                                <div class="tooltip-content">
+                                    Indicates whether this server appears to be dedicated to this Metaflow step or shared with other tasks. This assessment is based on comparing server-level resource usage with task-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
+                                </div>
+                            </span>
+                        </div>
+                        <div class="section-content-card-value">{{{server_info.allocation}}}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -88,7 +100,7 @@
                 </div>
                 <div class="header-text">
                     <div class="title">Usage Statistics</div>
-                    <p class="description">Current and historical averages and peaks for CPU and memory usage for the current and last five successful runs.</p>
+                    <p class="description">Current and historical (including up-to the last five successful runs) averages, peaks and other summaries on resource usage.</p>
                 </div>
             </h1>
             <div class="section-content">
@@ -158,7 +170,7 @@
                 </div>
                 <div class="header-text">
                     <div class="title">Recommendations</div>
-                    <p class="description">Based on recent average CPU usage, historical peak memory usage, and observed GPU usage.</p>
+                    <p class="description">Based on recent average CPU usage, historical peak memory and GPU utilization.</p>
                 </div>
             </h1>
             <div class="section-content">
@@ -178,8 +190,7 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Automated Tuning of Resources</div>
                         <div class="section-content-card-value">
-                            <!-- TODO replace with lander URL -->
-                            Learn more at <a href="https://sparecores.com/contact" target="_blank" style="color: #34D399;">sparecores.com {{{icon_external_link}}}</a>
+                            Learn more at <a href="https://sparecores.com/feedback/metaflow-resource-tracker" target="_blank" style="color: #34D399;">sparecores.com {{{icon_external_link}}}</a>
                         </div>
                     </div>
                     <div class="section-content-card">

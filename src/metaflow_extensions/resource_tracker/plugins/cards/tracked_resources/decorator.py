@@ -1,6 +1,7 @@
 from collections import Counter
 from math import ceil
 from os import listdir, path
+from statistics import mean
 
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
@@ -11,6 +12,13 @@ from .helpers import (
     pretty_number,
     round_memory,
 )
+
+SERVER_ALLOCATION_CHECKS = [
+    {"column": "CPU usage", "percent": 1.25, "absolute": 0.25},
+    {"column": "memory usage", "percent": 1.5, "absolute": 512 * 1024 * 1024},
+    {"column": "GPU used", "percent": 1.25, "absolute": 0.2},
+    {"column": "VRAM used", "percent": 1.25, "absolute": 512 * 1024 * 1024},
+]
 
 
 class TrackedResourcesCard(MetaflowCard):
@@ -175,6 +183,15 @@ class TrackedResourcesCard(MetaflowCard):
         variables["server_info"]["disk_space_total_gb"] = pretty_number(
             system["disk_space_total_gb"][0], 0
         )
+        variables["server_info"]["allocation"] = "Dedicated"
+        for check in SERVER_ALLOCATION_CHECKS:
+            system_val = mean(joined["Server " + check["column"]])
+            task_val = mean(joined["Task " + check["column"]])
+            if (system_val > task_val * check["percent"]) or (
+                system_val > task_val + check["absolute"]
+            ):
+                variables["server_info"]["allocation"] = "Shared"
+                break
 
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]

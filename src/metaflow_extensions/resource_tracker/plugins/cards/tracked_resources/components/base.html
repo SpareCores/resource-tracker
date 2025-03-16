@@ -236,7 +236,15 @@
                                 </div>
                             </span>
                         </div>
-                        <div class="section-content-card-value">${{{cost_savings.percent}}}% (${{{cost_savings.amount}}}/execution)</div>
+                        <div class="section-content-card-value">
+                            <span class="metric-highlight">
+                                {{{cost_savings.percent}}}%
+                            </span>
+                            <span class="metric-separator">|</span>
+                            <span class="metric">
+                                ${{{cost_savings.amount}}}/execution
+                            </span>
+                        </div>
                     </div>
                     {{/cost_savings}}
                 </div>

@@ -225,6 +225,20 @@
                             </ol>
                         </div>
                     </div>
+                    {{#cost_savings}}
+                    <div class="section-content-card">
+                        <div class="section-content-card-label">
+                            Potential Cost Savings
+                            <span class="info-icon">
+                                {{{icon_info}}}
+                                <div class="tooltip-content">
+                                    This calculation assumes the current cloud server is dedicated to running this step and that the recommended cloud server would provide comparable performance. Savings are based on the best available on-demand pricing in supported regions and don't account for any existing discounts you may have.
+                                </div>
+                            </span>
+                        </div>
+                        <div class="section-content-card-value">${{{cost_savings.percent}}}% (${{{cost_savings.amount}}}/execution)</div>
+                    </div>
+                    {{/cost_savings}}
                 </div>
             </div>
         </div>

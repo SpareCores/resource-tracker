@@ -278,5 +278,15 @@ class TrackedResourcesCard(MetaflowCard):
                 * data["stats"]["duration"],
                 6,
             )
+        cost_current = variables["cloud_info"].get("compute_costs")
+        cost_rec = variables["recommended_cloud_servers"][0].get("price_task")
+        if cost_current and cost_rec:
+            cost_current = float(cost_current)
+            cost_rec = float(cost_rec)
+            if cost_rec < cost_current:
+                variables["cost_savings"] = {
+                    "percent": round((cost_current - cost_rec) / cost_current * 100, 2),
+                    "amount": round(cost_current - cost_rec, 6),
+                }
 
         return chevron.render(variables["base_html"], variables)

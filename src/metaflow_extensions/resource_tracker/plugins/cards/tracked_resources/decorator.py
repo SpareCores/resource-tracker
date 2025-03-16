@@ -16,7 +16,7 @@ from .helpers import (
 SERVER_ALLOCATION_CHECKS = [
     {"column": "CPU usage", "percent": 1.25, "absolute": 0.25},
     {"column": "memory usage", "percent": 1.5, "absolute": 512 * 1024 * 1024},
-    {"column": "GPU used", "percent": 1.25, "absolute": 0.2},
+    {"column": "GPU usage", "percent": 1.25, "absolute": 0.2},
     {"column": "VRAM used", "percent": 1.25, "absolute": 512 * 1024 * 1024},
 ]
 

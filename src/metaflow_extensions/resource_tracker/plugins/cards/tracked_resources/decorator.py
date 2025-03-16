@@ -170,7 +170,7 @@ class TrackedResourcesCard(MetaflowCard):
             )
             if compute_costs:
                 variables["cloud_info"]["compute_costs"] = round(
-                    compute_costs / 60 / 60 * data["stats"]["duration"], 4
+                    compute_costs / 60 / 60 * data["stats"]["duration"], 6
                 )
 
         variables["server_info"] = data["server_info"]

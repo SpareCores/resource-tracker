@@ -1,3 +1,11 @@
+## v0.1.1 (March 17, 2025)
+
+- Fix rounding down recommended vCPUs with <0.5 load
+- Add info popups with more details and disclaimers for recommendations
+- Detect if the server is shared with other tasks
+- Add potential cost savings card
+- Documentation improvements
+
 ## v0.1.0 (March 12, 2025)
 
 Initial PyPI release of `resource-tracker` with the following features:

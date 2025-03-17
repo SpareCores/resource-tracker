@@ -1,7 +1,12 @@
 # resource-tracker
 
-A no-dependency Python package for tracking resource usage of processes and
-system-wide, with a focus on batch jobs like Metaflow steps.
+A lightweight, zero-dependency Python package for monitoring resource usage
+across processes and at the server level. Designed with batch jobs in mind (like
+Metaflow steps), it provides simple tools to track CPU, memory, GPU, network,
+and disk utilization with minimal setup -- e.g. using a simple step decorator in
+Metaflow to automatically track resource usage and generate a card with data
+visualizations on historical resource usage and cloud server recommendations for
+future runs.
 
 ## Installation
 
@@ -27,9 +32,9 @@ from resource_tracker import SystemTracker
 tracker = SystemTracker()
 ```
 
-Would track system-wide resource usage, including CPU, memory, GPU, network
+`SystemTracker` tracks system-wide resource usage, including CPU, memory, GPU, network
 traffic, disk I/O and space usage every 1 second, and write CSV to the standard
-output stream by default, e.g.:
+output stream by default. Example output:
 
 ```sh
 "timestamp","processes","utime","stime","cpu_usage","memory_free","memory_used","memory_buffers","memory_cached","memory_active_anon","memory_inactive_anon","disk_read_bytes","disk_write_bytes","disk_space_total_gb","disk_space_used_gb","disk_space_free_gb","net_recv_bytes","net_sent_bytes","gpu_usage","gpu_vram","gpu_utilized"
@@ -38,12 +43,12 @@ output stream by default, e.g.:
 1741785687.6766264,1148012,38,34,0.7199,37850036,26301016,16,1400724,13043036,1009284,40960,49152,5635.25,3405.81,2229.44,10602,9682,0.26,1029.0,1
 ```
 
-This can be redirected to a file by passing a path to the `csv_file_path`
+The default stream can be redirected to a file by passing a path to the `csv_file_path`
 argument, and can use different intervals for sampling via the `interval`
 argument.
 
-The `PidTracker` class tracks resource usage of a running process and its
-children recursively in a similar manner, although somewhat limited in
+The `PidTracker` class tracks resource usage of a running process and optionally
+all its children (recursively), in a similar manner, although somewhat limited in
 functionality, as e.g. `nvidia-smi pmon` can only track up-to 4 GPUs, and
 network traffic monitoring is not available.
 
@@ -66,14 +71,19 @@ get_server_info()
 # {'vcpus': 4, 'memory_mb': 15788.21, 'gpu_count': 1, 'gpu_names': ['Tesla T4'], 'gpu_memory_mb': 15360.0}
 ```
 
+Spare Cores integration can do further lookups for the current server type, e.g.
+to calculate the cost of running the current job and recommend cheaper cloud
+server types for future runs.
+
 ## Metaflow Integration
 
 The package also comes with a Metaflow extension for tracking resource usage of
 Metaflow steps, including the visualization of the collected data in a card with
-recommended `@resources` and cheapest cloud server type for future runs.
+recommended `@resources` and cheapest cloud server type for future runs, along
+with basic cost estimates.
 
-To get started, import the `track_resources` decorator from `metaflow` and use it to decorate your
-Metaflow steps:
+To get started, import the `track_resources` decorator from `metaflow` and use
+it to decorate your Metaflow steps:
 
 ```python
 from metaflow import Flow, FlowSpec, step, track_resources
@@ -162,7 +172,7 @@ Find more examples in the [examples](https://github.com/SpareCores/resource-trac
 
 ## References
 
+- PyPI: <https://pypi.org/project/resource-tracker>
 - Documentation: <https://sparecores.github.io/resource-tracker>
 - Source code: <https://github.com/SpareCores/resource-tracker>
-- PyPI: <https://pypi.org/project/resource-tracker>
-- Spare Cores: <https://sparecores.com>
+- Project roadmap and feedback form: <https://sparecores.com/feedback/metaflow-resource-tracker>

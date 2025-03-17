@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resource-tracker"
 version = "0.1.0"
-description = "Process and server-level resource usage tracker and cloud server suggestion tool."
+description = "Lightweight Python package for monitoring process and system resource usage with optional Metaflow integration for cloud cost optimization."
 readme = "README.md"
 authors = [
     {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}

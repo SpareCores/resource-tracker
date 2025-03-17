@@ -85,7 +85,7 @@ with basic cost estimates.
 To get started, import the `track_resources` decorator from `metaflow` and use
 it to decorate your Metaflow steps:
 
-```python
+```python linenums="1" hl_lines="1 9"
 from metaflow import Flow, FlowSpec, step, track_resources
 
 class ResourceTrackingFlow(FlowSpec):

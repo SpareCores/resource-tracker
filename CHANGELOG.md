@@ -1,3 +1,8 @@
+## v0.1.2 (March 18, 2025)
+
+- Experimental psutil support
+- Add server info card for operating system
+
 ## v0.1.1 (March 17, 2025)
 
 - Fix rounding down recommended vCPUs with <0.5 load

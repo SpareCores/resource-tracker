@@ -192,6 +192,12 @@ class TrackedResourcesCard(MetaflowCard):
             ):
                 variables["server_info"]["allocation"] = "Shared"
                 break
+        try:
+            import psutil
+
+            variables["server_info"]["psutil_version"] = psutil.__version__
+        except ImportError:
+            variables["server_info"]["psutil_version"] = "N/A"
 
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]

@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resource-tracker"
-version = "0.1.1"
+version = "0.1.2"
 description = "Lightweight Python package for monitoring process and system resource usage with optional Metaflow integration for cloud cost optimization."
+dependencies = ["psutil"]
 readme = "README.md"
 authors = [
     {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}

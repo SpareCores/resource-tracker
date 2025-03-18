@@ -10,6 +10,7 @@ from subprocess import PIPE, Popen, TimeoutExpired
 from time import time
 
 from .helpers import is_partition
+from .nvidia import process_nvidia_smi_pmon, start_nvidia_smi_pmon
 
 
 @cache
@@ -163,12 +164,7 @@ def get_pid_stats(
     """
     current_time = time()
 
-    # NOTE pmon is limited to monitoring max. 4 GPUs
-    with suppress(FileNotFoundError):
-        nvidia_process = Popen(
-            ["nvidia-smi", "pmon", "-c", "1", "-s", "um", "-d", "1"],
-            stdout=PIPE,
-        )
+    nvidia_process = start_nvidia_smi_pmon()
 
     current_children = get_pid_children(pid)
     current_pss = get_pid_pss_rollup(pid)
@@ -187,34 +183,7 @@ def get_pid_stats(
             for key in set(current_io) & set(child_io):
                 current_io[key] += child_io[key]
 
-    gpu_stats = {
-        "gpu_usage": 0,  # between 0 and GPU count
-        "gpu_vram": 0,  # MiB
-        "gpu_utilized": 0,  # number of GPUs with utilization > 0
-        "gpu_utilized_indexes": set(),  # set of GPU indexes
-    }
-    try:
-        stdout, _ = nvidia_process.communicate(timeout=0.5)
-        if nvidia_process.returncode == 0:
-            for index, line in enumerate(stdout.splitlines()):
-                if index < 2:
-                    continue  # skip the header lines
-                parts = line.decode().split()
-                # skip unmonitored processes
-                if int(parts[1]) == int(pid) or (
-                    children and int(parts[1]) in current_children
-                ):
-                    usage = 0
-                    if parts[3] != "-":  # sm%
-                        usage = float(parts[3])
-                        gpu_stats["gpu_utilized_indexes"].add(int(parts[0]))
-                    gpu_stats["gpu_usage"] += usage / 100
-                    gpu_stats["gpu_vram"] += float(parts[9])
-            gpu_stats["gpu_utilized"] = len(gpu_stats["gpu_utilized_indexes"])
-    except TimeoutExpired:
-        nvidia_process.kill()
-    except Exception:
-        pass
+    gpu_stats = process_nvidia_smi_pmon(nvidia_process, {pid} | current_children)
 
     return {
         "timestamp": current_time,

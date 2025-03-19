@@ -1,16 +1,25 @@
-import importlib
+from importlib import import_module
 from os import getpid
+from platform import system
 
 import pytest
 
 
 @pytest.mark.parametrize(
     "tracker_implementation",
-    ["resource_tracker.tracker_psutil", "resource_tracker.tracker_procfs"],
+    [
+        "resource_tracker.tracker_psutil",
+        pytest.param(
+            "resource_tracker.tracker_procfs",
+            marks=pytest.mark.skipif(
+                system() != "Linux", reason="procfs implementation only works on Linux"
+            ),
+        ),
+    ],
 )
 def test_get_pid_stats_implementations(tracker_implementation):
     """Test get_pid_stats from different implementations."""
-    module = importlib.import_module(tracker_implementation)
+    module = import_module(tracker_implementation)
     get_pid_stats = getattr(module, "get_pid_stats")
 
     pid = getpid()

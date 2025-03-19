@@ -8,6 +8,7 @@ from glob import glob
 from os import statvfs
 from subprocess import PIPE, Popen, TimeoutExpired
 from time import time
+from typing import Dict, Set, Union
 
 from .helpers import is_partition
 from .nvidia import (
@@ -19,7 +20,7 @@ from .nvidia import (
 
 
 @cache
-def get_sector_sizes() -> dict[str, int]:
+def get_sector_sizes() -> Dict[str, int]:
     """Get the sector size of all disks.
 
     Returns:
@@ -39,7 +40,7 @@ def get_sector_sizes() -> dict[str, int]:
     return sector_sizes
 
 
-def get_pid_children(pid: int) -> set[int]:
+def get_pid_children(pid: int) -> Set[int]:
     """Get all descendant processes recursively.
 
     Args:
@@ -94,7 +95,7 @@ def get_pid_pss_rollup(pid: int) -> int:
     return 0
 
 
-def get_pid_proc_times(pid: int, children: bool = True) -> dict[str, int]:
+def get_pid_proc_times(pid: int, children: bool = True) -> Dict[str, int]:
     """Get the current user and system times of a process from `/proc/{pid}/stat`.
 
     Note that cannot use `cutime`/`cstime` for real-time monitoring,
@@ -121,7 +122,7 @@ def get_pid_proc_times(pid: int, children: bool = True) -> dict[str, int]:
         return {"utime": 0, "stime": 0}
 
 
-def get_pid_proc_io(pid: int) -> dict[str, int]:
+def get_pid_proc_io(pid: int) -> Dict[str, int]:
     """Get the total bytes read and written by a process from `/proc/{pid}/io`.
 
     Note that it is not tracking reading from memory-mapped objects,
@@ -145,7 +146,7 @@ def get_pid_proc_io(pid: int) -> dict[str, int]:
 
 def get_pid_stats(
     pid: int, children: bool = True
-) -> dict[str, int | float | None | set[int]]:
+) -> Dict[str, Union[int, float, None, Set[int]]]:
     """Collect current/cumulative stats of a process from procfs.
 
     Args:
@@ -203,7 +204,7 @@ def get_pid_stats(
     }
 
 
-def get_system_stats() -> dict[str, int | float | dict]:
+def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
     """Collect current system-wide stats from procfs.
 
     Returns:

@@ -4,6 +4,7 @@ Helpers to track resource usage via psutil.
 
 from contextlib import suppress
 from time import time
+from typing import Dict, Set, Union
 
 from psutil import Process
 
@@ -12,7 +13,7 @@ from .nvidia import process_nvidia_smi_pmon, start_nvidia_smi_pmon
 
 def get_pid_stats(
     pid: int, children: bool = True
-) -> dict[str, int | float | None | set[int]]:
+) -> Dict[str, Union[int, float, None, Set[int]]]:
     """Collect current/cumulative stats of a process via psutil.
 
     Args:

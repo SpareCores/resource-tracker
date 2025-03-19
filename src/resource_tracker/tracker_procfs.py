@@ -10,11 +10,10 @@ from contextlib import suppress
 from functools import cache
 from glob import glob
 from os import statvfs
-from subprocess import PIPE, Popen, TimeoutExpired
 from time import time
 from typing import Dict, Set, Union
 
-from .helpers import is_partition
+from .helpers import get_zfs_pools_space, is_partition
 from .nvidia import (
     process_nvidia_smi,
     process_nvidia_smi_pmon,
@@ -218,6 +217,7 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - processes (int): Number of running processes.
             - utime (int): Total user mode CPU time in clock ticks.
             - stime (int): Total system mode CPU time in clock ticks.
+            - memory_free (int): Free physical memory in kB.
             - memory_used (int): Used physical memory in kB (excluding buffers/cache).
             - memory_buffers (int): Memory used for buffers in kB.
             - memory_cached (int): Memory used for cache in kB.
@@ -237,9 +237,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - net_recv_bytes (int): Total bytes received over network.
             - net_sent_bytes (int): Total bytes sent over network.
     """
-    current_time = time()
     stats = {
-        "timestamp": current_time,
+        "timestamp": time(),
         "processes": 0,
         "utime": 0,
         "stime": 0,
@@ -355,27 +354,7 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
                     except (OSError, PermissionError):
                         pass
     if check_zfs:
-        with suppress(FileNotFoundError, OSError):
-            zpool_process = Popen(
-                ["zpool", "list", "-Hp", "-o", "name,size,allocated,free"],
-                stdout=PIPE,
-            )
-            try:
-                stdout, _ = zpool_process.communicate(timeout=0.25)
-                if zpool_process.returncode == 0:
-                    stats["zfs_pools"] = {}
-                    for line in stdout.splitlines():
-                        parts = line.decode().split("\t")
-                        if len(parts) >= 4:
-                            stats["disk_spaces"][f"zfs:{parts[0]}"] = {
-                                "total": int(parts[1]),
-                                "used": int(parts[2]),
-                                "free": int(parts[3]),
-                            }
-            except TimeoutExpired:
-                zpool_process.kill()
-            except Exception:
-                pass
+        stats["disk_spaces"].update(get_zfs_pools_space())
 
     stats.update(process_nvidia_smi(nvidia_process))
 

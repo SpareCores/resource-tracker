@@ -3,11 +3,13 @@ Helpers for the resource tracker.
 """
 
 import os
+from contextlib import suppress
 from functools import cache
 from glob import glob
 from importlib.util import find_spec
 from re import search
-from typing import Callable
+from subprocess import PIPE, Popen, TimeoutExpired
+from typing import Callable, Dict
 
 
 @cache
@@ -78,3 +80,31 @@ def get_tracker_implementation() -> tuple[Callable, Callable]:
             "No tracker implementation available - install psutil or use a Linux system with procfs."
         )
     return get_pid_stats, get_system_stats
+
+
+def get_zfs_pools_space() -> Dict[str, Dict[str, int]]:
+    """
+    Get the space of ZFS pools.
+    """
+    disks = {}
+    with suppress(FileNotFoundError, OSError):
+        zpool_process = Popen(
+            ["zpool", "list", "-Hp", "-o", "name,size,allocated,free"],
+            stdout=PIPE,
+        )
+        try:
+            stdout, _ = zpool_process.communicate(timeout=0.25)
+            if zpool_process.returncode == 0:
+                for line in stdout.splitlines():
+                    parts = line.decode().split("\t")
+                    if len(parts) >= 4:
+                        disks[f"zfs:{parts[0]}"] = {
+                            "total": int(parts[1]),
+                            "used": int(parts[2]),
+                            "free": int(parts[3]),
+                        }
+        except TimeoutExpired:
+            zpool_process.kill()
+        except Exception:
+            pass
+    return disks

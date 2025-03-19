@@ -2,9 +2,12 @@
 Helpers for the resource tracker.
 """
 
+import os
 from functools import cache
 from glob import glob
+from importlib.util import find_spec
 from re import search
+from typing import Callable
 
 
 @cache
@@ -28,3 +31,50 @@ def is_partition(disk_name: str) -> bool:
         ):
             return True
     return False
+
+
+@cache
+def is_psutil_available() -> bool:
+    """
+    Check if psutil is installed and available for import.
+
+    Returns:
+        bool: True if psutil is available, False otherwise
+    """
+    try:
+        return find_spec("psutil") is not None
+    except ImportError:
+        return False
+
+
+@cache
+def is_procfs_available() -> bool:
+    """
+    Check if procfs is available on the system.
+
+    Returns:
+        bool: True if procfs is available, False otherwise
+    """
+    return os.path.isdir("/proc") and os.access("/proc", os.R_OK)
+
+
+@cache
+def get_tracker_implementation() -> tuple[Callable, Callable]:
+    """
+    Determine which tracker implementation to use based on available system resources.
+
+    Returns:
+        tuple: A tuple containing (get_pid_stats, get_system_stats) functions from the appropriate implementation module.
+
+    Raises:
+        ImportError: If no suitable implementation is available.
+    """
+    if is_psutil_available():
+        from .tracker_psutil import get_pid_stats, get_system_stats
+    elif is_procfs_available():
+        from .tracker_procfs import get_pid_stats, get_system_stats
+    else:
+        raise ImportError(
+            "No tracker implementation available - install psutil or use a Linux system with procfs."
+        )
+    return get_pid_stats, get_system_stats

@@ -1,5 +1,9 @@
 """
 Helpers to track resource usage via procfs.
+
+Note that procfs is specific to Linux, and these helpers rely on modern (2017+)
+kernel features, such as `smaps_rollup`, which is much faster than iterating
+over all `smaps` files.
 """
 
 from contextlib import suppress
@@ -161,7 +165,7 @@ def get_pid_stats(
             - children (int | None): The current number of child processes.
             - utime (int): The total user mode CPU time in clock ticks.
             - stime (int): The total system mode CPU time in clock ticks.
-            - pss_rollup (int): The current PSS (Proportional Set Size) in kB.
+            - memory (int): The current PSS (Proportional Set Size) in kB.
             - read_bytes (int): The total number of bytes read.
             - write_bytes (int): The total number of bytes written.
             - gpu_usage (float): The current GPU utilization between 0 and GPU count.
@@ -197,7 +201,7 @@ def get_pid_stats(
         "children": len(current_children) if children else None,
         "utime": current_proc_times["utime"],
         "stime": current_proc_times["stime"],
-        "pss": current_pss,
+        "memory": current_pss,
         "read_bytes": current_io["read_bytes"],
         "write_bytes": current_io["write_bytes"],
         **gpu_stats,

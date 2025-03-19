@@ -105,7 +105,7 @@ class TrackedResourcesCard(MetaflowCard):
         )
         # dummy merge
         joined["Task CPU usage"] = pid["cpu_usage"]
-        joined["Task memory usage"] = pid["pss"]
+        joined["Task memory usage"] = pid["memory"]
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
         joined["Task GPU usage"] = pid["gpu_usage"]

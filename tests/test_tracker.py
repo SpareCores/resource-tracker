@@ -37,5 +37,5 @@ def test_get_pid_stats_implementations(tracker_implementation):
     memory = stats["memory"]
     bigobj = bytearray(50 * 1024 * 1024)  # 50MB
     stats = get_pid_stats(pid)
-    assert stats["memory"] >= memory + 10 * 1024 * 1024
+    assert stats["memory"] >= memory + 40 * 1024  # kB
     del bigobj

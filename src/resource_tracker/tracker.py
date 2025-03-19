@@ -29,7 +29,10 @@ class PidTracker:
     - utime (int): The total user+nice mode CPU time in clock ticks.
     - stime (int): The total system mode CPU time in clock ticks.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
-    - pss (int): The current PSS (Proportional Set Size) in kB.
+    - memory (int): The current memory usage in kB. Implementation depends on the
+      operating system, and it is preferably PSS (Proportional Set Size) on Linux,
+      USS (Unique Set Size) on macOS and Windows, and RSS (Resident Set Size) on
+      Windows.
     - read_bytes (int): The total number of bytes read from disk.
     - write_bytes (int): The total number of bytes written to disk.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
@@ -90,7 +93,7 @@ class PidTracker:
                 ),
                 4,
             ),
-            "pss": self.stats["pss"],
+            "memory": self.stats["memory"],
             "read_bytes": max(0, self.stats["read_bytes"] - last_stats["read_bytes"]),
             "write_bytes": max(
                 0, self.stats["write_bytes"] - last_stats["write_bytes"]
@@ -117,7 +120,7 @@ class PidTracker:
             while True:
                 current_time = time()
                 current_stats = self.diff_stats()
-                if current_stats["pss"] == 0:
+                if current_stats["memory"] == 0:
                     # the process has exited
                     self.status = "exited"
                     break

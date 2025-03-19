@@ -147,8 +147,8 @@ class ResourceTrackerDecorator(StepDecorator):
                         "max": round(max(pid_tracker_data["cpu_usage"]), 2),
                     },
                     "memory_usage": {
-                        "mean": round(mean(pid_tracker_data["pss"]), 2),
-                        "max": round(max(pid_tracker_data["pss"]), 2),
+                        "mean": round(mean(pid_tracker_data["memory"]), 2),
+                        "max": round(max(pid_tracker_data["memory"]), 2),
                     },
                     "gpu_usage": {
                         "mean": round(mean(pid_tracker_data["gpu_usage"]), 2),

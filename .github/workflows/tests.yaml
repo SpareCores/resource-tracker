@@ -27,6 +27,7 @@ jobs:
         run: pip install tox
       - name: Install local pkg
         run: |
+          pip install ".[psutil]"
           pip install ".[dev]"
           pip install ".[metaflow]"
       - name: Tests

@@ -2,9 +2,10 @@
 
 from contextlib import suppress
 from subprocess import PIPE, Popen, TimeoutExpired
+from typing import Dict, Optional, Set, Union
 
 
-def start_nvidia_smi_pmon() -> Popen | None:
+def start_nvidia_smi_pmon() -> Optional[Popen]:
     """Start a subprocess to monitor NVIDIA GPUs at the process level using `nvidia-smi pmon`.
 
     Note that `nvidia-smi pmon` is limited to monitoring max. 4 GPUs.
@@ -20,8 +21,8 @@ def start_nvidia_smi_pmon() -> Popen | None:
 
 
 def process_nvidia_smi_pmon(
-    nvidia_process: Popen | None, pids: set[int] | None = None
-) -> dict[str, int | float]:
+    nvidia_process: Optional[Popen], pids: Optional[Set[int]] = None
+) -> Dict[str, Union[int, float, Set[int]]]:
     """Wait for the `nvidia-smi pmon` subprocess to finish and process the output.
 
     Args:
@@ -66,7 +67,7 @@ def process_nvidia_smi_pmon(
     return gpu_stats
 
 
-def start_nvidia_smi() -> Popen | None:
+def start_nvidia_smi() -> Optional[Popen]:
     """Start a subprocess to monitor NVIDIA GPUs' utilization and memory usage using `nvidia-smi`.
 
     Returns:
@@ -79,7 +80,7 @@ def start_nvidia_smi() -> Popen | None:
         )
 
 
-def process_nvidia_smi(nvidia_process: Popen | None) -> dict[str, int | float]:
+def process_nvidia_smi(nvidia_process: Optional[Popen]) -> Dict[str, Union[int, float]]:
     """Wait for the `nvidia-smi` subprocess to finish and process the output.
 
     Args:

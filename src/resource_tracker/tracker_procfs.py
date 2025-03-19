@@ -10,7 +10,12 @@ from subprocess import PIPE, Popen, TimeoutExpired
 from time import time
 
 from .helpers import is_partition
-from .nvidia import process_nvidia_smi_pmon, start_nvidia_smi_pmon
+from .nvidia import (
+    process_nvidia_smi,
+    process_nvidia_smi_pmon,
+    start_nvidia_smi,
+    start_nvidia_smi_pmon,
+)
 
 
 @cache
@@ -244,11 +249,7 @@ def get_system_stats() -> dict[str, int | float | dict]:
         "net_sent_bytes": 0,
     }
 
-    with suppress(FileNotFoundError):
-        nvidia_process = Popen(
-            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv"],
-            stdout=PIPE,
-        )
+    nvidia_process = start_nvidia_smi()
 
     with suppress(FileNotFoundError):
         with open("/proc/stat", "r") as f:
@@ -371,24 +372,6 @@ def get_system_stats() -> dict[str, int | float | dict]:
             except Exception:
                 pass
 
-    stats["gpu_usage"] = 0  # between 0 and GPU count
-    stats["gpu_vram"] = 0  # MiB
-    stats["gpu_utilized"] = 0  # number of GPUs with utilization > 0
-    try:
-        stdout, _ = nvidia_process.communicate(timeout=0.5)
-        if nvidia_process.returncode == 0:
-            for index, line in enumerate(stdout.splitlines()):
-                if index == 0:
-                    continue  # skip the header
-                parts = line.decode().split(", ")
-                if len(parts) == 2:
-                    usage = float(parts[0].rstrip(" %"))
-                    stats["gpu_usage"] += usage / 100
-                    stats["gpu_vram"] += float(parts[1].rstrip(" MiB"))
-                    stats["gpu_utilized"] += usage > 0
-    except TimeoutExpired:
-        nvidia_process.kill()
-    except Exception:
-        pass
+    stats.update(process_nvidia_smi(nvidia_process))
 
     return stats

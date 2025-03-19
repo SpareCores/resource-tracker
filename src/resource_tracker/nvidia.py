@@ -64,3 +64,54 @@ def process_nvidia_smi_pmon(
     except Exception:
         pass
     return gpu_stats
+
+
+def start_nvidia_smi() -> Popen | None:
+    """Start a subprocess to monitor NVIDIA GPUs' utilization and memory usage using `nvidia-smi`.
+
+    Returns:
+        The subprocess object or None if nvidia-smi is not installed.
+    """
+    with suppress(FileNotFoundError):
+        return Popen(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv"],
+            stdout=PIPE,
+        )
+
+
+def process_nvidia_smi(nvidia_process: Popen | None) -> dict[str, int | float]:
+    """Wait for the `nvidia-smi` subprocess to finish and process the output.
+
+    Args:
+        nvidia_process: The subprocess object to monitor or None if not started.
+          Returned by `start_nvidia_smi`.
+
+    Returns:
+        A dictionary of GPU stats:
+
+            - gpu_usage (float): The current GPU utilization between 0 and GPU count.
+            - gpu_vram (float): The current GPU memory/VRAM used in MiB.
+            - gpu_utilized (int): The number of GPUs with utilization > 0.
+    """
+    gpu_stats = {
+        "gpu_usage": 0,  # between 0 and GPU count
+        "gpu_vram": 0,  # MiB
+        "gpu_utilized": 0,  # number of GPUs with utilization > 0
+    }
+    try:
+        stdout, _ = nvidia_process.communicate(timeout=0.5)
+        if nvidia_process.returncode == 0:
+            for index, line in enumerate(stdout.splitlines()):
+                if index == 0:
+                    continue  # skip the header
+                parts = line.decode().split(", ")
+                if len(parts) == 2:
+                    usage = float(parts[0].rstrip(" %"))
+                    gpu_stats["gpu_usage"] += usage / 100
+                    gpu_stats["gpu_vram"] += float(parts[1].rstrip(" MiB"))
+                    gpu_stats["gpu_utilized"] += usage > 0
+    except TimeoutExpired:
+        nvidia_process.kill()
+    except Exception:
+        pass
+    return gpu_stats

@@ -10,7 +10,7 @@ jobs:
         python-version: ["3.13"]
         include:
           - os: ubuntu-latest
-            version: ["3.9", "3.10", "3.11", "3.12"]
+            python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python

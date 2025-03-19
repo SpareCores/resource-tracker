@@ -9,7 +9,7 @@ from subprocess import check_output
 
 
 def get_total_memory_mb() -> float:
-    """Get total system memory in MB from `/proc/meminfo`."""
+    """Get total system memory in MB from `/proc/meminfo` or using `psutil`."""
     with suppress(Exception):
         with open("/proc/meminfo", "r") as f:
             for line in f:
@@ -17,6 +17,10 @@ def get_total_memory_mb() -> float:
                     parts = line.split(":")
                     kb = int(parts[1].strip().split()[0])
                     return round(kb / (1024), 2)
+    with suppress(Exception):
+        from psutil import virtual_memory
+
+        return round(virtual_memory().total / (1024**2), 2)
     return 0
 
 

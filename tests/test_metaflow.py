@@ -1,12 +1,18 @@
 import subprocess
 from pathlib import Path
+from platform import system
 
-from metaflow import Flow
-from metaflow.cards import get_cards
+import pytest
 
 
+@pytest.mark.skipif(
+    system() == "Windows", reason="Metaflow is not supported on Windows"
+)
 def test_flow_execution():
     """Test running a Metaflow flow and checking its artifacts."""
+    from metaflow import Flow
+    from metaflow.cards import get_cards
+
     # Run the flow with test tag
     result = subprocess.run(
         [

@@ -85,7 +85,7 @@ def get_pid_stats(
                     and getattr(memory_info, attr) is not None
                     and getattr(memory_info, attr) != 0
                 ):
-                    stats["memory"] += getattr(memory_info, attr)
+                    stats["memory"] += getattr(memory_info, attr) / 1024  # kB
                     break
             io_counters = process.io_counters()
             stats["read_bytes"] += io_counters.read_bytes

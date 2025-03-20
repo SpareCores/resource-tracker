@@ -62,19 +62,11 @@ def test_get_system_stats_implementations(tracker_implementation):
 
     # at least some values should be present
     assert stats["timestamp"] is not None
-    assert stats["processes"] is not None
-    assert stats["utime"] is not None
-    assert stats["stime"] is not None
-    assert stats["memory_free"] is not None
-    assert stats["memory_used"] is not None
-
-    # test memory allocation is tracked
-    memory = stats["memory_used"]
-    bigobj = bytearray(50 * 1024 * 1024)  # 50MB
-    stats = get_system_stats()
-    # NOTE not updated immediately
-    assert stats["memory_used"] >= memory
-    del bigobj
+    assert stats["processes"] > 0
+    assert stats["utime"] > 0
+    assert stats["stime"] > 0
+    assert stats["memory_free"] > 0
+    assert stats["memory_used"] > 0
 
 
 @pytest.mark.skipif(

@@ -113,6 +113,9 @@ def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold,
             f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
         )
 
+    if field == "memory":
+        del big_array
+
 
 @pytest.mark.skipif(
     system() != "Linux", reason="procfs implementation only works on Linux"

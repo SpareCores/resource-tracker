@@ -115,8 +115,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - memory_used (int): Used physical memory in kB (excluding buffers/cache).
             - memory_buffers (int): Memory used for buffers in kB.
             - memory_cached (int): Memory used for cache in kB.
-            - memory_active_anon (int): Memory used for anonymous pages in kB.
-            - memory_inactive_anon (int): Memory used for inactive anonymous pages in kB.
+            - memory_active (int): Memory used for active pages in kB.
+            - memory_inactive (int): Memory used for inactive pages in kB.
             - disk_stats (dict): Dictionary mapping disk names to their stats:
 
                 - read_bytes (int): Bytes read from this disk.
@@ -140,8 +140,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
         "memory_used": 0,
         "memory_buffers": 0,
         "memory_cached": 0,
-        "memory_active_anon": 0,
-        "memory_inactive_anon": 0,
+        "memory_active": 0,
+        "memory_inactive": 0,
         "disk_stats": {},
         "disk_spaces": {},
         "net_recv_bytes": 0,
@@ -157,19 +157,18 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
     stats["stime"] = cpu.system
     stats["processes"] = len(pids())
 
+    # store memory stats in kB
     memory = virtual_memory()
-    stats["memory_free"] = memory.free
+    stats["memory_free"] = memory.free / 1024
     if hasattr(memory, "buffers"):
-        stats["memory_buffers"] = memory.buffers
+        stats["memory_buffers"] = memory.buffers / 1024
     if hasattr(memory, "cached"):
-        stats["memory_cached"] = memory.cached
+        stats["memory_cached"] = memory.cached / 1024
     if hasattr(memory, "active"):
-        stats["memory_active_anon"] = memory.active
+        stats["memory_active"] = memory.active / 1024
     if hasattr(memory, "inactive"):
-        stats["memory_inactive_anon"] = memory.inactive
-    stats["memory_used"] = (
-        memory.used - stats["memory_buffers"] - stats["memory_cached"]
-    )
+        stats["memory_inactive"] = memory.inactive / 1024
+    stats["memory_used"] = memory.used / 1024
 
     disk_io = disk_io_counters(perdisk=True)
     stats["disk_stats"] = {

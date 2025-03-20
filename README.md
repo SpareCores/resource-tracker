@@ -37,7 +37,7 @@ traffic, disk I/O and space usage every 1 second, and write CSV to the standard
 output stream by default. Example output:
 
 ```sh
-"timestamp","processes","utime","stime","cpu_usage","memory_free","memory_used","memory_buffers","memory_cached","memory_active_anon","memory_inactive_anon","disk_read_bytes","disk_write_bytes","disk_space_total_gb","disk_space_used_gb","disk_space_free_gb","net_recv_bytes","net_sent_bytes","gpu_usage","gpu_vram","gpu_utilized"
+"timestamp","processes","utime","stime","cpu_usage","memory_free","memory_used","memory_buffers","memory_cached","memory_active","memory_inactive","disk_read_bytes","disk_write_bytes","disk_space_total_gb","disk_space_used_gb","disk_space_free_gb","net_recv_bytes","net_sent_bytes","gpu_usage","gpu_vram","gpu_utilized"
 1741785685.6762981,1147955,40,31,0.7098,37828072,26322980,16,1400724,13080320,1009284,86016,401408,5635.25,3405.81,2229.44,10382,13140,0.24,1034.0,1
 1741785686.676473,1147984,23,49,0.7199,37836696,26316404,16,1398676,13071060,1009284,86016,7000064,5635.25,3405.81,2229.44,1369,1824,0.15,1033.0,1
 1741785687.6766264,1148012,38,34,0.7199,37850036,26301016,16,1400724,13043036,1009284,40960,49152,5635.25,3405.81,2229.44,10602,9682,0.26,1029.0,1
@@ -128,7 +128,7 @@ pp(artifact)
 # 'write_bytes': 0.0, 'gpu_usage': 0.0, 'gpu_vram': 0.0, 'gpu_utilized': 0.0},
 #     'system_tracker': TinyDataFrame with 9 rows and 21 columns. First row as a dict: {'timestamp': 1741732803.2471318, 
 # 'processes': 777773.0, 'utime': 225.0, 'stime': 53.0, 'cpu_usage': 2.7797, 'memory_free': 38480700.0, 'memory_used': 
-# 24338580.0, 'memory_buffers': 4792.0, 'memory_cached': 2727720.0, 'memory_active_anon': 15931396.0, 'memory_inactive_anon': 
+# 24338580.0, 'memory_buffers': 4792.0, 'memory_cached': 2727720.0, 'memory_active': 15931396.0, 'memory_inactive': 
 # 0.0, 'disk_read_bytes': 380928.0, 'disk_write_bytes': 10088448.0, 'disk_space_total_gb': 5635.25, 'disk_space_used_gb': 
 # 3405.11, 'disk_space_free_gb': 2230.14, 'net_recv_bytes': 8066.0, 'net_sent_bytes': 8593.0, 'gpu_usage': 0.29, 'gpu_vram': 
 # 998.0, 'gpu_utilized': 1.0},

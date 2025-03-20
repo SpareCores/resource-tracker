@@ -221,8 +221,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - memory_used (int): Used physical memory in kB (excluding buffers/cache).
             - memory_buffers (int): Memory used for buffers in kB.
             - memory_cached (int): Memory used for cache in kB.
-            - memory_active_anon (int): Memory used for anonymous pages in kB.
-            - memory_inactive_anon (int): Memory used for inactive anonymous pages in kB.
+            - memory_active (int): Memory used for active pages in kB.
+            - memory_inactive (int): Memory used for inactive pages in kB.
             - disk_stats (dict): Dictionary mapping disk names to their stats:
 
                 - read_bytes (int): Bytes read from this disk.
@@ -242,11 +242,12 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
         "processes": 0,
         "utime": 0,
         "stime": 0,
+        "memory_free": 0,
         "memory_used": 0,
         "memory_buffers": 0,
         "memory_cached": 0,
-        "memory_active_anon": 0,
-        "memory_inactive_anon": 0,
+        "memory_active": 0,
+        "memory_inactive": 0,
         "disk_stats": {},
         "disk_spaces": {},
         "net_recv_bytes": 0,
@@ -285,15 +286,15 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             stats["memory_free"] = mem_info.get("MemFree", 0)
             stats["memory_buffers"] = mem_info.get("Buffers", 0)
             stats["memory_cached"] = mem_info.get("Cached", 0)
+            stats["memory_cached"] += mem_info.get("SReclaimable", 0)
             stats["memory_used"] = (
                 total
                 - stats["memory_free"]
                 - stats["memory_buffers"]
                 - stats["memory_cached"]
             )
-            stats["memory_active_anon"] = mem_info.get("Active(anon)", 0)
-            stats["memory_inactive_anon"] = mem_info.get("Inactive(anon)", 0)
-            # TODO standardize memory stats .. no active etc.
+            stats["memory_active"] = mem_info.get("Active", 0)
+            stats["memory_inactive"] = mem_info.get("Inactive", 0)
 
     with suppress(FileNotFoundError):
         with open("/proc/diskstats", "r") as f:

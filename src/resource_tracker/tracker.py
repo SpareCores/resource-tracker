@@ -9,7 +9,9 @@ from sys import stdout
 from time import sleep, time
 from typing import Optional
 
-from .tracker_procfs import get_pid_stats, get_system_stats
+from .helpers import get_tracker_implementation
+
+get_pid_stats, get_system_stats = get_tracker_implementation()
 
 
 class PidTracker:
@@ -155,8 +157,8 @@ class SystemTracker:
     - memory_used (int): The amount of used memory in kB.
     - memory_buffers (int): The amount of memory used for buffers in kB.
     - memory_cached (int): The amount of memory used for caching in kB.
-    - memory_active_anon (int): The amount of memory used for anonymous pages in kB.
-    - memory_inactive_anon (int): The amount of memory used for inactive anonymous pages in kB.
+    - memory_active (int): The amount of memory used for active pages in kB.
+    - memory_inactive (int): The amount of memory used for inactive pages in kB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
     - disk_space_total_gb (float): The total disk space in GB.
@@ -246,8 +248,8 @@ class SystemTracker:
             "memory_used": self.stats["memory_used"],
             "memory_buffers": self.stats["memory_buffers"],
             "memory_cached": self.stats["memory_cached"],
-            "memory_active_anon": self.stats["memory_active_anon"],
-            "memory_inactive_anon": self.stats["memory_inactive_anon"],
+            "memory_active": self.stats["memory_active"],
+            "memory_inactive": self.stats["memory_inactive"],
             "disk_read_bytes": total_read_bytes,
             "disk_write_bytes": total_write_bytes,
             "disk_space_total_gb": round(disk_space_total / (1024**3), 2),

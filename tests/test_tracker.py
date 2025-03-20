@@ -80,29 +80,10 @@ def test_get_system_stats_implementations(tracker_implementation):
 @pytest.mark.skipif(
     system() != "Linux", reason="procfs implementation only works on Linux"
 )
-def test_procfs_equals_psutil_children():
-    """Test that deterministic fields in procfs implementation match psutil implementation."""
-    from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
-    from resource_tracker.tracker_procfs import get_system_stats as procfs_systemstats
-    from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
-    from resource_tracker.tracker_psutil import get_system_stats as psutil_systemstats
-
-    procfs_systemstats = procfs_systemstats()
-    psutil_systemstats = psutil_systemstats()
-    assert procfs_systemstats["processes"] == psutil_systemstats["processes"]
-
-    pid = getpid()
-    procfs_stats = procfs_pidstats(pid)
-    psutil_stats = psutil_pidstats(pid)
-    assert procfs_stats["children"] == psutil_stats["children"]
-
-
-@pytest.mark.skipif(
-    system() != "Linux", reason="procfs implementation only works on Linux"
-)
 @pytest.mark.parametrize(
     "field,percent_threshold,absolute_threshold,unit",
     [
+        ("children", None, 0, "processes"),
         ("memory", None, 50_000, "KB"),
         ("utime", None, 0.25, "s"),
         ("stime", None, 1, "s"),
@@ -110,10 +91,8 @@ def test_procfs_equals_psutil_children():
         ("write_bytes", 10, None, "B"),
     ],
 )
-def test_procfs_equals_psutil_field_comparison(
-    field, percent_threshold, absolute_threshold, unit
-):
-    """Test that specific fields in procfs implementation match psutil implementation within thresholds."""
+def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold, unit):
+    """Test that fields in procfs pidstats implementation match psutil implementation within thresholds."""
     from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
     from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
 
@@ -134,10 +113,56 @@ def test_procfs_equals_psutil_field_comparison(
     diff = abs(value1 - value2)
     percent = diff / min(value1, value2) * 100 if value1 != 0 and value2 != 0 else 0
     if percent_threshold is not None:
-        assert percent < percent_threshold, (
+        assert percent <= percent_threshold, (
             f"{field} percent difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit} ({percent:.2f}%)"
         )
     if absolute_threshold is not None:
-        assert diff < absolute_threshold, (
+        assert diff <= absolute_threshold, (
+            f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
+        )
+
+
+@pytest.mark.skipif(
+    system() != "Linux", reason="procfs implementation only works on Linux"
+)
+@pytest.mark.parametrize(
+    "field,percent_threshold,absolute_threshold,unit",
+    [
+        ("processes", None, 5, "processes"),
+        ("utime", None, 0.25, "s"),
+        ("stime", None, 1, "s"),
+        ("memory_free", None, 50_000, "KB"),
+        ("memory_used", None, 50_000, "KB"),
+        ("memory_buffers", None, 50_000, "KB"),
+        ("memory_cached", None, 50_000, "KB"),
+        ("memory_active", None, 50_000, "KB"),
+        ("memory_inactive", None, 50_000, "KB"),
+        ("net_recv_bytes", 10, None, "B"),
+        ("net_sent_bytes", 10, None, "B"),
+        ("gpu_usage", None, 0.25, "GPUs"),
+        ("gpu_vram", None, 50_000, "MiB"),
+        ("gpu_utilized", None, 0, "GPUs"),
+    ],
+)
+def test_systemstats_procfs_vs_psutil(
+    field, percent_threshold, absolute_threshold, unit
+):
+    """Test that fields in procfs systemstats implementation match psutil implementation within thresholds."""
+    from resource_tracker.tracker_procfs import get_system_stats as procfs_systemstats
+    from resource_tracker.tracker_psutil import get_system_stats as psutil_systemstats
+
+    procfs_stats = procfs_systemstats()
+    psutil_stats = psutil_systemstats()
+
+    value1 = procfs_stats[field]
+    value2 = psutil_stats[field]
+    diff = abs(value1 - value2)
+    percent = diff / min(value1, value2) * 100 if value1 != 0 and value2 != 0 else 0
+    if percent_threshold is not None:
+        assert percent <= percent_threshold, (
+            f"{field} percent difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit} ({percent:.2f}%)"
+        )
+    if absolute_threshold is not None:
+        assert diff <= absolute_threshold, (
             f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
         )

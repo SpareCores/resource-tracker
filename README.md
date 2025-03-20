@@ -67,8 +67,9 @@ CI/CD is set up to run tests on the below Python versions on Ubuntu latest LTS:
 ## Performance
 
 The performance of the `procfs` and the `psutil` implementations is similar, see
-e.g. [benchmark.py](benchmark.py) for a comparison of the two implementations
-when looking at process-level stats:
+e.g.
+[benchmark.py](https://github.com/SpareCores/resource-tracker/tree/main/examples/benchmark.py)
+for a comparison of the two implementations when looking at process-level stats:
 
 ```
 PSUtil implementation: 0.082130s avg (min: 0.067612s, max: 0.114606s)
@@ -80,9 +81,9 @@ On a heavy application with many descendants (such as Google Chrome with
 hundreds of processes and open tabs):
 
 ```
-PSUtil implementation: 0.392544s avg (min: 0.377922s, max: 0.404844s)
-ProcFS implementation: 0.366212s avg (min: 0.351986s, max: 0.379092s)
-Speedup factor: 1.07x (procfs faster)
+PSUtil implementation: 0.201849s avg (min: 0.193392s, max: 0.214061s)
+ProcFS implementation: 0.182557s avg (min: 0.174610s, max: 0.192760s)
+Speedup factor: 1.11x (procfs faster)
 ```
 
 The server-level stats are much cheaper to collect, and there is no effective

@@ -12,6 +12,17 @@ resources of a running process (and its children) or system-wide resources.
 * `PidTracker`: Track resources of a running process and its children.
 * `SystemTracker`: Track system-wide resources.
 
+### benchmark.py
+
+This script compares the performance of the `procfs` and `psutil` implementations
+of the `get_pid_stats` function.
+
+Example run:
+
+```sh
+python benchmark.py --pid `pgrep -f "chrome" | head -2 | tail -1`
+```
+
 ## Metaflow
 
 ### 1-minimal.py

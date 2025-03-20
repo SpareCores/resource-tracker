@@ -9,9 +9,13 @@ over all `smaps` files.
 from contextlib import suppress
 from functools import cache
 from glob import glob
-from os import listdir, statvfs, sysconf
+from os import listdir, sysconf
 from time import time
 from typing import Dict, Set, Union
+
+# not available on Windows
+with suppress(ImportError):
+    from os import statvfs
 
 from .helpers import get_zfs_pools_space, is_partition
 from .nvidia import (

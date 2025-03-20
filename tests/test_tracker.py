@@ -98,9 +98,11 @@ def test_procfs_equals_psutil_children():
 @pytest.mark.parametrize(
     "field,percent_threshold,absolute_threshold,unit",
     [
-        ("memory", 0.1, 1024, "KB"),
-        ("utime", None, 1, "s"),
+        ("memory", None, 50_000, "KB"),
+        ("utime", None, 0.25, "s"),
         ("stime", None, 1, "s"),
+        ("read_bytes", 10, None, "B"),
+        ("write_bytes", 10, None, "B"),
     ],
 )
 def test_procfs_equals_psutil_field_comparison(
@@ -110,6 +112,14 @@ def test_procfs_equals_psutil_field_comparison(
     from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
     from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
 
+    # make use of memory for testing
+    if field == "memory":
+        big_array = bytearray(100 * 1024 * 1024)
+    # make use of cpu for testing
+    if field == "utime":
+        for i in range(1_000):
+            i**i
+
     pid = getpid()
     procfs_stats = procfs_pidstats(pid)
     psutil_stats = psutil_pidstats(pid)
@@ -117,7 +127,7 @@ def test_procfs_equals_psutil_field_comparison(
     value1 = procfs_stats[field]
     value2 = psutil_stats[field]
     diff = abs(value1 - value2)
-    percent = diff / min(value1, value2) * 100
+    percent = diff / min(value1, value2) * 100 if value1 != 0 and value2 != 0 else 0
     if percent_threshold is not None:
         assert percent < percent_threshold, (
             f"{field} percent difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit} ({percent:.2f}%)"

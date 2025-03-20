@@ -23,7 +23,7 @@ issues = "https://github.com/SpareCores/resource-tracker/issues"
 documentation = "https://sparecores.github.io/resource-tracker/"
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "metaflow", "psutil"]
 metaflow = ["metaflow"]
 psutil = ["psutil"]
 mkdocs = [

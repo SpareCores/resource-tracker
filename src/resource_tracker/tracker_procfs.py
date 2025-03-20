@@ -9,7 +9,7 @@ over all `smaps` files.
 from contextlib import suppress
 from functools import cache
 from glob import glob
-from os import statvfs, sysconf
+from os import listdir, statvfs, sysconf
 from time import time
 from typing import Dict, Set, Union
 
@@ -265,8 +265,7 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
                     # user + nice
                     stats["utime"] = (int(cpu_stats[1]) + int(cpu_stats[2])) / tps
                     stats["stime"] = int(cpu_stats[3]) / tps
-                elif line.startswith("processes"):
-                    stats["processes"] = int(line.split()[1])
+        stats["processes"] = len([x for x in listdir("/proc") if x.isdigit()])
 
     # memory stats reported in kB
     with suppress(FileNotFoundError):

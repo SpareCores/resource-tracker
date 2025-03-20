@@ -83,12 +83,17 @@ def test_get_system_stats_implementations(tracker_implementation):
 def test_procfs_equals_psutil_children():
     """Test that deterministic fields in procfs implementation match psutil implementation."""
     from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
+    from resource_tracker.tracker_procfs import get_system_stats as procfs_systemstats
     from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
+    from resource_tracker.tracker_psutil import get_system_stats as psutil_systemstats
+
+    procfs_systemstats = procfs_systemstats()
+    psutil_systemstats = psutil_systemstats()
+    assert procfs_systemstats["processes"] == psutil_systemstats["processes"]
 
     pid = getpid()
     procfs_stats = procfs_pidstats(pid)
     psutil_stats = psutil_pidstats(pid)
-
     assert procfs_stats["children"] == psutil_stats["children"]
 
 

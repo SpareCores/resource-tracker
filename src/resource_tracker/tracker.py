@@ -4,7 +4,7 @@ Track resource usage of a process or server.
 
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
-from os import getpid, sysconf
+from os import getpid
 from sys import stdout
 from time import sleep, time
 from typing import Optional
@@ -28,8 +28,8 @@ class PidTracker:
     - timestamp (float): The current timestamp.
     - pid (int): The monitored process ID.
     - children (int | None): The current number of child processes.
-    - utime (int): The total user+nice mode CPU time in clock ticks.
-    - stime (int): The total system mode CPU time in clock ticks.
+    - utime (int): The total user+nice mode CPU time in seconds.
+    - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
     - memory (int): The current memory usage in kB. Implementation depends on the
       operating system, and it is preferably PSS (Proportional Set Size) on Linux,
@@ -90,8 +90,7 @@ class PidTracker:
                         (self.stats["utime"] + self.stats["stime"])
                         - (last_stats["utime"] + last_stats["stime"])
                     )
-                    / (self.stats["timestamp"] - last_stats["timestamp"])
-                    / sysconf("SC_CLK_TCK"),
+                    / (self.stats["timestamp"] - last_stats["timestamp"]),
                 ),
                 4,
             ),
@@ -150,8 +149,8 @@ class SystemTracker:
 
     - timestamp (float): The current timestamp.
     - processes (int): The number of running processes.
-    - utime (int): The total user+nice mode CPU time in clock ticks.
-    - stime (int): The total system mode CPU time in clock ticks.
+    - utime (int): The total user+nice mode CPU time in seconds.
+    - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
     - memory_free (int): The amount of free memory in kB.
     - memory_used (int): The amount of used memory in kB.
@@ -239,8 +238,7 @@ class SystemTracker:
                         (self.stats["utime"] + self.stats["stime"])
                         - (last_stats["utime"] + last_stats["stime"])
                     )
-                    / time_diff
-                    / sysconf("SC_CLK_TCK"),
+                    / time_diff,
                 ),
                 4,
             ),

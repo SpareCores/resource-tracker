@@ -9,7 +9,7 @@ over all `smaps` files.
 from contextlib import suppress
 from functools import cache
 from glob import glob
-from os import statvfs
+from os import statvfs, sysconf
 from time import time
 from typing import Dict, Set, Union
 
@@ -162,8 +162,8 @@ def get_pid_stats(
             - timestamp (float): The current timestamp.
             - pid (int): The process ID.
             - children (int | None): The current number of child processes.
-            - utime (int): The total user mode CPU time in clock ticks.
-            - stime (int): The total system mode CPU time in clock ticks.
+            - utime (int): The total user mode CPU time in seconds.
+            - stime (int): The total system mode CPU time in seconds.
             - memory (int): The current PSS (Proportional Set Size) in kB.
             - read_bytes (int): The total number of bytes read.
             - write_bytes (int): The total number of bytes written.
@@ -198,8 +198,8 @@ def get_pid_stats(
         "timestamp": current_time,
         "pid": pid,
         "children": len(current_children) if children else None,
-        "utime": current_proc_times["utime"],
-        "stime": current_proc_times["stime"],
+        "utime": current_proc_times["utime"] / sysconf("SC_CLK_TCK"),
+        "stime": current_proc_times["stime"] / sysconf("SC_CLK_TCK"),
         "memory": current_pss,
         "read_bytes": current_io["read_bytes"],
         "write_bytes": current_io["write_bytes"],
@@ -215,8 +215,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
 
             - timestamp (float): The current timestamp.
             - processes (int): Number of running processes.
-            - utime (int): Total user mode CPU time in clock ticks.
-            - stime (int): Total system mode CPU time in clock ticks.
+            - utime (int): Total user mode CPU time in seconds.
+            - stime (int): Total system mode CPU time in seconds.
             - memory_free (int): Free physical memory in kB.
             - memory_used (int): Used physical memory in kB (excluding buffers/cache).
             - memory_buffers (int): Memory used for buffers in kB.
@@ -261,9 +261,10 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             for line in f:
                 if line.startswith("cpu "):
                     cpu_stats = line.split()
+                    tps = sysconf("SC_CLK_TCK")
                     # user + nice
-                    stats["utime"] = int(cpu_stats[1]) + int(cpu_stats[2])
-                    stats["stime"] = int(cpu_stats[3])
+                    stats["utime"] = (int(cpu_stats[1]) + int(cpu_stats[2])) / tps
+                    stats["stime"] = int(cpu_stats[3]) / tps
                 elif line.startswith("processes"):
                     stats["processes"] = int(line.split()[1])
 

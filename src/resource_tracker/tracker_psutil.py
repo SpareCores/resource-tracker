@@ -41,8 +41,8 @@ def get_pid_stats(
             - timestamp (float): The current timestamp.
             - pid (int): The process ID.
             - children (int | None): The current number of child processes.
-            - utime (int): The total user mode CPU time in clock ticks.
-            - stime (int): The total system mode CPU time in clock ticks.
+            - utime (int): The total user mode CPU time in seconds.
+            - stime (int): The total system mode CPU time in seconds.
             - memory (int): The current PSS (Proportional Set Size) on Linux,
               USS (Unique Set Size) on macOS and Windows, and RSS (Resident Set Size) on
               other OSs where neither PSS nor USS are available in kB. See more details at
@@ -109,8 +109,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
 
             - timestamp (float): The current timestamp.
             - processes (int): Number of running processes.
-            - utime (int): Total user mode CPU time in clock ticks.
-            - stime (int): Total system mode CPU time in clock ticks.
+            - utime (int): Total user mode CPU time in seconds.
+            - stime (int): Total system mode CPU time in seconds.
             - memory_free (int): Free physical memory in kB.
             - memory_used (int): Used physical memory in kB (excluding buffers/cache).
             - memory_buffers (int): Memory used for buffers in kB.

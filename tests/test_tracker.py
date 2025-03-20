@@ -75,3 +75,54 @@ def test_get_system_stats_implementations(tracker_implementation):
     # NOTE not updated immediately
     assert stats["memory_used"] >= memory
     del bigobj
+
+
+@pytest.mark.skipif(
+    system() != "Linux", reason="procfs implementation only works on Linux"
+)
+def test_procfs_equals_psutil_children():
+    """Test that deterministic fields in procfs implementation match psutil implementation."""
+    from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
+    from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
+
+    pid = getpid()
+    procfs_stats = procfs_pidstats(pid)
+    psutil_stats = psutil_pidstats(pid)
+
+    assert procfs_stats["children"] == psutil_stats["children"]
+
+
+@pytest.mark.skipif(
+    system() != "Linux", reason="procfs implementation only works on Linux"
+)
+@pytest.mark.parametrize(
+    "field,percent_threshold,absolute_threshold,unit",
+    [
+        ("memory", 0.1, 1024, "KB"),
+        ("utime", None, 1, "s"),
+        ("stime", None, 1, "s"),
+    ],
+)
+def test_procfs_equals_psutil_field_comparison(
+    field, percent_threshold, absolute_threshold, unit
+):
+    """Test that specific fields in procfs implementation match psutil implementation within thresholds."""
+    from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
+    from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
+
+    pid = getpid()
+    procfs_stats = procfs_pidstats(pid)
+    psutil_stats = psutil_pidstats(pid)
+
+    value1 = procfs_stats[field]
+    value2 = psutil_stats[field]
+    diff = abs(value1 - value2)
+    percent = diff / min(value1, value2) * 100
+    if percent_threshold is not None:
+        assert percent < percent_threshold, (
+            f"{field} percent difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit} ({percent:.2f}%)"
+        )
+    if absolute_threshold is not None:
+        assert diff < absolute_threshold, (
+            f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
+        )

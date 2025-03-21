@@ -28,6 +28,7 @@ class ResourceTrackerDecorator(StepDecorator):
         "artifact_name": "resource_tracker_data",
         "create_card": True,
     }
+    error_details = None
 
     def __init__(self, attributes=None, statically_defined=False):
         """Override default attributes."""
@@ -115,8 +116,15 @@ class ResourceTrackerDecorator(StepDecorator):
             self.start_time = time()
 
         except Exception as e:
+            import traceback
+
+            self.error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
             self.logger(
-                f"*WARNING Failed to start resource tracker processes: {type(e).__name__} / {e}",
+                f"*WARNING* Failed to start resource tracker processes: {type(e).__name__} / {e}",
                 timestamp=False,
             )
 
@@ -129,6 +137,13 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store collected data as an artifact for card/user to process."""
+        # already failed in task_pre_step
+        if self.error_details is not None:
+            setattr(
+                flow, self.attributes["artifact_name"], {"error": self.error_details}
+            )
+            return
+
         try:
             # wait for the cloud_info thread to complete
             if self.cloud_info_thread.is_alive():

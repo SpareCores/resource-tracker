@@ -50,13 +50,13 @@ class ResourceTrackerDecorator(StepDecorator):
         "artifact_name": "resource_tracker_data",
         "create_card": True,
     }
-    # error details from main process and threads
-    error_details = None
-    # error details from subprocesses
-    error_queue = Queue()
 
     def __init__(self, attributes=None, statically_defined=False):
-        """Override default attributes."""
+        # error details from main process and threads
+        self.error_details = None
+        # error details from subprocesses
+        self.error_queue = Queue()
+        # override default attributes.
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
         )

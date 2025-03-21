@@ -22,6 +22,8 @@ Development version can be installed directly from the repository:
 pip install git+https://github.com/sparecores/resource-tracker.git
 ```
 
+Note that depending on your operating system, you might need to also install `psutil` (e.g. on MacOS and Windows).
+
 ## Operating System Support
 
 The package was originally created to work on Linux systems (as the most
@@ -54,7 +56,7 @@ CI/CD is set up to run tests on the below operating systems:
 
 The package supports Python 3.9 and above.
 
-CI/CD is set up to run tests on the below Python versions on Ubuntu latest LTS:
+CI/CD is set up to run tests on the below Python versions on Ubuntu latest LTS, Windows Server 2022 and MacOS latest:
 
 - 3.9
 - 3.10
@@ -186,6 +188,8 @@ class ResourceTrackingFlow(FlowSpec):
 if __name__ == "__main__":
     ResourceTrackingFlow()
 ```
+
+Note that if you are using `--environment=pypi` or other means of custom package management on a non-Linux system, you might need to install `psutil` there.
 
 Example output of an auto-generated Metaflow card:
 

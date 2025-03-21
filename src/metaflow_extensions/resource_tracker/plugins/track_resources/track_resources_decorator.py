@@ -255,6 +255,7 @@ class ResourceTrackerDecorator(StepDecorator):
             )
         finally:
             unlink(self.pid_tracker_data_file.name)
+            unlink(self.system_tracker_data_file.name)
 
     def _get_historical_stats(self, flow, step_name):
         """Fetch historical resource stats from previous runs' artifacts."""

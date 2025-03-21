@@ -14,6 +14,28 @@ from .resource_tracker.server_info import get_server_info
 from .resource_tracker.tiny_data_frame import TinyDataFrame
 
 
+def _run_tracker(tracker_type, error_queue, **kwargs):
+    """Run either PidTracker or SystemTracker in a subprocess.
+
+    This functions is standalone so that it can be pickled by multiprocessing.
+    """
+    try:
+        from .resource_tracker import PidTracker, SystemTracker
+
+        tracker = PidTracker if tracker_type == "pid" else SystemTracker
+        tracker(**kwargs)
+    except Exception as e:
+        import traceback
+
+        error_queue.put(
+            {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+        )
+
+
 class ResourceTrackerDecorator(StepDecorator):
     """Track resources used in a step."""
 
@@ -83,8 +105,6 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         """Start resource tracker processes."""
         try:
-            from .resource_tracker import PidTracker, SystemTracker
-
             # create temporary files for both trackers,
             # and pass only the filepath to the subprocess to avoid pickling the file objects
             for tracker_name in ["pid_tracker", "system_tracker"]:
@@ -92,23 +112,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 setattr(self, f"{tracker_name}_filepath", temp_file.name)
                 temp_file.close()
 
-            def run_tracker(tracker_type, error_queue, **kwargs):
-                try:
-                    tracker = PidTracker if tracker_type == "pid" else SystemTracker
-                    tracker(**kwargs)
-                except Exception as e:
-                    import traceback
-
-                    error_queue.put(
-                        {
-                            "error_message": str(e),
-                            "error_type": type(e).__name__,
-                            "traceback": traceback.format_exc(),
-                        }
-                    )
-
             self.pid_tracker_process = Process(
-                target=run_tracker,
+                target=_run_tracker,
                 args=("pid", self.error_queue),
                 kwargs={
                     "pid": getpid(),
@@ -120,7 +125,7 @@ class ResourceTrackerDecorator(StepDecorator):
             self.pid_tracker_process.start()
 
             self.system_tracker_process = Process(
-                target=run_tracker,
+                target=_run_tracker,
                 args=("system", self.error_queue),
                 kwargs={
                     "interval": self.attributes["interval"],

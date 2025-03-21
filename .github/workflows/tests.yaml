@@ -29,7 +29,11 @@ jobs:
       - name: Install local pkg
         run: |
           pip install ".[dev]"
+      - name: Print platform info
+        run: |
+          python -c "import sys; print(sys.platform)"
       - name: Tests
         run: tox
       - name: Linters
         run: tox -e lint
+ 

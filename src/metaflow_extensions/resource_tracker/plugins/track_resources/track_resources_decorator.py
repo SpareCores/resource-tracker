@@ -92,9 +92,9 @@ class ResourceTrackerDecorator(StepDecorator):
                 setattr(self, f"{tracker_name}_filepath", temp_file.name)
                 temp_file.close()
 
-            def run_tracker(type, error_queue, **kwargs):
+            def run_tracker(tracker_type, error_queue, **kwargs):
                 try:
-                    tracker = PidTracker if type == "pid" else SystemTracker
+                    tracker = PidTracker if tracker_type == "pid" else SystemTracker
                     tracker(**kwargs)
                 except Exception as e:
                     import traceback

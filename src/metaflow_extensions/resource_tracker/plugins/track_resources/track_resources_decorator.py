@@ -184,15 +184,15 @@ class ResourceTrackerDecorator(StepDecorator):
                 },
                 "historical_stats": historical_stats,
             }
+            setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
-            data["error"] = str(e)
+            setattr(flow, self.attributes["artifact_name"], {"error": str(e)})
             self.logger(
                 f"*ERROR* Failed to process resource tracking results: {e}",
                 bad=True,  # NOTE this settings doesn't do anything here? works outside of the decorator, though
                 timestamp=False,
             )
         finally:
-            setattr(flow, self.attributes["artifact_name"], data)
             unlink(self.pid_tracker_data_file.name)
 
     def _get_historical_stats(self, flow, step_name):

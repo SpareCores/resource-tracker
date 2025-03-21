@@ -2,7 +2,7 @@ name: Unit tests
 on: [push]
 
 jobs:
-  build:
+  pytest:
     strategy:
       fail-fast: false
       matrix:
@@ -31,4 +31,3 @@ jobs:
           pip install ".[dev]"
       - name: Tests
         run: tox
- 

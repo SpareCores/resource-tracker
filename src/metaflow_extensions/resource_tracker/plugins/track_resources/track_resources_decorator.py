@@ -246,7 +246,8 @@ class ResourceTrackerDecorator(StepDecorator):
                     gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
                     self.logger(
-                        f"Warning: Could not process historical data for run {run.id}: {e}"
+                        f"*WARNING* Could not process historical data for run {run.id}: {e}",
+                        timestamp=False,
                     )
                     continue
 
@@ -268,5 +269,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 }
 
         except Exception as e:
-            self.logger(f"Warning: Failed to retrieve historical stats: {e}")
+            self.logger(
+                f"*WARNING* Failed to retrieve historical stats: {e}", timestamp=False
+            )
             return {"available": False, "error": str(e)}

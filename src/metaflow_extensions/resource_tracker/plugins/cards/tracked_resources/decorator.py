@@ -58,7 +58,30 @@ class TrackedResourcesCard(MetaflowCard):
 
         # check if there was any error
         if data.get("error", None):
-            return f"The resource tracker encountered the following error, so thus no data was collected: {data['error']}"
+            error_html = "<p>The resource tracker encountered the following error, so thus no data was collected.</p>"
+            if isinstance(data["error"], dict) and "traceback" in data["error"]:
+                error_html += "<hr>"
+                error_html += (
+                    "<p><b>Error Type:</b> "
+                    + data["error"].get("error_type", "")
+                    + "</p>"
+                )
+                error_html += (
+                    "<p><b>Error Message:</b> "
+                    + data["error"].get("error_message", "")
+                    + "</p>"
+                )
+                error_html += (
+                    "<p><b>Traceback:</b></p>"
+                    "<pre style='white-space: pre-wrap; overflow-x: auto; background: #f8f8f8; padding: 10px; border-radius: 4px;'>"
+                    + data["error"].get("traceback", "")
+                    + "</pre>"
+                )
+            else:
+                error_html += (
+                    "<p><b>This is all we know:</b></p><pre>" + data["error"] + "</pre>"
+                )
+            return error_html
 
         pid = data["pid_tracker"]
         system = data["system_tracker"]

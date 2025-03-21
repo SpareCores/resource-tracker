@@ -1,7 +1,10 @@
 from contextlib import suppress
-from multiprocessing import Process, Queue
+from multiprocessing import Process, SimpleQueue
+from multiprocessing.resource_tracker import _resource_tracker
 from os import getpid, unlink
+from signal import SIGINT, SIGTERM, signal
 from statistics import mean
+from sys import exit
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import time
@@ -18,8 +21,25 @@ from .resource_tracker.tiny_data_frame import TinyDataFrame
 def _run_tracker(tracker_type, error_queue, **kwargs):
     """Run either PidTracker or SystemTracker in a subprocess.
 
-    This functions is standalone so that it can be pickled by multiprocessing.
+    This functions is standalone so that it can be pickled by multiprocessing,
+    and tries to clean up resources before exiting.
     """
+
+    def signal_handler(signum, frame):
+        with suppress(Exception):
+            if hasattr(_resource_tracker, "unregister_all"):
+                _resource_tracker.unregister_all()
+            elif (
+                hasattr(_resource_tracker, "_resource_tracker")
+                and _resource_tracker._resource_tracker is not None
+            ):
+                _resource_tracker._resource_tracker.ensure_running()
+                _resource_tracker._resource_tracker._send("CLOSE")
+        exit(0)
+
+    signal(SIGTERM, signal_handler)
+    signal(SIGINT, signal_handler)
+
     try:
         from .resource_tracker import PidTracker, SystemTracker
 
@@ -35,6 +55,8 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
                 "traceback": traceback.format_exc(),
             }
         )
+    finally:
+        signal_handler(None, None)
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -56,7 +78,7 @@ class ResourceTrackerDecorator(StepDecorator):
         # error details from main process and threads
         self.error_details = None
         # error details from subprocesses
-        self.error_queue = Queue()
+        self.error_queue = SimpleQueue()
         # override default attributes.
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
@@ -194,6 +216,10 @@ class ResourceTrackerDecorator(StepDecorator):
             if hasattr(self, process_attr):
                 process = getattr(self, process_attr)
                 if process.is_alive():
+                    self.logger(
+                        f"*DEBUG* [@resource_tracker] Terminating {tracker_name} process",
+                        timestamp=False,
+                    )
                     with suppress(Exception):
                         process.terminate()
                         process.join(timeout=1.0)
@@ -201,8 +227,6 @@ class ResourceTrackerDecorator(StepDecorator):
                             process.kill()
                             process.join(timeout=1.0)
                 process.close()
-        self.error_queue.close()
-        self.error_queue.join_thread()
         # early return if there was an error either in the main process, threads, or in the subprocesses
         if self.error_details is not None:
             setattr(

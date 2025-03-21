@@ -76,8 +76,8 @@ def get_pid_stats(
         # process might have been terminated, so silently skip if not found
         with suppress(Exception):
             cpu_times = process.cpu_times()
-            stats["utime"] += cpu_times.user
-            stats["stime"] += cpu_times.system
+            stats["utime"] += cpu_times.user + cpu_times.children_user
+            stats["stime"] += cpu_times.system + cpu_times.children_system
             memory_info = process.memory_full_info()
             for attr in ("pss", "uss", "rss"):
                 if (

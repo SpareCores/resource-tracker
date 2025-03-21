@@ -92,11 +92,25 @@ class ResourceTrackerDecorator(StepDecorator):
                 setattr(self, f"{tracker_name}_filepath", temp_file.name)
                 temp_file.close()
 
+            def run_tracker(type, error_queue, **kwargs):
+                try:
+                    tracker = PidTracker if type == "pid" else SystemTracker
+                    tracker(**kwargs)
+                except Exception as e:
+                    import traceback
+
+                    error_queue.put(
+                        {
+                            "error_message": str(e),
+                            "error_type": type(e).__name__,
+                            "traceback": traceback.format_exc(),
+                        }
+                    )
+
             self.pid_tracker_process = Process(
-                target=self._run_with_error_handling,
+                target=run_tracker,
+                args=("pid", self.error_queue),
                 kwargs={
-                    "target_func": PidTracker,
-                    "error_queue": self.error_queue,
                     "pid": getpid(),
                     "interval": self.attributes["interval"],
                     "output_file": self.pid_tracker_filepath,
@@ -106,10 +120,9 @@ class ResourceTrackerDecorator(StepDecorator):
             self.pid_tracker_process.start()
 
             self.system_tracker_process = Process(
-                target=self._run_with_error_handling,
+                target=run_tracker,
+                args=("system", self.error_queue),
                 kwargs={
-                    "target_func": SystemTracker,
-                    "error_queue": self.error_queue,
                     "interval": self.attributes["interval"],
                     "output_file": self.system_tracker_filepath,
                 },
@@ -138,21 +151,6 @@ class ResourceTrackerDecorator(StepDecorator):
             self.logger(
                 f"*WARNING* [@resource_tracker] Failed to start resource tracker processes: {type(e).__name__} / {e}",
                 timestamp=False,
-            )
-
-    def _run_with_error_handling(self, target_func, error_queue, **kwargs):
-        """Run a function in a subprocess and capture any exceptions."""
-        try:
-            target_func(**kwargs)
-        except Exception as e:
-            import traceback
-
-            error_queue.put(
-                {
-                    "error_message": str(e),
-                    "error_type": type(e).__name__,
-                    "traceback": traceback.format_exc(),
-                }
             )
 
     def _get_cloud_info_with_error_handling(self):

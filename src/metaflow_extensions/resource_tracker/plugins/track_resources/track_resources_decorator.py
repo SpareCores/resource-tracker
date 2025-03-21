@@ -1,3 +1,4 @@
+from contextlib import suppress
 from multiprocessing import Process, Queue
 from os import getpid, unlink
 from statistics import mean
@@ -189,12 +190,19 @@ class ResourceTrackerDecorator(StepDecorator):
             )
         # terminate tracker processes
         for tracker_name in ["pid_tracker", "system_tracker"]:
-            if (
-                hasattr(self, f"{tracker_name}_process")
-                and getattr(self, f"{tracker_name}_process").is_alive()
-            ):
-                getattr(self, f"{tracker_name}_process").terminate()
-                getattr(self, f"{tracker_name}_process").join(timeout=1.0)
+            process_attr = f"{tracker_name}_process"
+            if hasattr(self, process_attr):
+                process = getattr(self, process_attr)
+                if process.is_alive():
+                    with suppress(Exception):
+                        process.terminate()
+                        process.join(timeout=1.0)
+                        if process.is_alive():
+                            process.kill()
+                            process.join(timeout=1.0)
+                process.close()
+        self.error_queue.close()
+        self.error_queue.join_thread()
         # early return if there was an error either in the main process, threads, or in the subprocesses
         if self.error_details is not None:
             setattr(

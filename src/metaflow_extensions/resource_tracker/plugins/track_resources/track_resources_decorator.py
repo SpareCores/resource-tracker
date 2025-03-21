@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from os import getpid, unlink
 from statistics import mean
 from tempfile import NamedTemporaryFile
@@ -28,7 +28,10 @@ class ResourceTrackerDecorator(StepDecorator):
         "artifact_name": "resource_tracker_data",
         "create_card": True,
     }
+    # error details from main process and threads
     error_details = None
+    # error details from subprocesses
+    error_queue = Queue()
 
     def __init__(self, attributes=None, statically_defined=False):
         """Override default attributes."""
@@ -84,8 +87,10 @@ class ResourceTrackerDecorator(StepDecorator):
 
             self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
             self.pid_tracker_process = Process(
-                target=PidTracker,
+                target=self._run_with_error_handling,
                 kwargs={
+                    "target_func": PidTracker,
+                    "error_queue": self.error_queue,
                     "pid": getpid(),
                     "interval": self.attributes["interval"],
                     "output_file": self.pid_tracker_data_file.name,
@@ -96,8 +101,10 @@ class ResourceTrackerDecorator(StepDecorator):
 
             self.system_tracker_data_file = NamedTemporaryFile(delete=False)
             self.system_tracker_process = Process(
-                target=SystemTracker,
+                target=self._run_with_error_handling,
                 kwargs={
+                    "target_func": SystemTracker,
+                    "error_queue": self.error_queue,
                     "interval": self.attributes["interval"],
                     "output_file": self.system_tracker_data_file.name,
                 },
@@ -107,7 +114,7 @@ class ResourceTrackerDecorator(StepDecorator):
 
             self.cloud_info = None
             self.cloud_info_thread = Thread(
-                target=lambda: setattr(self, "cloud_info", get_cloud_info()),
+                target=self._get_cloud_info_with_error_handling,
                 daemon=True,
             )
             self.cloud_info_thread.start()
@@ -128,6 +135,34 @@ class ResourceTrackerDecorator(StepDecorator):
                 timestamp=False,
             )
 
+    def _run_with_error_handling(self, target_func, error_queue, **kwargs):
+        """Run a function in a subprocess and capture any exceptions."""
+        try:
+            target_func(**kwargs)
+        except Exception as e:
+            import traceback
+
+            error_queue.put(
+                {
+                    "error_message": str(e),
+                    "error_type": type(e).__name__,
+                    "traceback": traceback.format_exc(),
+                }
+            )
+
+    def _get_cloud_info_with_error_handling(self):
+        """Get cloud info and capture any exceptions."""
+        try:
+            self.cloud_info = get_cloud_info()
+        except Exception as e:
+            import traceback
+
+            self.error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+
     def task_post_step(
         self,
         step_name,
@@ -137,7 +172,13 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store collected data as an artifact for card/user to process."""
-        # already failed in task_pre_step
+        # check for previous errors in the main process, threads, and subprocesses
+        if not self.error_queue.empty():
+            self.error_details = self.error_queue.get()
+            self.logger(
+                f"*WARNING* [@resource_tracker] Subprocess failed: {self.error_details['error_type']} / {self.error_details['error_message']}",
+                timestamp=False,
+            )
         if self.error_details is not None:
             setattr(
                 flow, self.attributes["artifact_name"], {"error": self.error_details}

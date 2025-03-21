@@ -1,6 +1,5 @@
 from contextlib import suppress
 from multiprocessing import Process, SimpleQueue
-from multiprocessing.resource_tracker import _resource_tracker
 from os import getpid, unlink
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
@@ -27,14 +26,7 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
 
     def signal_handler(signum, frame):
         with suppress(Exception):
-            if hasattr(_resource_tracker, "unregister_all"):
-                _resource_tracker.unregister_all()
-            elif (
-                hasattr(_resource_tracker, "_resource_tracker")
-                and _resource_tracker._resource_tracker is not None
-            ):
-                _resource_tracker._resource_tracker.ensure_running()
-                _resource_tracker._resource_tracker._send("CLOSE")
+            error_queue.close()
         exit(0)
 
     signal(SIGTERM, signal_handler)
@@ -216,10 +208,6 @@ class ResourceTrackerDecorator(StepDecorator):
             if hasattr(self, process_attr):
                 process = getattr(self, process_attr)
                 if process.is_alive():
-                    self.logger(
-                        f"*DEBUG* [@resource_tracker] Terminating {tracker_name} process",
-                        timestamp=False,
-                    )
                     with suppress(Exception):
                         process.terminate()
                         process.join(timeout=1.0)
@@ -349,6 +337,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     vram_maxes.append(resource_data["stats"]["gpu_vram"]["max"])
                     gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
+                    # this happens if the run was successful, but tracker failed
                     self.logger(
                         f"*WARNING* [@resource_tracker] Could not process historical data for run {run.id}: {e}",
                         timestamp=False,

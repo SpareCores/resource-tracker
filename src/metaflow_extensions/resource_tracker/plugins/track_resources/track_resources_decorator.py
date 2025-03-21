@@ -1,4 +1,3 @@
-from importlib.metadata import version
 from multiprocessing import Process
 from os import getpid, unlink
 from statistics import mean
@@ -8,6 +7,7 @@ from time import time
 
 from metaflow.decorators import StepDecorator
 
+from .resource_tracker._version import __version__
 from .resource_tracker.cloud_info import get_cloud_info
 from .resource_tracker.helpers import is_psutil_available
 from .resource_tracker.server_info import get_server_info
@@ -144,7 +144,7 @@ class ResourceTrackerDecorator(StepDecorator):
 
             data = {
                 "resource_tracker": {
-                    "version": version("resource-tracker"),
+                    "version": __version__,
                     "implementation": "psutil" if is_psutil_available() else "procfs",
                 },
                 "pid_tracker": pid_tracker_data,

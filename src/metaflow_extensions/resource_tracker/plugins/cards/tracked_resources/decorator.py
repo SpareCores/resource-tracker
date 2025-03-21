@@ -55,6 +55,11 @@ class TrackedResourcesCard(MetaflowCard):
 
     def render(self, task):
         data = getattr(task.data, self._artifact_name)
+
+        # check if there was any error
+        if data.get("error", None):
+            return f"The resource tracker encountered the following error, so thus no data was collected: {data['error']}"
+
         pid = data["pid_tracker"]
         system = data["system_tracker"]
 

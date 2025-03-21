@@ -8,14 +8,10 @@ from time import time
 
 from metaflow.decorators import StepDecorator
 
-from .resource_tracker import (
-    PidTracker,
-    SystemTracker,
-    TinyDataFrame,
-    get_cloud_info,
-    get_server_info,
-)
+from .resource_tracker.cloud_info import get_cloud_info
 from .resource_tracker.helpers import is_psutil_available
+from .resource_tracker.server_info import get_server_info
+from .resource_tracker.tiny_data_frame import TinyDataFrame
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -82,39 +78,48 @@ class ResourceTrackerDecorator(StepDecorator):
         inputs,
     ):
         """Start resource tracker processes."""
-        self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
-        self.pid_tracker_process = Process(
-            target=PidTracker,
-            kwargs={
-                "pid": getpid(),
-                "interval": self.attributes["interval"],
-                "output_file": self.pid_tracker_data_file.name,
-            },
-            daemon=True,
-        )
-        self.pid_tracker_process.start()
+        try:
+            from .resource_tracker import PidTracker, SystemTracker
 
-        self.system_tracker_data_file = NamedTemporaryFile(delete=False)
-        self.system_tracker_process = Process(
-            target=SystemTracker,
-            kwargs={
-                "interval": self.attributes["interval"],
-                "output_file": self.system_tracker_data_file.name,
-            },
-            daemon=True,
-        )
-        self.system_tracker_process.start()
+            self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
+            self.pid_tracker_process = Process(
+                target=PidTracker,
+                kwargs={
+                    "pid": getpid(),
+                    "interval": self.attributes["interval"],
+                    "output_file": self.pid_tracker_data_file.name,
+                },
+                daemon=True,
+            )
+            self.pid_tracker_process.start()
 
-        self.cloud_info = None
-        self.cloud_info_thread = Thread(
-            target=lambda: setattr(self, "cloud_info", get_cloud_info()),
-            daemon=True,
-        )
-        self.cloud_info_thread.start()
+            self.system_tracker_data_file = NamedTemporaryFile(delete=False)
+            self.system_tracker_process = Process(
+                target=SystemTracker,
+                kwargs={
+                    "interval": self.attributes["interval"],
+                    "output_file": self.system_tracker_data_file.name,
+                },
+                daemon=True,
+            )
+            self.system_tracker_process.start()
 
-        self.server_info = get_server_info()
+            self.cloud_info = None
+            self.cloud_info_thread = Thread(
+                target=lambda: setattr(self, "cloud_info", get_cloud_info()),
+                daemon=True,
+            )
+            self.cloud_info_thread.start()
 
-        self.start_time = time()
+            self.server_info = get_server_info()
+            self.start_time = time()
+
+        except Exception as e:
+            self.logger(
+                f"*ERROR* Failed to start resourc            e tracker processes: {e}",
+                bad=True,
+                timestamp=False,
+            )
 
     def task_post_step(
         self,
@@ -179,15 +184,15 @@ class ResourceTrackerDecorator(StepDecorator):
                 },
                 "historical_stats": historical_stats,
             }
-
-            setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
+            data["error"] = str(e)
             self.logger(
                 f"*ERROR* Failed to process resource tracking results: {e}",
                 bad=True,  # NOTE this settings doesn't do anything here? works outside of the decorator, though
                 timestamp=False,
             )
         finally:
+            setattr(flow, self.attributes["artifact_name"], data)
             unlink(self.pid_tracker_data_file.name)
 
     def _get_historical_stats(self, flow, step_name):

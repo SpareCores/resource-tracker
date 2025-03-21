@@ -11,8 +11,6 @@ from typing import Optional
 
 from .helpers import get_tracker_implementation
 
-get_pid_stats, get_system_stats = get_tracker_implementation()
-
 
 class PidTracker:
     """Track resource usage of a process and optionally its children.
@@ -57,13 +55,15 @@ class PidTracker:
         autostart: bool = True,
         output_file: str = None,
     ):
+        self.get_pid_stats, _ = get_tracker_implementation()
+
         self.pid = pid
         self.status = "running"
         self.interval = interval
         self.cycle = 0
         self.children = children
         self.start_time = time()
-        self.stats = get_pid_stats(pid, children)
+        self.stats = self.get_pid_stats(pid, children)
         if autostart:
             self.start_tracking(output_file)
 
@@ -74,7 +74,7 @@ class PidTracker:
     def diff_stats(self):
         """Calculate stats since last call."""
         last_stats = self.stats
-        self.stats = get_pid_stats(self.pid, self.children)
+        self.stats = self.get_pid_stats(self.pid, self.children)
         self.cycle += 1
 
         return {
@@ -181,12 +181,14 @@ class SystemTracker:
         autostart: bool = True,
         output_file: str = None,
     ):
+        _, self.get_system_stats = get_tracker_implementation()
+
         self.status = "running"
         self.interval = interval
         self.cycle = 0
         self.start_time = time()
 
-        self.stats = get_system_stats()
+        self.stats = self.get_system_stats()
         if autostart:
             self.start_tracking(output_file)
 
@@ -197,7 +199,7 @@ class SystemTracker:
     def diff_stats(self):
         """Calculate stats since last call."""
         last_stats = self.stats
-        self.stats = get_system_stats()
+        self.stats = self.get_system_stats()
         self.cycle += 1
 
         time_diff = self.stats["timestamp"] - last_stats["timestamp"]

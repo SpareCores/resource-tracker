@@ -175,13 +175,22 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store collected data as an artifact for card/user to process."""
-        # check for previous errors in the main process, threads, and subprocesses
+        # check for previous errors in the subprocesses
         if not self.error_queue.empty():
             self.error_details = self.error_queue.get()
             self.logger(
                 f"*WARNING* [@resource_tracker] Subprocess failed: {self.error_details['error_type']} / {self.error_details['error_message']}",
                 timestamp=False,
             )
+        # terminate tracker processes
+        for tracker_name in ["pid_tracker", "system_tracker"]:
+            if (
+                hasattr(self, f"{tracker_name}_process")
+                and getattr(self, f"{tracker_name}_process").is_alive()
+            ):
+                getattr(self, f"{tracker_name}_process").terminate()
+                getattr(self, f"{tracker_name}_process").join(timeout=1.0)
+        # early return if there was an error either in the main process, threads, or in the subprocesses
         if self.error_details is not None:
             setattr(
                 flow, self.attributes["artifact_name"], {"error": self.error_details}

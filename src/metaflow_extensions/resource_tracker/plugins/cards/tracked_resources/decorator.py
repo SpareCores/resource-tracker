@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import datetime
 from math import ceil
 from os import listdir, path
 from statistics import mean
@@ -287,5 +288,8 @@ class TrackedResourcesCard(MetaflowCard):
                     "percent": round((cost_current - cost_rec) / cost_current * 100, 2),
                     "amount": round(cost_current - cost_rec, 6),
                 }
+
+        variables["resource_tracker"] = data["resource_tracker"]
+        variables["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return chevron.render(variables["base_html"], variables)

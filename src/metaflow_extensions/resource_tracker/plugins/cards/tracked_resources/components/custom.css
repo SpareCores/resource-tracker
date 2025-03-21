@@ -3,6 +3,14 @@ body {
     margin: 0px;
 }
 
+div#footer {
+    text-align: center;
+    padding: 10px 20px 10px 20px;
+    margin: 30px 0px 0px 0px;
+    background-color: #06263A;
+    color: #fff;
+}
+
 div.section h1 {
     display: flex;
     align-items: center;

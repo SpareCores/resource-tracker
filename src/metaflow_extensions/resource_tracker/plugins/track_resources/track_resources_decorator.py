@@ -1,3 +1,4 @@
+from importlib.metadata import version
 from multiprocessing import Process
 from os import getpid, unlink
 from statistics import mean
@@ -14,6 +15,7 @@ from .resource_tracker import (
     get_cloud_info,
     get_server_info,
 )
+from .resource_tracker.helpers import is_psutil_available
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -137,6 +139,10 @@ class ResourceTrackerDecorator(StepDecorator):
             historical_stats = self._get_historical_stats(flow, step_name)
 
             data = {
+                "resource_tracker": {
+                    "version": version("resource-tracker"),
+                    "implementation": "psutil" if is_psutil_available() else "procfs",
+                },
                 "pid_tracker": pid_tracker_data,
                 "system_tracker": system_tracker_data,
                 "cloud_info": self.cloud_info,

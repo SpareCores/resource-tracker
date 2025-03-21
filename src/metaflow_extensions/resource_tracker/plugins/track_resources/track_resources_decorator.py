@@ -116,8 +116,7 @@ class ResourceTrackerDecorator(StepDecorator):
 
         except Exception as e:
             self.logger(
-                f"*ERROR* Failed to start resourc            e tracker processes: {e}",
-                bad=True,
+                f"*WARNING Failed to start resource tracker processes: {type(e).__name__} / {e}",
                 timestamp=False,
             )
 
@@ -186,10 +185,16 @@ class ResourceTrackerDecorator(StepDecorator):
             }
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
-            setattr(flow, self.attributes["artifact_name"], {"error": str(e)})
+            import traceback
+
+            error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+            setattr(flow, self.attributes["artifact_name"], {"error": error_details})
             self.logger(
-                f"*ERROR* Failed to process resource tracking results: {e}",
-                bad=True,  # NOTE this settings doesn't do anything here? works outside of the decorator, though
+                f"*WARNING* Failed to process resource tracking results: {type(e).__name__} / {e}. See the artifact or card for more details, including the traceback.",
                 timestamp=False,
             )
         finally:

@@ -85,7 +85,13 @@ class ResourceTrackerDecorator(StepDecorator):
         try:
             from .resource_tracker import PidTracker, SystemTracker
 
-            self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
+            # create temporary files for both trackers,
+            # and pass only the filepath to the subprocess to avoid pickling the file objects
+            for tracker_name in ["pid_tracker", "system_tracker"]:
+                temp_file = NamedTemporaryFile(delete=False)
+                setattr(self, f"{tracker_name}_filepath", temp_file.name)
+                temp_file.close()
+
             self.pid_tracker_process = Process(
                 target=self._run_with_error_handling,
                 kwargs={
@@ -93,20 +99,19 @@ class ResourceTrackerDecorator(StepDecorator):
                     "error_queue": self.error_queue,
                     "pid": getpid(),
                     "interval": self.attributes["interval"],
-                    "output_file": self.pid_tracker_data_file.name,
+                    "output_file": self.pid_tracker_filepath,
                 },
                 daemon=True,
             )
             self.pid_tracker_process.start()
 
-            self.system_tracker_data_file = NamedTemporaryFile(delete=False)
             self.system_tracker_process = Process(
                 target=self._run_with_error_handling,
                 kwargs={
                     "target_func": SystemTracker,
                     "error_queue": self.error_queue,
                     "interval": self.attributes["interval"],
-                    "output_file": self.system_tracker_data_file.name,
+                    "output_file": self.system_tracker_filepath,
                 },
                 daemon=True,
             )
@@ -190,11 +195,9 @@ class ResourceTrackerDecorator(StepDecorator):
             if self.cloud_info_thread.is_alive():
                 self.cloud_info_thread.join()
 
-            pid_tracker_data = TinyDataFrame(
-                csv_file_path=self.pid_tracker_data_file.name
-            )
+            pid_tracker_data = TinyDataFrame(csv_file_path=self.pid_tracker_filepath)
             system_tracker_data = TinyDataFrame(
-                csv_file_path=self.system_tracker_data_file.name
+                csv_file_path=self.system_tracker_filepath
             )
             historical_stats = self._get_historical_stats(flow, step_name)
 
@@ -254,8 +257,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 timestamp=False,
             )
         finally:
-            unlink(self.pid_tracker_data_file.name)
-            unlink(self.system_tracker_data_file.name)
+            unlink(self.pid_tracker_filepath)
+            unlink(self.system_tracker_filepath)
 
     def _get_historical_stats(self, flow, step_name):
         """Fetch historical resource stats from previous runs' artifacts."""

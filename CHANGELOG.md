@@ -1,3 +1,22 @@
+## v0.2.0 (March 21, 2025)
+
+Relatively major package rewrite to support alternative tracker implementations (other than directly reading from `/proc`). No breaking changes in the public API on Linux.
+
+- Add tracker implementation using `psutil` to support MacOS and Windows
+- Fix data issues with the `/proc` implementation after validating with the `psutil` version (e.g. number of processes reported)
+- General code cleanup and refactoring
+- Additional unit tests:
+
+    - Tracker implementation using `procfs`
+    - Tracker implementation using `psutil`
+    - Consistency between tracker implementations
+    - Metaflow decorators
+
+- Extended CI/CD pipeline
+
+    - Test on Linux, MacOS, and Windows
+    - Test multiple Python versions (3.9, 3.10, 3.11, 3.12, 3.13)
+
 ## v0.1.2 (March 18, 2025)
 
 - Experimental psutil support

@@ -124,7 +124,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 "traceback": traceback.format_exc(),
             }
             self.logger(
-                f"*WARNING* Failed to start resource tracker processes: {type(e).__name__} / {e}",
+                f"*WARNING* [@resource_tracker] Failed to start resource tracker processes: {type(e).__name__} / {e}",
                 timestamp=False,
             )
 
@@ -209,7 +209,7 @@ class ResourceTrackerDecorator(StepDecorator):
             }
             setattr(flow, self.attributes["artifact_name"], {"error": error_details})
             self.logger(
-                f"*WARNING* Failed to process resource tracking results: {type(e).__name__} / {e}. See the artifact or card for more details, including the traceback.",
+                f"*WARNING* [@resource_tracker] Failed to process resource tracking results: {type(e).__name__} / {e}. See the artifact or card for more details, including the traceback.",
                 timestamp=False,
             )
         finally:
@@ -261,7 +261,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
                     self.logger(
-                        f"*WARNING* Could not process historical data for run {run.id}: {e}",
+                        f"*WARNING* [@resource_tracker] Could not process historical data for run {run.id}: {e}",
                         timestamp=False,
                     )
                     continue
@@ -285,6 +285,7 @@ class ResourceTrackerDecorator(StepDecorator):
 
         except Exception as e:
             self.logger(
-                f"*WARNING* Failed to retrieve historical stats: {e}", timestamp=False
+                f"*WARNING* [@resource_tracker] Failed to retrieve historical stats: {e}",
+                timestamp=False,
             )
             return {"available": False, "error": str(e)}

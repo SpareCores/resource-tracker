@@ -25,8 +25,6 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
     """
 
     def signal_handler(signum, frame):
-        with suppress(Exception):
-            error_queue.close()
         exit(0)
 
     signal(SIGTERM, signal_handler)
@@ -47,8 +45,6 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
                 "traceback": traceback.format_exc(),
             }
         )
-    finally:
-        signal_handler(None, None)
 
 
 class ResourceTrackerDecorator(StepDecorator):

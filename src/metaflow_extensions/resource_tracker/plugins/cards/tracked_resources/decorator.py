@@ -277,7 +277,7 @@ class TrackedResourcesCard(MetaflowCard):
 
         # get recommended resources
         rec = {
-            "cpu": ceil(variables["stats"]["cpu_usage"]["mean"]),
+            "cpu": max(1, round(variables["stats"]["cpu_usage"]["mean"])),
             "memory": round_memory(variables["stats"]["memory_usage"]["max"]),
         }
         if variables["historical_stats"]["available"] and (
@@ -288,7 +288,7 @@ class TrackedResourcesCard(MetaflowCard):
                 variables["historical_stats"]["max_memory_max"]
             )
         if variables["stats"]["gpu_usage"]["mean"] > 0:
-            rec["gpu"] = ceil(variables["stats"]["gpu_usage"]["max"])
+            rec["gpu"] = max(1, round(variables["stats"]["gpu_usage"]["max"]))
         rec["memory"] = round_memory(rec["memory"] / 1024 * 1.2)
         rec_str = ", ".join(f"{key}={value}" for key, value in rec.items())
         variables["recommended_resources"] = f"@resources({rec_str})"

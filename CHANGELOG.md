@@ -1,3 +1,9 @@
+## v0.2.1 (March 21, 2025)
+
+- Fix don't always round up CPU/GPU recommendations
+- Improve error message on missing historical data
+- Improve documentation
+
 ## v0.2.0 (March 21, 2025)
 
 Relatively major package rewrite to support alternative tracker implementations (other than directly reading from `/proc`). No breaking changes in the public API on Linux.

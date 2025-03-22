@@ -211,6 +211,7 @@ class ResourceTrackerDecorator(StepDecorator):
                             process.kill()
                             process.join(timeout=1.0)
                 process.close()
+        self.error_queue.close()
         # early return if there was an error either in the main process, threads, or in the subprocesses
         if self.error_details is not None:
             setattr(

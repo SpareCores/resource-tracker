@@ -1,9 +1,9 @@
 from contextlib import suppress
-from multiprocessing import Process, SimpleQueue
+from multiprocessing import Process, SimpleQueue, set_start_method
 from os import getpid, unlink
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
-from sys import exit
+from sys import exit, platform
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import time
@@ -15,6 +15,10 @@ from .resource_tracker.cloud_info import get_cloud_info
 from .resource_tracker.helpers import is_psutil_available
 from .resource_tracker.server_info import get_server_info
 from .resource_tracker.tiny_data_frame import TinyDataFrame
+
+# https://github.com/python/cpython/issues/90549
+if platform == "darwin":
+    set_start_method("spawn")
 
 
 def _run_tracker(tracker_type, error_queue, **kwargs):

@@ -18,7 +18,7 @@ from .resource_tracker.tiny_data_frame import TinyDataFrame
 
 # https://github.com/python/cpython/issues/90549
 if platform == "darwin":
-    set_start_method("spawn")
+    set_start_method("fork")
 
 
 def _run_tracker(tracker_type, error_queue, **kwargs):

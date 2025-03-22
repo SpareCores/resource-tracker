@@ -362,6 +362,13 @@ class ResourceTrackerDecorator(StepDecorator):
                     if not hasattr(task.data, self.attributes["artifact_name"]):
                         continue
                     resource_data = getattr(task.data, self.attributes["artifact_name"])
+                    # successful run, but tracker failed
+                    if resource_data.get("error"):
+                        self.logger(
+                            f"*NOTE* [@resource_tracker] No historical data found for run {run.id}",
+                            timestamp=False,
+                        )
+                        continue
                     cpu_means.append(resource_data["stats"]["cpu_usage"]["mean"])
                     memory_maxes.append(resource_data["stats"]["memory_usage"]["max"])
                     durations.append(resource_data["stats"]["duration"])
@@ -369,9 +376,10 @@ class ResourceTrackerDecorator(StepDecorator):
                     vram_maxes.append(resource_data["stats"]["gpu_vram"]["max"])
                     gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
-                    # this happens if the run was successful, but tracker failed
+                    import traceback
+
                     self.logger(
-                        f"*WARNING* [@resource_tracker] Could not process historical data for run {run.id}: {e}",
+                        f"*WARNING* [@resource_tracker] Could not process historical data for run {run.id}: {type(e).__name__} / {e} / {traceback.format_exc()}",
                         timestamp=False,
                     )
                     continue

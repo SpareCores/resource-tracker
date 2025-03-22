@@ -232,6 +232,34 @@ class ResourceTrackerDecorator(StepDecorator):
                 self.cloud_info_thread.join()
 
             pid_tracker_data = TinyDataFrame(csv_file_path=self.pid_tracker_filepath)
+
+            # nothing to report on
+            if len(pid_tracker_data) == 0:
+                if self.attributes["interval"] * 2 > (time() - self.start_time):
+                    setattr(
+                        flow,
+                        self.attributes["artifact_name"],
+                        {
+                            "error": {
+                                "error_type": "ValueError",
+                                "error_message": f"The step ran for too short time ({round(time() - self.start_time, 2)} seconds) to collect any data with the specified interval ({self.attributes['interval']} seconds).",
+                                "traceback": "-",
+                            }
+                        },
+                    )
+                else:
+                    setattr(
+                        flow,
+                        self.attributes["artifact_name"],
+                        {
+                            "error": {
+                                "error_type": "ValueError",
+                                "error_message": "Somehow, the tracker did not collect any data. Please report this issue at https://github.com/SpareCores/resource-tracker/issues",
+                            }
+                        },
+                    )
+                return
+
             system_tracker_data = TinyDataFrame(
                 csv_file_path=self.system_tracker_filepath
             )

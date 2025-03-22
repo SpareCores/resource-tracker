@@ -10,7 +10,8 @@ future runs.
 
 ## Installation
 
-You can install the stable version of the package from PyPI:
+You can install the stable version of the package from PyPI: [![resource-tracker  on PyPI](https://img.shields.io/pypi/v/resource-tracker?color=%2332C955)](https://pypi.org/project/resource-tracker/)
+
 
 ```sh
 pip install resource-tracker

@@ -206,7 +206,7 @@ artifact = Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 pp(artifact)
 # {
 #     'pid_tracker': TinyDataFrame with 9 rows and 12 columns. First row as a dict: {'timestamp': 1741732803.3076203, 'pid': 
-# 777691.0, 'children': 3.0, 'utime': 95.0, 'stime': 13.0, 'cpu_usage': 1.0796, 'pss': 563273.0, 'read_bytes': 52260.0, 
+# 777691.0, 'children': 3.0, 'utime': 95.0, 'stime': 13.0, 'cpu_usage': 1.0796, 'memory': 563273.0, 'read_bytes': 52260.0, 
 # 'write_bytes': 0.0, 'gpu_usage': 0.0, 'gpu_vram': 0.0, 'gpu_utilized': 0.0},
 #     'system_tracker': TinyDataFrame with 9 rows and 21 columns. First row as a dict: {'timestamp': 1741732803.2471318, 
 # 'processes': 777773.0, 'utime': 225.0, 'stime': 53.0, 'cpu_usage': 2.7797, 'memory_free': 38480700.0, 'memory_used': 

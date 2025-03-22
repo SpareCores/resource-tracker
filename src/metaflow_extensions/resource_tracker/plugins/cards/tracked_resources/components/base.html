@@ -277,7 +277,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Memory Usage</div>
-                <p class="description">Server application memory usage is monitored through the size of anonymous memory pages, while task memory usage is measured by summing all Proportional Set Size (PSS) rollups of subprocesses.</p>
+                <p class="description">On Linux, the used server memory is calculated by <code>total - free - buffers - cached</code>, while it depends on <code>psutil</code> for other systems. Task memory usage is measured by summing PSS (on Linux), USS (on MacOS and Windows), or RSS rollups of all subprocesses.</p>
             </div>
             <div id="labels_mem" class="labels"></div>
         </h1>

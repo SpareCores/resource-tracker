@@ -1,16 +1,38 @@
+## v0.2.0 (March 21, 2025)
+
+Relatively major package rewrite to support alternative tracker implementations (other than directly reading from `/proc`). No breaking changes in the public API on Linux.
+
+- Add tracker implementation using `psutil` to support MacOS and Windows
+- Fix data issues with the `/proc` implementation after validating with the `psutil` version (e.g. number of processes reported)
+- Refactor code for better maintainability
+- Add additional unit tests:
+    - Tracker implementation using `procfs`
+    - Tracker implementation using `psutil`
+    - Consistency between tracker implementations
+    - Metaflow decorators
+- Extend CI/CD pipeline:
+    - Test on Linux, MacOS, and Windows
+    - Test multiple Python versions (3.9, 3.10, 3.11, 3.12, 3.13)
+- Improve documentation
+
+## v0.1.2 (March 18, 2025)
+
+- Add experimental psutil support
+- Add server info card for operating system
+
 ## v0.1.1 (March 17, 2025)
 
 - Fix rounding down recommended vCPUs with <0.5 load
 - Add info popups with more details and disclaimers for recommendations
-- Detect if the server is shared with other tasks
+- Add detection for shared server environments
 - Add potential cost savings card
-- Documentation improvements
+- Improve documentation
 
 ## v0.1.0 (March 12, 2025)
 
 Initial PyPI release of `resource-tracker` with the following features:
 
-- Detect if the system is running on a cloud provider, and if so, detect the provider, region, and instance type.
+- Detect if the system is running on a cloud provider, and if so, detect the provider, region, and instance type
 - Detect main server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount)
 - Track system-wide resource usage:
     - Process count
@@ -26,7 +48,7 @@ Initial PyPI release of `resource-tracker` with the following features:
     - Memory usage (based on proportional set sizes)
     - Disk I/O (read and write bytes)
     - GPU and VRAM usage (using `nvidia-smi pmon`)
-- Metaflow plugin for tracking resource usage of a step:
+- Add Metaflow plugin for tracking resource usage of a step:
     - Track process and system resource usage for the duration of the step
     - Generate a card with the resource usage data
     - Suggest `@resources` decorator for future runs

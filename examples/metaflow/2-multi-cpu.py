@@ -12,7 +12,7 @@ def heavy_computation(n=1e7):
     return total
 
 
-class ResourceTrackingFlow(FlowSpec):
+class MultiCpuFlow(FlowSpec):
     @step
     def start(self):
         print("Starting")
@@ -41,4 +41,4 @@ def get_tracker_artifact() -> str:
 
 
 if __name__ == "__main__":
-    ResourceTrackingFlow()
+    MultiCpuFlow()

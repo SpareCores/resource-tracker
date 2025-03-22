@@ -1,10 +1,10 @@
 from json import loads
-from typing import Optional
+from typing import Dict, List, Optional, Union
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
 
-def pretty_number(num: float | int | None, digits: int = 2) -> str:
+def pretty_number(num: Optional[Union[float, int]], digits: int = 2) -> str:
     """Format a number for HTML display.
 
     Non-numeric values are returned as a string.
@@ -42,7 +42,7 @@ def pretty_number(num: float | int | None, digits: int = 2) -> str:
         return str(num)
 
 
-def round_memory(mb: float | int) -> int:
+def round_memory(mb: Union[float, int]) -> int:
     """Round a number to the nearest meaningful memory amount.
 
     Args:
@@ -76,7 +76,7 @@ def round_memory(mb: float | int) -> int:
     return rounded
 
 
-def get_instance_price(vendor_id, region_id, instance_type) -> float | None:
+def get_instance_price(vendor_id, region_id, instance_type) -> Optional[float]:
     """Get the on-demand price for a specific instance type in a region.
 
     Args:
@@ -119,7 +119,7 @@ def get_recommended_cloud_servers(
     gpu: Optional[int] = None,
     vram: Optional[int] = None,
     n: int = 10,
-) -> list[dict]:
+) -> List[Dict]:
     """Get the cheapest cloud servers for the given resources from Spare Cores.
 
     Args:

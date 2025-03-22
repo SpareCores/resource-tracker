@@ -1,19 +1,57 @@
-from multiprocessing import Process
+from contextlib import suppress
+from multiprocessing import SimpleQueue, get_context
 from os import getpid, unlink
+from signal import SIGINT, SIGTERM, signal
 from statistics import mean
+from sys import exit, platform
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import time
 
 from metaflow.decorators import StepDecorator
 
-from .resource_tracker import (
-    PidTracker,
-    SystemTracker,
-    TinyDataFrame,
-    get_cloud_info,
-    get_server_info,
-)
+from .resource_tracker._version import __version__
+from .resource_tracker.cloud_info import get_cloud_info
+from .resource_tracker.helpers import is_psutil_available
+from .resource_tracker.server_info import get_server_info
+from .resource_tracker.tiny_data_frame import TinyDataFrame
+
+# try to fork when possible due to leaked semaphores on older Python versions
+# see e.g. https://github.com/python/cpython/issues/90549
+if platform in ["linux", "darwin"]:
+    mpc = get_context("fork")
+else:
+    mpc = get_context("spawn")
+
+
+def _run_tracker(tracker_type, error_queue, **kwargs):
+    """Run either PidTracker or SystemTracker in a subprocess.
+
+    This functions is standalone so that it can be pickled by multiprocessing,
+    and tries to clean up resources before exiting.
+    """
+
+    def signal_handler(signum, frame):
+        exit(0)
+
+    signal(SIGTERM, signal_handler)
+    signal(SIGINT, signal_handler)
+
+    try:
+        from .resource_tracker import PidTracker, SystemTracker
+
+        tracker = PidTracker if tracker_type == "pid" else SystemTracker
+        tracker(**kwargs)
+    except Exception as e:
+        import traceback
+
+        error_queue.put(
+            {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+        )
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -32,7 +70,11 @@ class ResourceTrackerDecorator(StepDecorator):
     }
 
     def __init__(self, attributes=None, statically_defined=False):
-        """Override default attributes."""
+        # error details from main process and threads
+        self.error_details = None
+        # error details from subprocesses
+        self.error_queue = SimpleQueue()
+        # override default attributes.
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
         )
@@ -80,39 +122,72 @@ class ResourceTrackerDecorator(StepDecorator):
         inputs,
     ):
         """Start resource tracker processes."""
-        self.pid_tracker_data_file = NamedTemporaryFile(delete=False)
-        self.pid_tracker_process = Process(
-            target=PidTracker,
-            kwargs={
-                "pid": getpid(),
-                "interval": self.attributes["interval"],
-                "output_file": self.pid_tracker_data_file.name,
-            },
-            daemon=True,
-        )
-        self.pid_tracker_process.start()
+        try:
+            # create temporary files for both trackers,
+            # and pass only the filepath to the subprocess to avoid pickling the file objects
+            for tracker_name in ["pid_tracker", "system_tracker"]:
+                temp_file = NamedTemporaryFile(delete=False)
+                setattr(self, f"{tracker_name}_filepath", temp_file.name)
+                temp_file.close()
 
-        self.system_tracker_data_file = NamedTemporaryFile(delete=False)
-        self.system_tracker_process = Process(
-            target=SystemTracker,
-            kwargs={
-                "interval": self.attributes["interval"],
-                "output_file": self.system_tracker_data_file.name,
-            },
-            daemon=True,
-        )
-        self.system_tracker_process.start()
+            self.pid_tracker_process = mpc.Process(
+                target=_run_tracker,
+                args=("pid", self.error_queue),
+                kwargs={
+                    "pid": getpid(),
+                    "interval": self.attributes["interval"],
+                    "output_file": self.pid_tracker_filepath,
+                },
+                daemon=True,
+            )
+            self.pid_tracker_process.start()
 
-        self.cloud_info = None
-        self.cloud_info_thread = Thread(
-            target=lambda: setattr(self, "cloud_info", get_cloud_info()),
-            daemon=True,
-        )
-        self.cloud_info_thread.start()
+            self.system_tracker_process = mpc.Process(
+                target=_run_tracker,
+                args=("system", self.error_queue),
+                kwargs={
+                    "interval": self.attributes["interval"],
+                    "output_file": self.system_tracker_filepath,
+                },
+                daemon=True,
+            )
+            self.system_tracker_process.start()
 
-        self.server_info = get_server_info()
+            self.cloud_info = None
+            self.cloud_info_thread = Thread(
+                target=self._get_cloud_info_with_error_handling,
+                daemon=True,
+            )
+            self.cloud_info_thread.start()
 
-        self.start_time = time()
+            self.server_info = get_server_info()
+            self.start_time = time()
+
+        except Exception as e:
+            import traceback
+
+            self.error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+            self.logger(
+                f"*WARNING* [@resource_tracker] Failed to start resource tracker processes: {type(e).__name__} / {e}",
+                timestamp=False,
+            )
+
+    def _get_cloud_info_with_error_handling(self):
+        """Get cloud info and capture any exceptions."""
+        try:
+            self.cloud_info = get_cloud_info()
+        except Exception as e:
+            import traceback
+
+            self.error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
 
     def task_post_step(
         self,
@@ -123,20 +198,50 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store collected data as an artifact for card/user to process."""
+        # check for previous errors in the subprocesses
+        if not self.error_queue.empty():
+            self.error_details = self.error_queue.get()
+            self.logger(
+                f"*WARNING* [@resource_tracker] Subprocess failed: {self.error_details['error_type']} / {self.error_details['error_message']}",
+                timestamp=False,
+            )
+        # terminate tracker processes
+        for tracker_name in ["pid_tracker", "system_tracker"]:
+            process_attr = f"{tracker_name}_process"
+            if hasattr(self, process_attr):
+                process = getattr(self, process_attr)
+                if process.is_alive():
+                    with suppress(Exception):
+                        process.terminate()
+                        process.join(timeout=1.0)
+                        if process.is_alive():
+                            process.kill()
+                            process.join(timeout=1.0)
+                process.close()
+        self.error_queue.close()
+        # early return if there was an error either in the main process, threads, or in the subprocesses
+        if self.error_details is not None:
+            setattr(
+                flow, self.attributes["artifact_name"], {"error": self.error_details}
+            )
+            return
+
         try:
             # wait for the cloud_info thread to complete
             if self.cloud_info_thread.is_alive():
                 self.cloud_info_thread.join()
 
-            pid_tracker_data = TinyDataFrame(
-                csv_file_path=self.pid_tracker_data_file.name
-            )
+            pid_tracker_data = TinyDataFrame(csv_file_path=self.pid_tracker_filepath)
             system_tracker_data = TinyDataFrame(
-                csv_file_path=self.system_tracker_data_file.name
+                csv_file_path=self.system_tracker_filepath
             )
             historical_stats = self._get_historical_stats(flow, step_name)
 
             data = {
+                "resource_tracker": {
+                    "version": __version__,
+                    "implementation": "psutil" if is_psutil_available() else "procfs",
+                },
                 "pid_tracker": pid_tracker_data,
                 "system_tracker": system_tracker_data,
                 "cloud_info": self.cloud_info,
@@ -147,8 +252,8 @@ class ResourceTrackerDecorator(StepDecorator):
                         "max": round(max(pid_tracker_data["cpu_usage"]), 2),
                     },
                     "memory_usage": {
-                        "mean": round(mean(pid_tracker_data["pss"]), 2),
-                        "max": round(max(pid_tracker_data["pss"]), 2),
+                        "mean": round(mean(pid_tracker_data["memory"]), 2),
+                        "max": round(max(pid_tracker_data["memory"]), 2),
                     },
                     "gpu_usage": {
                         "mean": round(mean(pid_tracker_data["gpu_usage"]), 2),
@@ -173,16 +278,23 @@ class ResourceTrackerDecorator(StepDecorator):
                 },
                 "historical_stats": historical_stats,
             }
-
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
+            import traceback
+
+            error_details = {
+                "error_message": str(e),
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+            }
+            setattr(flow, self.attributes["artifact_name"], {"error": error_details})
             self.logger(
-                f"*ERROR* Failed to process resource tracking results: {e}",
-                bad=True,  # NOTE this settings doesn't do anything here? works outside of the decorator, though
+                f"*WARNING* [@resource_tracker] Failed to process resource tracking results: {type(e).__name__} / {e}. See the artifact or card for more details, including the traceback.",
                 timestamp=False,
             )
         finally:
-            unlink(self.pid_tracker_data_file.name)
+            unlink(self.pid_tracker_filepath)
+            unlink(self.system_tracker_filepath)
 
     def _get_historical_stats(self, flow, step_name):
         """Fetch historical resource stats from previous runs' artifacts."""
@@ -229,8 +341,10 @@ class ResourceTrackerDecorator(StepDecorator):
                     vram_maxes.append(resource_data["stats"]["gpu_vram"]["max"])
                     gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
                 except Exception as e:
+                    # this happens if the run was successful, but tracker failed
                     self.logger(
-                        f"Warning: Could not process historical data for run {run.id}: {e}"
+                        f"*WARNING* [@resource_tracker] Could not process historical data for run {run.id}: {e}",
+                        timestamp=False,
                     )
                     continue
 
@@ -252,5 +366,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 }
 
         except Exception as e:
-            self.logger(f"Warning: Failed to retrieve historical stats: {e}")
+            self.logger(
+                f"*WARNING* [@resource_tracker] Failed to retrieve historical stats: {e}",
+                timestamp=False,
+            )
             return {"available": False, "error": str(e)}

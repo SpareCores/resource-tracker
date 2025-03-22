@@ -5,7 +5,7 @@ A very inefficient data-frame implementation for manipulating resource usage dat
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
 from csv import writer as csv_writer
 from io import StringIO
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -53,7 +53,9 @@ class TinyDataFrame:
     """
 
     def __init__(
-        self, data: Optional[dict | list] = None, csv_file_path: Optional[str] = None
+        self,
+        data: Optional[Union[Dict[str, List[float]], List[Dict[str, float]]]] = None,
+        csv_file_path: Optional[str] = None,
     ):
         """
         Initialize with either:
@@ -126,8 +128,8 @@ class TinyDataFrame:
         return len(next(iter(self._data.values()))) if self.columns else 0
 
     def __getitem__(
-        self, key: Union[str, list[str], int, slice]
-    ) -> Union[list, dict, "TinyDataFrame"]:
+        self, key: Union[str, List[str], int, slice]
+    ) -> Union[List[float], Dict[str, float], "TinyDataFrame"]:
         """Get a single column or multiple columns or a row or a slice of rows. Can be chained.
 
         Args:
@@ -140,7 +142,7 @@ class TinyDataFrame:
         if isinstance(key, str):
             return self._data[key]
         # multiple columns
-        elif isinstance(key, list) and all(isinstance(k, str) for k in key):
+        elif isinstance(key, List) and all(isinstance(k, str) for k in key):
             return TinyDataFrame(
                 {col: self._data[col] for col in key if col in self._data}
             )
@@ -153,7 +155,7 @@ class TinyDataFrame:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
-    def __setitem__(self, key: str, value: list) -> None:
+    def __setitem__(self, key: str, value: List[float]) -> None:
         """Set a column with the given key to the provided values.
 
         Args:

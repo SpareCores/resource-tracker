@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import datetime
 from math import ceil
 from os import listdir, path
 from statistics import mean
@@ -54,6 +55,34 @@ class TrackedResourcesCard(MetaflowCard):
 
     def render(self, task):
         data = getattr(task.data, self._artifact_name)
+
+        # check if there was any error
+        if data.get("error", None):
+            error_html = "<p>The resource tracker encountered the following error, so thus no data was collected.</p>"
+            if isinstance(data["error"], dict) and "traceback" in data["error"]:
+                error_html += "<hr>"
+                error_html += (
+                    "<p><b>Error Type:</b> "
+                    + data["error"].get("error_type", "")
+                    + "</p>"
+                )
+                error_html += (
+                    "<p><b>Error Message:</b> "
+                    + data["error"].get("error_message", "")
+                    + "</p>"
+                )
+                error_html += (
+                    "<p><b>Traceback:</b></p>"
+                    "<pre style='white-space: pre-wrap; overflow-x: auto; background: #f8f8f8; padding: 10px; border-radius: 4px;'>"
+                    + data["error"].get("traceback", "")
+                    + "</pre>"
+                )
+            else:
+                error_html += (
+                    "<p><b>This is all we know:</b></p><pre>" + data["error"] + "</pre>"
+                )
+            return error_html
+
         pid = data["pid_tracker"]
         system = data["system_tracker"]
 
@@ -71,8 +100,7 @@ class TrackedResourcesCard(MetaflowCard):
             [
                 "timestamp",
                 "cpu_usage",
-                "memory_active_anon",
-                "memory_inactive_anon",
+                "memory_used",
                 "disk_read_bytes",
                 "disk_write_bytes",
                 "disk_space_used_gb",
@@ -83,16 +111,10 @@ class TrackedResourcesCard(MetaflowCard):
                 "gpu_utilized",
             ]
         ]
-        joined["memory_usage"] = [
-            memory_active_anon + memory_inactive_anon
-            for memory_active_anon, memory_inactive_anon in zip(
-                joined["memory_active_anon"], joined["memory_inactive_anon"]
-            )
-        ]
         joined.rename(
             columns={
                 "cpu_usage": "Server CPU usage",
-                "memory_usage": "Server memory usage",
+                "memory_used": "Server memory usage",
                 "disk_read_bytes": "Server disk read",
                 "disk_write_bytes": "Server disk write",
                 "disk_space_used_gb": "Server disk space used",
@@ -105,7 +127,7 @@ class TrackedResourcesCard(MetaflowCard):
         )
         # dummy merge
         joined["Task CPU usage"] = pid["cpu_usage"]
-        joined["Task memory usage"] = pid["pss"]
+        joined["Task memory usage"] = pid["memory"]
         joined["Task disk read"] = pid["read_bytes"]
         joined["Task disk write"] = pid["write_bytes"]
         joined["Task GPU usage"] = pid["gpu_usage"]
@@ -192,6 +214,12 @@ class TrackedResourcesCard(MetaflowCard):
             ):
                 variables["server_info"]["allocation"] = "Shared"
                 break
+        try:
+            import psutil
+
+            variables["server_info"]["psutil_version"] = psutil.__version__
+        except ImportError:
+            variables["server_info"]["psutil_version"] = "N/A"
 
         variables["stats"] = data["stats"]
         variables["historical_stats"] = data["historical_stats"]
@@ -288,5 +316,8 @@ class TrackedResourcesCard(MetaflowCard):
                     "percent": round((cost_current - cost_rec) / cost_current * 100, 2),
                     "amount": round(cost_current - cost_rec, 6),
                 }
+
+        variables["resource_tracker"] = data["resource_tracker"]
+        variables["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         return chevron.render(variables["base_html"], variables)

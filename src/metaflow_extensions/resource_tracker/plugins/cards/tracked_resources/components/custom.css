@@ -3,6 +3,14 @@ body {
     margin: 0px;
 }
 
+div#footer {
+    text-align: center;
+    padding: 10px 20px 10px 20px;
+    margin: 30px 0px 0px 0px;
+    background-color: #06263A;
+    color: #fff;
+}
+
 div.section h1 {
     display: flex;
     align-items: center;
@@ -60,7 +68,7 @@ div.section .section-content-cards {
 div.section .section-content-card {
     background-color: #06263A;
     padding: 15px;
-    min-width: 120px;
+    min-width: 60px;
     flex: 0 1 auto;
     border-left: 3px solid #38BDF8;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -69,7 +77,7 @@ div.section .section-content-card {
 div.section .section-content-card-task {
     background-color: #06263A;
     padding: 15px;
-    min-width: 120px;
+    min-width: 60px;
     flex: 0 1 auto;
     border-left: 3px solid #34D399;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);

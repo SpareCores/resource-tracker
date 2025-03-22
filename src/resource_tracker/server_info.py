@@ -4,11 +4,12 @@ Detect server hardware (CPU count, memory amount, disk space, GPU count and VRAM
 
 from contextlib import suppress
 from os import cpu_count
+from platform import system
 from subprocess import check_output
 
 
 def get_total_memory_mb() -> float:
-    """Get total system memory in MB from `/proc/meminfo`."""
+    """Get total system memory in MB from `/proc/meminfo` or using `psutil`."""
     with suppress(Exception):
         with open("/proc/meminfo", "r") as f:
             for line in f:
@@ -16,6 +17,10 @@ def get_total_memory_mb() -> float:
                     parts = line.split(":")
                     kb = int(parts[1].strip().split()[0])
                     return round(kb / (1024), 2)
+    with suppress(Exception):
+        from psutil import virtual_memory
+
+        return round(virtual_memory().total / (1024**2), 2)
     return 0
 
 
@@ -64,6 +69,7 @@ def get_server_info() -> dict:
     Returns:
         A dictionary containing server information:
 
+            - `os`: Operating system
             - `vcpus`: Number of virtual CPUs
             - `memory_mb`: Total memory in MB
             - `gpu_count`: Number of GPUs (`0` if not available)
@@ -71,6 +77,7 @@ def get_server_info() -> dict:
     """
     gpu_info = get_gpu_info()
     info = {
+        "os": system(),
         "vcpus": cpu_count(),
         "memory_mb": get_total_memory_mb(),
         "gpu_count": gpu_info["count"],

@@ -1,5 +1,5 @@
 from contextlib import suppress
-from multiprocessing import Process, SimpleQueue, set_start_method
+from multiprocessing import SimpleQueue, get_context
 from os import getpid, unlink
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
@@ -16,9 +16,12 @@ from .resource_tracker.helpers import is_psutil_available
 from .resource_tracker.server_info import get_server_info
 from .resource_tracker.tiny_data_frame import TinyDataFrame
 
-# https://github.com/python/cpython/issues/90549
-if platform == "darwin":
-    set_start_method("fork")
+# try to fork when possible due to leaked semaphores on older Python versions
+# see e.g. https://github.com/python/cpython/issues/90549
+if platform in ["linux", "darwin"]:
+    mpc = get_context("fork")
+else:
+    mpc = get_context("spawn")
 
 
 def _run_tracker(tracker_type, error_queue, **kwargs):
@@ -127,7 +130,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 setattr(self, f"{tracker_name}_filepath", temp_file.name)
                 temp_file.close()
 
-            self.pid_tracker_process = Process(
+            self.pid_tracker_process = mpc.Process(
                 target=_run_tracker,
                 args=("pid", self.error_queue),
                 kwargs={
@@ -139,7 +142,7 @@ class ResourceTrackerDecorator(StepDecorator):
             )
             self.pid_tracker_process.start()
 
-            self.system_tracker_process = Process(
+            self.system_tracker_process = mpc.Process(
                 target=_run_tracker,
                 args=("system", self.error_queue),
                 kwargs={

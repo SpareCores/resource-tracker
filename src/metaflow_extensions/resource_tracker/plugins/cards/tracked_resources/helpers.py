@@ -1,7 +1,7 @@
 from json import loads
 from typing import Dict, List, Optional, Union
-from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.parse import urlencode, urljoin
+from urllib.request import Request, urlopen
 
 
 def pretty_number(num: Optional[Union[float, int]], digits: int = 2) -> str:
@@ -76,6 +76,28 @@ def round_memory(mb: Union[float, int]) -> int:
     return rounded
 
 
+def keeper_request(
+    path: str, timeout: int = 2, endpoint: str = "https://keeper.sparecores.net"
+) -> Optional[dict]:
+    """Fetch data from a SC Keeper URL with a custom header.
+
+    Args:
+        path: The path to fetch data from.
+        timeout: The timeout for the request.
+        endpoint: The endpoint to fetch data from.
+
+    Returns:
+        The JSON-decoded response data, or None if an error occurs.
+    """
+    try:
+        request = Request(urljoin(endpoint, path))
+        request.add_header("X-Application-ID", "resource-tracker")
+        with urlopen(request, timeout=timeout) as response:
+            return loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
 def get_instance_price(vendor_id, region_id, instance_type) -> Optional[float]:
     """Get the on-demand price for a specific instance type in a region.
 
@@ -88,9 +110,7 @@ def get_instance_price(vendor_id, region_id, instance_type) -> Optional[float]:
         The on-demand price for the instance type in the region, or None if no price is found.
     """
     try:
-        url = f"https://keeper.sparecores.net/server/{vendor_id}/{instance_type}/prices"
-        with urlopen(url, timeout=2) as response:
-            pricing_data = loads(response.read().decode("utf-8"))
+        pricing_data = keeper_request(f"/server/{vendor_id}/{instance_type}/prices")
 
         for item in pricing_data:
             if (
@@ -147,10 +167,6 @@ def get_recommended_cloud_servers(
             params["gpu_min"] = gpu
         if vram and vram > 0:
             params["gpu_memory_total"] = vram
-        base_url = "https://keeper.sparecores.net/servers"
-        url = f"{base_url}?{urlencode(params)}"
-        with urlopen(url, timeout=5) as response:
-            servers_data = loads(response.read().decode("utf-8"))
-        return servers_data
+        return keeper_request(f"/servers?{urlencode(params)}")
     except Exception:
         return []

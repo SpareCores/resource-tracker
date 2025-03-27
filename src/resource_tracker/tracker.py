@@ -363,10 +363,34 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
         exit(1)
 
 
-def _cleanup_temp_files(files):
+def _cleanup_files(files):
+    """Cleanup files.
+
+    Args:
+        files: List of file paths to cleanup.
+    """
     for f in files:
         with suppress(Exception):
             unlink(f)
+
+
+def _cleanup_processes(processes):
+    """Gracefully or forcefully terminate and cleanup processes.
+
+    Args:
+        processes: List of `multiprocessing.Process` objects to cleanup.
+    """
+    for process in processes:
+        with suppress(Exception):
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=1.0)
+        with suppress(Exception):
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=1.0)
+        with suppress(Exception):
+            process.close()
 
 
 class ResourceTracker:
@@ -421,7 +445,7 @@ class ResourceTracker:
         # make sure to cleanup the temp files
         finalize(
             self,
-            _cleanup_temp_files,
+            _cleanup_files,
             [self.pid_tracker_filepath, self.system_tracker_filepath],
         )
 
@@ -454,6 +478,13 @@ class ResourceTracker:
         )
         self.system_tracker_process.start()
 
+        # make sure to cleanup the started subprocesses
+        finalize(
+            self,
+            _cleanup_processes,
+            [self.pid_tracker_process, self.system_tracker_process],
+        )
+
     def stop(self):
         self.stop_time = time()
         # check for errors in the subprocesses
@@ -469,15 +500,7 @@ class ResourceTracker:
         for tracker_name in ["pid_tracker", "system_tracker"]:
             process_attr = f"{tracker_name}_process"
             if hasattr(self, process_attr):
-                process = getattr(self, process_attr)
-                if process.is_alive():
-                    with suppress(Exception):
-                        process.terminate()
-                        process.join(timeout=1.0)
-                        if process.is_alive():
-                            process.kill()
-                            process.join(timeout=1.0)
-                    process.close()
+                _cleanup_processes([getattr(self, process_attr)])
         self.error_queue.close()
         logger.debug(
             "Resource tracker stopped after %s seconds, logging %s records",

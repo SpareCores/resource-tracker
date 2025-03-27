@@ -321,9 +321,13 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
         # the trackers might be coming from the resource-tracker package,
         # or a module of the Metaflow decorator, or a flat module structure
         candidates = [
+            "resource_tracker",
+            "resource_tracker.tracker",
+            f"{__package__}.tracker",
+            f"{__package__}",
             f"{__package__}.resource_tracker",
             ".resource_tracker",
-            "resource_tracker",
+            ".resource_tracker.tracker",
         ]
         class_names = {
             "pid": "PidTracker",

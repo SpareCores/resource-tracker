@@ -118,7 +118,7 @@ class TinyDataFrame:
             for row in reader:
                 results.append(row)
         finally:
-            if not isinstance(csv_source, list):
+            if hasattr(csv_source, "close"):
                 csv_source.close()
 
         return results

@@ -1,5 +1,5 @@
 """
-Helpers for the resource tracker.
+General helpers.
 """
 
 import os

@@ -1,7 +1,7 @@
 """
-Helpers to track resource usage via procfs.
+Helpers to track resource usage via `procfs`.
 
-Note that procfs is specific to Linux, and these helpers rely on modern (2017+)
+Note that `procfs` is specific to Linux, and these helpers rely on modern (2017+)
 kernel features, such as `smaps_rollup`, which is much faster than iterating
 over all `smaps` files.
 """

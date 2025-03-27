@@ -1,5 +1,5 @@
 """
-Resource Tracker package for monitoring system resources and detecting cloud environments.
+Resource Tracker package for monitoring resource usage, detecting cloud environments, and more.
 """
 
 from logging import NullHandler, getLogger

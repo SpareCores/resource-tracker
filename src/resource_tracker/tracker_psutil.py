@@ -1,5 +1,5 @@
 """
-Helpers to track resource usage via psutil.
+Helpers to track resource usage via `psutil`.
 """
 
 from contextlib import suppress

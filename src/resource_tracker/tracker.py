@@ -1,5 +1,16 @@
 """
-Track resource usage of a process or server.
+Track resource usage of a process and/or the system.
+
+To start tracker(s) in the background as spawned or forked process(es), use the
+[resource_tracker.ResourceTracker][] class. Starting this will not block the
+main process and will allow you to access the collected data via the
+`pid_tracker` and `system_tracker` properties of the instance in real-time, or
+after stopping the resource tracker(s).
+
+For more custom use cases, you can also use the [resource_tracker.PidTracker][]
+and [resource_tracker.SystemTracker][] classes directly logging either to the
+standard output or a file, and handle putting those into a background
+thread/process yourself.
 """
 
 from csv import QUOTE_NONNUMERIC
@@ -11,7 +22,7 @@ from signal import SIGINT, SIGTERM, signal
 from sys import platform, stdout
 from tempfile import NamedTemporaryFile
 from time import sleep, time
-from typing import Optional
+from typing import List, Optional, Union
 from weakref import finalize
 
 from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
@@ -369,7 +380,7 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
 class ResourceTracker:
     """Track resource usage of processes and the system in a non-blocking way.
 
-    Start a `PidTracker` and/or a `SystemTracker` in the background as spawned
+    Start a [resource_tracker.PidTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
     or forked process(es), and make the collected data available easily in the
     main process via the `pid_tracker` and `system_tracker` properties.
 
@@ -439,6 +450,7 @@ class ResourceTracker:
             self.start()
 
     def start(self):
+        """Start the selected resource trackers in the background as subprocess(es)."""
         self.start_time = time()
 
         if "pid_tracker" in self.trackers:
@@ -478,6 +490,7 @@ class ResourceTracker:
         )
 
     def stop(self):
+        """Stop the previously started resource trackers' background processes."""
         self.stop_time = time()
         # check for errors in the subprocesses
         if not self.error_queue.empty():
@@ -502,12 +515,11 @@ class ResourceTracker:
         )
 
     @property
-    def pid_tracker(self):
-        """Get the collected data from the `PidTracker`.
+    def pid_tracker(self) -> Union[TinyDataFrame, List]:
+        """Collected data from the [resource_tracker.PidTracker][].
 
         Returns:
-            A `TinyDataFrame` object containing the collected data or an empty list
-            if the `PidTracker` is not running.
+            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.PidTracker][] is not running.
         """
         try:
             return TinyDataFrame(
@@ -517,12 +529,11 @@ class ResourceTracker:
             return []
 
     @property
-    def system_tracker(self):
-        """Get the collected data from the `SystemTracker`.
+    def system_tracker(self) -> Union[TinyDataFrame, List]:
+        """Collected data from the [resource_tracker.SystemTracker][].
 
         Returns:
-            A `TinyDataFrame` object containing the collected data or an empty list
-            if the `SystemTracker` is not running.
+            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.SystemTracker][] is not running.
         """
         try:
             return TinyDataFrame(

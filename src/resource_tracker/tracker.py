@@ -2,12 +2,11 @@
 Track resource usage of a process or server.
 """
 
-from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
 from logging import getLogger
 from multiprocessing import SimpleQueue, get_context
-from os import getpid, unlink
+from os import getpid
 from signal import SIGINT, SIGTERM, signal
 from sys import platform, stdout
 from tempfile import NamedTemporaryFile
@@ -15,7 +14,7 @@ from time import sleep, time
 from typing import Optional
 from weakref import finalize
 
-from .helpers import get_tracker_implementation
+from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
 from .tiny_data_frame import TinyDataFrame
 
 logger = getLogger(__name__)
@@ -363,42 +362,12 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
         exit(1)
 
 
-def _cleanup_files(files):
-    """Cleanup files.
-
-    Args:
-        files: List of file paths to cleanup.
-    """
-    for f in files:
-        with suppress(Exception):
-            unlink(f)
-
-
-def _cleanup_processes(processes):
-    """Gracefully or forcefully terminate and cleanup processes.
-
-    Args:
-        processes: List of `multiprocessing.Process` objects to cleanup.
-    """
-    for process in processes:
-        with suppress(Exception):
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=1.0)
-        with suppress(Exception):
-            if process.is_alive():
-                process.kill()
-                process.join(timeout=1.0)
-        with suppress(Exception):
-            process.close()
-
-
 class ResourceTracker:
     """Track resource usage of processes and the system in a non-blocking way.
 
-    Start a `PidTracker` and a `SystemTracker` in background processes, and
-    make the collected data available easily in the main process via the
-    `pid_tracker` and `system_tracker` properties.
+    Start a `PidTracker` and/or a `SystemTracker` in the background as spawned
+    or forked process(es), and make the collected data available easily in the
+    main process via the `pid_tracker` and `system_tracker` properties.
 
     Args:
         pid: Process ID to track. Defaults to current process ID.
@@ -407,6 +376,9 @@ class ResourceTracker:
         method: Multiprocessing method. Defaults to None, which tries to fork on
             Linux and macOS, and spawn on Windows.
         autostart: Whether to start tracking immediately. Defaults to True.
+        track_processes: Whether to track resource usage at the process level.
+            Defaults to True.
+        track_system: Whether to track system-wide resource usage. Defaults to True.
     """
 
     def __init__(
@@ -416,12 +388,19 @@ class ResourceTracker:
         interval: float = 1,
         method: Optional[str] = None,
         autostart: bool = True,
+        track_processes: bool = True,
+        track_system: bool = True,
     ):
         self.pid = pid
         self.children = children
         self.interval = interval
         self.method = method
         self.autostart = autostart
+        self.trackers = []
+        if track_processes:
+            self.trackers.append("pid_tracker")
+        if track_system:
+            self.trackers.append("system_tracker")
 
         if method is None:
             # try to fork when possible due to leaked semaphores on older Python versions
@@ -436,17 +415,20 @@ class ResourceTracker:
         # error details from subprocesses
         self.error_queue = SimpleQueue()
 
-        # create temporary CSV files for both trackers,
-        # and pass only the filepath to the subprocess to avoid pickling the file objects
-        for tracker_name in ["pid_tracker", "system_tracker"]:
+        # create temporary CSV file(s) for the tracker(s), and record only the file path(s)
+        # to be passed later to subprocess(es) avoiding pickling the file object(s)
+        for tracker_name in self.trackers:
             temp_file = NamedTemporaryFile(delete=False)
             setattr(self, f"{tracker_name}_filepath", temp_file.name)
             temp_file.close()
-        # make sure to cleanup the temp files
+        # make sure to cleanup the temp file(s)
         finalize(
             self,
-            _cleanup_files,
-            [self.pid_tracker_filepath, self.system_tracker_filepath],
+            cleanup_files,
+            [
+                getattr(self, f"{tracker_name}_filepath")
+                for tracker_name in self.trackers
+            ],
         )
 
         if autostart:
@@ -454,35 +436,41 @@ class ResourceTracker:
 
     def start(self):
         self.start_time = time()
-        self.pid_tracker_process = self.mpc.Process(
-            target=_run_tracker,
-            args=("pid", self.error_queue),
-            kwargs={
-                "pid": self.pid,
-                "interval": self.interval,
-                "children": self.children,
-                "output_file": self.pid_tracker_filepath,
-            },
-            daemon=True,
-        )
-        self.pid_tracker_process.start()
 
-        self.system_tracker_process = self.mpc.Process(
-            target=_run_tracker,
-            args=("system", self.error_queue),
-            kwargs={
-                "interval": self.interval,
-                "output_file": self.system_tracker_filepath,
-            },
-            daemon=True,
-        )
-        self.system_tracker_process.start()
+        if "pid_tracker" in self.trackers:
+            self.pid_tracker_process = self.mpc.Process(
+                target=_run_tracker,
+                args=("pid", self.error_queue),
+                kwargs={
+                    "pid": self.pid,
+                    "interval": self.interval,
+                    "children": self.children,
+                    "output_file": self.pid_tracker_filepath,
+                },
+                daemon=True,
+            )
+            self.pid_tracker_process.start()
 
-        # make sure to cleanup the started subprocesses
+        if "system_tracker" in self.trackers:
+            self.system_tracker_process = self.mpc.Process(
+                target=_run_tracker,
+                args=("system", self.error_queue),
+                kwargs={
+                    "interval": self.interval,
+                    "output_file": self.system_tracker_filepath,
+                },
+                daemon=True,
+            )
+            self.system_tracker_process.start()
+
+        # make sure to cleanup the started subprocess(es)
         finalize(
             self,
-            _cleanup_processes,
-            [self.pid_tracker_process, self.system_tracker_process],
+            cleanup_processes,
+            [
+                getattr(self, f"{tracker_name}_process")
+                for tracker_name in self.trackers
+            ],
         )
 
     def stop(self):
@@ -497,27 +485,44 @@ class ResourceTracker:
                 f"Original traceback:\n{error_data['traceback']}"
             )
         # terminate tracker processes
-        for tracker_name in ["pid_tracker", "system_tracker"]:
+        for tracker_name in self.trackers:
             process_attr = f"{tracker_name}_process"
             if hasattr(self, process_attr):
-                _cleanup_processes([getattr(self, process_attr)])
+                cleanup_processes([getattr(self, process_attr)])
         self.error_queue.close()
         logger.debug(
-            "Resource tracker stopped after %s seconds, logging %s records",
+            "Resource tracker stopped after %s seconds, logging %d process-level and %d system-wide records",
             self.stop_time - self.start_time,
             len(self.pid_tracker),
+            len(self.system_tracker),
         )
 
     @property
     def pid_tracker(self):
-        """Get the collected data from the `PidTracker`."""
-        return TinyDataFrame(
-            csv_file_path=self.pid_tracker_filepath,
-        )
+        """Get the collected data from the `PidTracker`.
+
+        Returns:
+            A `TinyDataFrame` object containing the collected data or an empty list
+            if the `PidTracker` is not running.
+        """
+        try:
+            return TinyDataFrame(
+                csv_file_path=self.pid_tracker_filepath,
+            )
+        except Exception:
+            return []
 
     @property
     def system_tracker(self):
-        """Get the collected data from the `SystemTracker`."""
-        return TinyDataFrame(
-            csv_file_path=self.system_tracker_filepath,
-        )
+        """Get the collected data from the `SystemTracker`.
+
+        Returns:
+            A `TinyDataFrame` object containing the collected data or an empty list
+            if the `SystemTracker` is not running.
+        """
+        try:
+            return TinyDataFrame(
+                csv_file_path=self.system_tracker_filepath,
+            )
+        except Exception:
+            return []

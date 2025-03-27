@@ -164,7 +164,7 @@ def test_systemstats_procfs_vs_psutil(
         )
 
 
-def test_resource_tracker_subprocess():
+def test_resource_tracker_subprocesses():
     """Test that the resource tracker subprocess is working."""
     from resource_tracker import ResourceTracker
 
@@ -178,5 +178,21 @@ def test_resource_tracker_subprocess():
     assert tracker.pid_tracker[0]["utime"] >= 0
     assert tracker.system_tracker[0]["utime"] >= 0
     assert tracker.pid_tracker[0]["memory"] > 0
+    assert tracker.system_tracker[0]["memory_used"] > 0
+    assert tracker.system_tracker[0]["processes"] > 0
+
+
+def test_resource_tracker_subprocess():
+    """Test that the partial resource tracker subprocess is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker(track_processes=False)
+    tracker.start()
+    sleep(2)
+    print("STOPPING TRACKER")
+    tracker.stop()
+    assert len(tracker.pid_tracker) == 0
+    assert len(tracker.system_tracker) > 0
+    assert tracker.system_tracker[0]["utime"] >= 0
     assert tracker.system_tracker[0]["memory_used"] > 0
     assert tracker.system_tracker[0]["processes"] > 0

@@ -115,8 +115,7 @@ class TinyDataFrame:
 
         try:
             reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
-            for row in reader:
-                results.append(row)
+            results = list(reader)
         finally:
             if hasattr(csv_source, "close"):
                 csv_source.close()

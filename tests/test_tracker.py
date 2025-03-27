@@ -171,7 +171,6 @@ def test_resource_tracker_subprocesses():
     tracker = ResourceTracker()
     tracker.start()
     sleep(2)
-    print("STOPPING TRACKER")
     tracker.stop()
     assert len(tracker.pid_tracker) > 0
     assert len(tracker.system_tracker) > 0
@@ -189,7 +188,6 @@ def test_resource_tracker_subprocess():
     tracker = ResourceTracker(track_processes=False)
     tracker.start()
     sleep(2)
-    print("STOPPING TRACKER")
     tracker.stop()
     assert len(tracker.pid_tracker) == 0
     assert len(tracker.system_tracker) > 0

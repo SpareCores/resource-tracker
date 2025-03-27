@@ -2,14 +2,23 @@
 Track resource usage of a process or server.
 """
 
+from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
-from os import getpid
-from sys import stdout
+from logging import getLogger
+from multiprocessing import SimpleQueue, get_context
+from os import getpid, unlink
+from signal import SIGINT, SIGTERM, signal
+from sys import platform, stdout
+from tempfile import NamedTemporaryFile
 from time import sleep, time
 from typing import Optional
+from weakref import finalize
 
 from .helpers import get_tracker_implementation
+from .tiny_data_frame import TinyDataFrame
+
+logger = getLogger(__name__)
 
 
 class PidTracker:
@@ -293,3 +302,199 @@ class SystemTracker:
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()
+
+
+def _run_tracker(tracker_type, error_queue, **kwargs):
+    """Run either PidTracker or SystemTracker with dynamic import resolution and error handling.
+
+    This functions is standalone so that it can be pickled by multiprocessing,
+    and tries to clean up resources before exiting.
+    """
+    from importlib import import_module
+
+    def signal_handler(signum, frame):
+        exit(0)
+
+    signal(SIGTERM, signal_handler)
+    signal(SIGINT, signal_handler)
+
+    def resolve_class(tracker_type):
+        # the trackers might be coming from the resource-tracker package,
+        # or a module of the Metaflow decorator, or a flat module structure
+        candidates = [
+            f"{__package__}.resource_tracker",
+            ".resource_tracker",
+            "resource_tracker",
+        ]
+        class_names = {
+            "pid": "PidTracker",
+            "system": "SystemTracker",
+        }
+
+        for module_path in candidates:
+            try:
+                module = import_module(module_path, package=__package__)
+                cls = getattr(module, class_names[tracker_type])
+                return cls
+            except (ImportError, AttributeError, KeyError):
+                continue
+        raise ImportError(
+            f"Could not find {class_names[tracker_type]} in any of: {candidates}"
+        )
+
+    try:
+        tracker_cls = resolve_class(tracker_type)
+        if not callable(tracker_cls):
+            raise TypeError(f"{tracker_type} is not callable")
+        return tracker_cls(**kwargs)
+    except Exception:
+        import traceback
+        from sys import exc_info, exit
+
+        exc_info = exc_info()
+        error_queue.put(
+            {
+                "name": exc_info[0].__name__,
+                "module": exc_info[0].__module__,
+                "message": str(exc_info[1]),
+                "traceback": traceback.format_exception(*exc_info),
+            }
+        )
+        exit(1)
+
+
+def _cleanup_temp_files(files):
+    for f in files:
+        with suppress(Exception):
+            unlink(f)
+
+
+class ResourceTracker:
+    """Track resource usage of processes and the system in a non-blocking way.
+
+    Start a `PidTracker` and a `SystemTracker` in background processes, and
+    make the collected data available easily in the main process via the
+    `pid_tracker` and `system_tracker` properties.
+
+    Args:
+        pid: Process ID to track. Defaults to current process ID.
+        children: Whether to track child processes. Defaults to True.
+        interval: Sampling interval in seconds. Defaults to 1.
+        method: Multiprocessing method. Defaults to None, which tries to fork on
+            Linux and macOS, and spawn on Windows.
+        autostart: Whether to start tracking immediately. Defaults to True.
+    """
+
+    def __init__(
+        self,
+        pid: int = getpid(),
+        children: bool = True,
+        interval: float = 1,
+        method: Optional[str] = None,
+        autostart: bool = True,
+    ):
+        self.pid = pid
+        self.children = children
+        self.interval = interval
+        self.method = method
+        self.autostart = autostart
+
+        if method is None:
+            # try to fork when possible due to leaked semaphores on older Python versions
+            # see e.g. https://github.com/python/cpython/issues/90549
+            if platform in ["linux", "darwin"]:
+                self.mpc = get_context("fork")
+            else:
+                self.mpc = get_context("spawn")
+        else:
+            self.mpc = get_context(method)
+
+        # error details from subprocesses
+        self.error_queue = SimpleQueue()
+
+        # create temporary CSV files for both trackers,
+        # and pass only the filepath to the subprocess to avoid pickling the file objects
+        for tracker_name in ["pid_tracker", "system_tracker"]:
+            temp_file = NamedTemporaryFile(delete=False)
+            setattr(self, f"{tracker_name}_filepath", temp_file.name)
+            temp_file.close()
+        # make sure to cleanup the temp files
+        finalize(
+            self,
+            _cleanup_temp_files,
+            [self.pid_tracker_filepath, self.system_tracker_filepath],
+        )
+
+        if autostart:
+            self.start()
+
+    def start(self):
+        self.start_time = time()
+        self.pid_tracker_process = self.mpc.Process(
+            target=_run_tracker,
+            args=("pid", self.error_queue),
+            kwargs={
+                "pid": self.pid,
+                "interval": self.interval,
+                "children": self.children,
+                "output_file": self.pid_tracker_filepath,
+            },
+            daemon=True,
+        )
+        self.pid_tracker_process.start()
+
+        self.system_tracker_process = self.mpc.Process(
+            target=_run_tracker,
+            args=("system", self.error_queue),
+            kwargs={
+                "interval": self.interval,
+                "output_file": self.system_tracker_filepath,
+            },
+            daemon=True,
+        )
+        self.system_tracker_process.start()
+
+    def stop(self):
+        self.stop_time = time()
+        # check for errors in the subprocesses
+        if not self.error_queue.empty():
+            error_data = self.error_queue.get()
+            logger.warning(
+                "Resource tracker subprocess failed!\n"
+                f"Error type: {error_data['name']} (from module {error_data['module']})\n"
+                f"Error message: {error_data['message']}\n"
+                f"Original traceback:\n{error_data['traceback']}"
+            )
+        # terminate tracker processes
+        for tracker_name in ["pid_tracker", "system_tracker"]:
+            process_attr = f"{tracker_name}_process"
+            if hasattr(self, process_attr):
+                process = getattr(self, process_attr)
+                if process.is_alive():
+                    with suppress(Exception):
+                        process.terminate()
+                        process.join(timeout=1.0)
+                        if process.is_alive():
+                            process.kill()
+                            process.join(timeout=1.0)
+                    process.close()
+        self.error_queue.close()
+        logger.debug(
+            "Resource tracker stopped after %s seconds, logging %s records",
+            self.stop_time - self.start_time,
+            len(self.pid_tracker),
+        )
+
+    @property
+    def pid_tracker(self):
+        """Get the collected data from the `PidTracker`."""
+        return TinyDataFrame(
+            csv_file_path=self.pid_tracker_filepath,
+        )
+
+    @property
+    def system_tracker(self):
+        """Get the collected data from the `SystemTracker`."""
+        return TinyDataFrame(
+            csv_file_path=self.system_tracker_filepath,
+        )

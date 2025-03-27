@@ -1,6 +1,7 @@
 from importlib import import_module
 from os import getpid
 from platform import system
+from time import sleep
 
 import pytest
 
@@ -161,3 +162,21 @@ def test_systemstats_procfs_vs_psutil(
         assert diff <= absolute_threshold, (
             f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
         )
+
+
+def test_resource_tracker_subprocess():
+    """Test that the resource tracker subprocess is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    tracker.start()
+    sleep(2)
+    print("STOPPING TRACKER")
+    tracker.stop()
+    assert len(tracker.pid_tracker) > 0
+    assert len(tracker.system_tracker) > 0
+    assert tracker.pid_tracker[0]["utime"] > 0
+    assert tracker.system_tracker[0]["utime"] > 0
+    assert tracker.pid_tracker[0]["memory"] > 0
+    assert tracker.system_tracker[0]["memory_used"] > 0
+    assert tracker.system_tracker[0]["processes"] > 0

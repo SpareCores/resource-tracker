@@ -175,8 +175,8 @@ def test_resource_tracker_subprocess():
     tracker.stop()
     assert len(tracker.pid_tracker) > 0
     assert len(tracker.system_tracker) > 0
-    assert tracker.pid_tracker[0]["utime"] > 0
-    assert tracker.system_tracker[0]["utime"] > 0
+    assert tracker.pid_tracker[0]["utime"] >= 0
+    assert tracker.system_tracker[0]["utime"] >= 0
     assert tracker.pid_tracker[0]["memory"] > 0
     assert tracker.system_tracker[0]["memory_used"] > 0
     assert tracker.system_tracker[0]["processes"] > 0

@@ -1,7 +1,7 @@
 # resource-tracker
 
 A lightweight, zero-dependency Python package for monitoring resource usage
-across processes and at the server level. Designed with batch jobs in mind (like
+across processes and at the system level. Designed with batch jobs in mind (like
 Metaflow steps), it provides simple tools to track CPU, memory, GPU, network,
 and disk utilization with minimal setup -- e.g. using a step decorator in
 Metaflow to automatically track resource usage and generate a card with data
@@ -89,7 +89,7 @@ ProcFS implementation: 0.182557s avg (min: 0.174610s, max: 0.192760s)
 Speedup factor: 1.11x (procfs faster)
 ```
 
-The server-level stats are much cheaper to collect, and there is no effective
+The system-level stats are much cheaper to collect, and there is no effective
 difference in performance between the two implementations.
 
 Why have both implementations then? The `psutil` implementation works on all

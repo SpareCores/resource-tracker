@@ -31,7 +31,7 @@
                             <span class="info-icon">
                                 {{{icon_info}}}
                                 <div class="tooltip-content">
-                                    Indicates whether this server appears to be dedicated to this Metaflow step or shared with other tasks. This assessment is based on comparing server-level resource usage with task-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
+                                    Indicates whether this server appears to be dedicated to this Metaflow step or shared with other tasks. This assessment is based on comparing system-level resource usage with task-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
                                 </div>
                             </span>
                         </div>
@@ -262,7 +262,7 @@
             </div>
             <div class="header-text">
                 <div class="title">CPU Usage</div>
-                <p class="description">CPU usage for both the server and specific tasks is calculated by summing user+nice and system CPU times (in clock ticks), normalized by dividing by the total elapsed time and ticks per second. Task CPU usage encompasses all child processes.</p>
+                <p class="description">CPU usage for both the system and specific tasks is calculated by summing user+nice and system CPU times (in clock ticks), normalized by dividing by the total elapsed time and ticks per second. Task CPU usage encompasses all child processes.</p>
             </div>
             <div id="labels_cpu" class="labels"></div>
         </h1>
@@ -292,7 +292,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Disk I/O Usage</div>
-                <p class="description">Task-specific disk usage tracking is unreliable; therefore, it is recommended to monitor disk usage at the server level, encompassing all mounted disks.</p>
+                <p class="description">Task-specific disk usage tracking is unreliable; therefore, it is recommended to monitor disk usage at the system level, encompassing all mounted disks.</p>
             </div>
             <div id="labels_disk" class="labels"></div>
         </h1>
@@ -307,7 +307,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Disk Space Usage</div>
-                <p class="description">Server-level disk space usage on all mounted disks.</p>
+                <p class="description">System-level disk space usage on all mounted disks.</p>
             </div>
             <div id="labels_disk_space" class="labels"></div>
         </h1>
@@ -322,7 +322,7 @@
             </div>
             <div class="header-text">
                 <div class="title">Network Usage</div>
-                <p class="description">Network usage is monitored solely at the server level across all interfaces.</p>
+                <p class="description">Network usage is monitored solely at the system level across all interfaces.</p>
             </div>
             <div id="labels_net" class="labels"></div>
         </h1>
@@ -338,7 +338,7 @@
             </div>
             <div class="header-text">
                 <div class="title">GPU Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_usage" class="labels"></div>
         </h1>
@@ -353,7 +353,7 @@
             </div>
             <div class="header-text">
                 <div class="title">GPUs in Use</div>
-                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_utilized" class="labels"></div>
         </h1>
@@ -368,7 +368,7 @@
             </div>
             <div class="header-text">
                 <div class="title">VRAM Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs. Note that task-specific GPU usage is not as reliable as server-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_vram" class="labels"></div>
         </h1>
@@ -391,9 +391,9 @@
                         labelsKMG2: true,
                         series: {
                             "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
-                            "Server disk write": {strokePattern: [7, 3], color: '#38BDF8'},
+                            "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
                             "Task disk read": {strokePattern: null, color: '#34D399'},
-                            "Server disk read": {strokePattern: null, color: '#38BDF8'}
+                            "System disk read": {strokePattern: null, color: '#38BDF8'}
                         },
                     }),
                 diskSpaceGraph = createGraph("plot_disk_space", `{{{csv_disk_space}}}`, 'labels_disk_space',

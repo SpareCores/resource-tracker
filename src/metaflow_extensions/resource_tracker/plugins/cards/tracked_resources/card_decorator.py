@@ -113,16 +113,16 @@ class TrackedResourcesCard(MetaflowCard):
         ]
         joined.rename(
             columns={
-                "cpu_usage": "Server CPU usage",
-                "memory_used": "Server memory usage",
-                "disk_read_bytes": "Server disk read",
-                "disk_write_bytes": "Server disk write",
-                "disk_space_used_gb": "Server disk space used",
+                "cpu_usage": "System CPU usage",
+                "memory_used": "System memory usage",
+                "disk_read_bytes": "System disk read",
+                "disk_write_bytes": "System disk write",
+                "disk_space_used_gb": "System disk space used",
                 "net_recv_bytes": "Inbound network traffic",
                 "net_sent_bytes": "Outbound network traffic",
-                "gpu_usage": "Server GPU usage",
-                "gpu_vram": "Server VRAM used",
-                "gpu_utilized": "Server GPUs in use",
+                "gpu_usage": "System GPU usage",
+                "gpu_vram": "System VRAM used",
+                "gpu_utilized": "System GPUs in use",
             }
         )
         # dummy merge
@@ -134,45 +134,45 @@ class TrackedResourcesCard(MetaflowCard):
         joined["Task GPUs in use"] = pid["gpu_utilized"]
         joined["Task VRAM used"] = pid["gpu_vram"]
         # convert memory usage to bytes so that we can pretty format on the client side
-        for col in ["Task memory usage", "Server memory usage"]:  # KiB -> B
+        for col in ["Task memory usage", "System memory usage"]:  # KiB -> B
             joined[col] = [m * 1024 for m in joined[col]]
-        for col in ["Task VRAM used", "Server VRAM used"]:  # MiB -> B
+        for col in ["Task VRAM used", "System VRAM used"]:  # MiB -> B
             joined[col] = [m * 1024 * 1024 for m in joined[col]]
-        for col in ["Server disk space used"]:  # GiB -> B
+        for col in ["System disk space used"]:  # GiB -> B
             joined[col] = [m * 1024 * 1024 * 1024 for m in joined[col]]
         # convert to JS milliseconds
         joined["timestamp"] = [t * 1000 for t in joined["timestamp"]]
 
         variables = self._read_component_files()
         variables["csv_cpu"] = joined[
-            ["timestamp", "Task CPU usage", "Server CPU usage"]
+            ["timestamp", "Task CPU usage", "System CPU usage"]
         ].to_csv(quote_strings=False)
         variables["csv_mem"] = joined[
-            ["timestamp", "Task memory usage", "Server memory usage"]
+            ["timestamp", "Task memory usage", "System memory usage"]
         ].to_csv(quote_strings=False)
         variables["csv_disk"] = joined[
             [
                 "timestamp",
                 "Task disk read",
-                "Server disk read",
+                "System disk read",
                 "Task disk write",
-                "Server disk write",
+                "System disk write",
             ]
         ].to_csv(quote_strings=False)
         variables["csv_disk_space"] = joined[
-            ["timestamp", "Server disk space used"]
+            ["timestamp", "System disk space used"]
         ].to_csv(quote_strings=False)
         variables["csv_net"] = joined[
             ["timestamp", "Inbound network traffic", "Outbound network traffic"]
         ].to_csv(quote_strings=False)
         variables["csv_gpu_usage"] = joined[
-            ["timestamp", "Task GPU usage", "Server GPU usage"]
+            ["timestamp", "Task GPU usage", "System GPU usage"]
         ].to_csv(quote_strings=False)
         variables["csv_vram"] = joined[
-            ["timestamp", "Task VRAM used", "Server VRAM used"]
+            ["timestamp", "Task VRAM used", "System VRAM used"]
         ].to_csv(quote_strings=False)
         variables["csv_gpu_utilized"] = joined[
-            ["timestamp", "Task GPUs in use", "Server GPUs in use"]
+            ["timestamp", "Task GPUs in use", "System GPUs in use"]
         ].to_csv(quote_strings=False)
 
         variables["cloud_info"] = data["cloud_info"]
@@ -207,7 +207,7 @@ class TrackedResourcesCard(MetaflowCard):
         )
         variables["server_info"]["allocation"] = "Dedicated"
         for check in SERVER_ALLOCATION_CHECKS:
-            system_val = mean(joined["Server " + check["column"]])
+            system_val = mean(joined["System " + check["column"]])
             task_val = mean(joined["Task " + check["column"]])
             if (system_val > task_val * check["percent"]) or (
                 system_val > task_val + check["absolute"]

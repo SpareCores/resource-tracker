@@ -164,9 +164,14 @@ def test_systemstats_procfs_vs_psutil(
         )
 
 
-def wait_for_tracker(tracker, records=1):
+def wait_for_tracker(tracker, check_pid_tracker=True, check_system_tracker=True):
     for i in range(50):
-        if len(tracker.system_tracker) >= records:
+        checks_passed = 0
+        if check_pid_tracker and len(tracker.pid_tracker) >= 1:
+            checks_passed += 1
+        if check_system_tracker and len(tracker.system_tracker) >= 1:
+            checks_passed += 1
+        if checks_passed == int(check_pid_tracker) + int(check_system_tracker):
             break
         sleep(0.1)
     else:
@@ -196,7 +201,7 @@ def test_resource_tracker_subprocess():
 
     tracker = ResourceTracker(track_processes=False)
     tracker.start()
-    wait_for_tracker(tracker)
+    wait_for_tracker(tracker, check_pid_tracker=False)
     tracker.stop()
     assert len(tracker.pid_tracker) == 0
     assert len(tracker.system_tracker) > 0

@@ -274,13 +274,21 @@ class ResourceTrackerDecorator(StepDecorator):
                     task = next(iter(step.tasks()), None)
                     if not task:
                         continue
-                    if not hasattr(task.data, self.attributes["artifact_name"]):
+                    # cannot use hasattr on the artifact object, so force try/catch to see if we have an artifact
+                    try:
+                        resource_data = getattr(
+                            task.data, self.attributes["artifact_name"]
+                        )
+                    except Exception:
+                        self.logger(
+                            f"*NOTE* [@resource_tracker] No historical data found for run {run.id}",
+                            timestamp=False,
+                        )
                         continue
-                    resource_data = getattr(task.data, self.attributes["artifact_name"])
                     # successful run, but tracker failed
                     if resource_data.get("error"):
                         self.logger(
-                            f"*NOTE* [@resource_tracker] No historical data found for run {run.id}",
+                            f"*NOTE* [@resource_tracker] Failed historical data found for run {run.id}",
                             timestamp=False,
                         )
                         continue

@@ -138,9 +138,9 @@ start (e.g. spawn or fork) the subprocesses of the trackers.
 
 For even more control, you can use the underlying `PidTracker` and
 `SystemTracker` classes directly, which are not starting and handling new
-processes, but simply log resource usage to the standard output or a file as
-defined in the `interval` argument. For example, to track only the system-wide
-resource usage, you can use `SystemTracker`:
+processes, but simply log resource usage to the standard output or a file. For
+example, to track only the system-wide resource usage, you can use
+`SystemTracker`:
 
 ```python
 from resource_tracker import SystemTracker
@@ -162,10 +162,10 @@ The default stream can be redirected to a file by passing a path to the `csv_fil
 argument, and can use different intervals for sampling via the `interval`
 argument.
 
-The `PidTracker` class tracks resource usage of a running process and optionally
-all its children (recursively), in a similar manner, although somewhat limited in
-functionality, as e.g. `nvidia-smi pmon` can only track up-to 4 GPUs, and
-network traffic monitoring is not available.
+The `PidTracker` class tracks resource usage of a running process (defaults to
+the current process) and optionally all its children (recursively), in a similar
+manner, although somewhat limited in functionality, as e.g. `nvidia-smi pmon`
+can only track up-to 4 GPUs, and network traffic monitoring is not available.
 
 Helper functions are also provided, e.g. `get_pid_stats` and `get_system_stats`
 from both the `tracker_procfs` and `tracker_psutil` modules, which are used

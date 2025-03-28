@@ -1,7 +1,7 @@
 # resource-tracker
 
 A lightweight, zero-dependency Python package for monitoring resource usage
-across processes and at the server level. Designed with batch jobs in mind (like
+across processes and at the system level. Designed with batch jobs in mind (like
 Metaflow steps), it provides simple tools to track CPU, memory, GPU, network,
 and disk utilization with minimal setup -- e.g. using a step decorator in
 Metaflow to automatically track resource usage and generate a card with data
@@ -10,14 +10,14 @@ future runs.
 
 ## Installation
 
-You can install the stable version of the package from PyPI: [![resource-tracker  on PyPI](https://img.shields.io/pypi/v/resource-tracker?color=%2332C955)](https://pypi.org/project/resource-tracker/)
-
+You can install the stable version of the package from PyPI:
+[![resource-tracker on PyPI](https://img.shields.io/pypi/v/resource-tracker?color=%2332C955)](https://pypi.org/project/resource-tracker/)
 
 ```sh
 pip install resource-tracker
 ```
 
-Development version can be installed directly from the repository:
+Development version can be installed directly from the git repository:
 
 ```sh
 pip install git+https://github.com/sparecores/resource-tracker.git
@@ -89,7 +89,7 @@ ProcFS implementation: 0.182557s avg (min: 0.174610s, max: 0.192760s)
 Speedup factor: 1.11x (procfs faster)
 ```
 
-The server-level stats are much cheaper to collect, and there is no effective
+The system-level stats are much cheaper to collect, and there is no effective
 difference in performance between the two implementations.
 
 Why have both implementations then? The `psutil` implementation works on all
@@ -102,9 +102,45 @@ decorator without explicit `@pypi` config).
 ## Standalone Usage
 
 The package comes with helper functions and classes for tracking resource usage,
-such as `PidTracker` and `SystemTracker`, both using either `procfs` or `psutil`
-under the hood, depending on which is available, with a preference for `psutil`
-when both are present.
+such as the `ResourceTracker` class that runs trackers in the background, or the
+underlying `PidTracker` and `SystemTracker` classes logging resource usage to
+the standard output or a file, both using either `procfs` or `psutil` under the
+hood, depending on which is available, with a preference for `psutil` when both
+are present.
+
+For the most basic (and often well enough) usage, import the `ResourceTracker`
+class, and automatically start both system-wide and per-process trackers in the
+background as spawned or forked processes as part of the instantiation:
+
+```python
+from resource_tracker import ResourceTracker
+
+tracker = ResourceTracker()
+# your compute-heavy code
+tracker.stop()
+
+# your analytics code utilizing the collected data
+tracker.pid_tracker
+tracker.system_tracker
+```
+
+The `ResourceTracker` instance gives you access to the collected data in
+real-time, or after stopping the trackers via the `pid_tracker` and
+`system_tracker` properties. Both are `TinyDataFrame` objects, which are
+essentially dictionaries of lists, with additional methods for e.g. printing and
+saving to a CSV file. See the
+[standalone.py](https://github.com/SpareCores/resource-tracker/tree/main/examples/standalone.py)
+for a more detailed actual usage example.
+
+It's possible to track only the system-wide or process resource usage by the
+related init parameters, just like controlling the sampling interval, or how to
+start (e.g. spawn or fork) the subprocesses of the trackers.
+
+For even more control, you can use the underlying `PidTracker` and
+`SystemTracker` classes directly, which are not starting and handling new
+processes, but simply log resource usage to the standard output or a file. For
+example, to track only the system-wide resource usage, you can use
+`SystemTracker`:
 
 ```python
 from resource_tracker import SystemTracker
@@ -126,10 +162,10 @@ The default stream can be redirected to a file by passing a path to the `csv_fil
 argument, and can use different intervals for sampling via the `interval`
 argument.
 
-The `PidTracker` class tracks resource usage of a running process and optionally
-all its children (recursively), in a similar manner, although somewhat limited in
-functionality, as e.g. `nvidia-smi pmon` can only track up-to 4 GPUs, and
-network traffic monitoring is not available.
+The `PidTracker` class tracks resource usage of a running process (defaults to
+the current process) and optionally all its children (recursively), in a similar
+manner, although somewhat limited in functionality, as e.g. `nvidia-smi pmon`
+can only track up-to 4 GPUs, and network traffic monitoring is not available.
 
 Helper functions are also provided, e.g. `get_pid_stats` and `get_system_stats`
 from both the `tracker_procfs` and `tracker_psutil` modules, which are used

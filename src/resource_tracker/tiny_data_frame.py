@@ -1,5 +1,8 @@
 """
 A very inefficient data-frame implementation for manipulating resource usage data.
+
+If you don't like this helper class, grab the `_data` instance attribute that is
+a dictionary of lists (keyed by column name) and do whatever you want with it.
 """
 
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
@@ -115,10 +118,9 @@ class TinyDataFrame:
 
         try:
             reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
-            for row in reader:
-                results.append(row)
+            results = list(reader)
         finally:
-            if not isinstance(csv_source, list):
+            if hasattr(csv_source, "close"):
                 csv_source.close()
 
         return results

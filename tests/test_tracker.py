@@ -1,6 +1,7 @@
 from importlib import import_module
 from os import getpid
 from platform import system
+from time import sleep
 
 import pytest
 
@@ -161,3 +162,59 @@ def test_systemstats_procfs_vs_psutil(
         assert diff <= absolute_threshold, (
             f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
         )
+
+
+def wait_for_tracker(
+    tracker, check_pid_tracker=True, check_system_tracker=True, timeout=5
+):
+    """Wait for the resource tracker to collect data.
+
+    Args:
+        tracker: The resource tracker to wait for.
+        check_pid_tracker: Whether to check the pid tracker.
+        check_system_tracker: Whether to check the system tracker.
+        timeout: The timeout in seconds.
+    """
+    for i in range(timeout * 10):
+        checks_passed = 0
+        if check_pid_tracker and len(tracker.pid_tracker) >= 1:
+            checks_passed += 1
+        if check_system_tracker and len(tracker.system_tracker) >= 1:
+            checks_passed += 1
+        if checks_passed == int(check_pid_tracker) + int(check_system_tracker):
+            break
+        sleep(0.1)
+    else:
+        pytest.fail("No data collected in pid_tracker after 5 seconds")
+
+
+def test_resource_tracker_subprocesses():
+    """Test that the resource tracker subprocess is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    tracker.start()
+    wait_for_tracker(tracker)
+    tracker.stop()
+    assert len(tracker.pid_tracker) > 0
+    assert len(tracker.system_tracker) > 0
+    assert tracker.pid_tracker[0]["utime"] >= 0
+    assert tracker.system_tracker[0]["utime"] >= 0
+    assert tracker.pid_tracker[0]["memory"] > 0
+    assert tracker.system_tracker[0]["memory_used"] > 0
+    assert tracker.system_tracker[0]["processes"] > 0
+
+
+def test_resource_tracker_subprocess():
+    """Test that the partial resource tracker subprocess is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker(track_processes=False)
+    tracker.start()
+    wait_for_tracker(tracker, check_pid_tracker=False)
+    tracker.stop()
+    assert len(tracker.pid_tracker) == 0
+    assert len(tracker.system_tracker) > 0
+    assert tracker.system_tracker[0]["utime"] >= 0
+    assert tracker.system_tracker[0]["memory_used"] > 0
+    assert tracker.system_tracker[0]["processes"] > 0

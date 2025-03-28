@@ -1,5 +1,5 @@
 """
-Detect server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount) via `procfs` and `nvidia-smi`.
+Detect server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount) via `procfs` or `psutil`, and `nvidia-smi`.
 """
 
 from contextlib import suppress

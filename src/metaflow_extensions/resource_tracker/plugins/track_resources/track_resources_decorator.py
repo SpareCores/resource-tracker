@@ -1,10 +1,4 @@
-from contextlib import suppress
-from multiprocessing import SimpleQueue, get_context
-from os import getpid, unlink
-from signal import SIGINT, SIGTERM, signal
 from statistics import mean
-from sys import exit, platform
-from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import time
 
@@ -14,44 +8,6 @@ from .resource_tracker._version import __version__
 from .resource_tracker.cloud_info import get_cloud_info
 from .resource_tracker.helpers import is_psutil_available
 from .resource_tracker.server_info import get_server_info
-from .resource_tracker.tiny_data_frame import TinyDataFrame
-
-# try to fork when possible due to leaked semaphores on older Python versions
-# see e.g. https://github.com/python/cpython/issues/90549
-if platform in ["linux", "darwin"]:
-    mpc = get_context("fork")
-else:
-    mpc = get_context("spawn")
-
-
-def _run_tracker(tracker_type, error_queue, **kwargs):
-    """Run either PidTracker or SystemTracker in a subprocess.
-
-    This functions is standalone so that it can be pickled by multiprocessing,
-    and tries to clean up resources before exiting.
-    """
-
-    def signal_handler(signum, frame):
-        exit(0)
-
-    signal(SIGTERM, signal_handler)
-    signal(SIGINT, signal_handler)
-
-    try:
-        from .resource_tracker import PidTracker, SystemTracker
-
-        tracker = PidTracker if tracker_type == "pid" else SystemTracker
-        tracker(**kwargs)
-    except Exception as e:
-        import traceback
-
-        error_queue.put(
-            {
-                "error_message": str(e),
-                "error_type": type(e).__name__,
-                "traceback": traceback.format_exc(),
-            }
-        )
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -72,8 +28,6 @@ class ResourceTrackerDecorator(StepDecorator):
     def __init__(self, attributes=None, statically_defined=False):
         # error details from main process and threads
         self.error_details = None
-        # error details from subprocesses
-        self.error_queue = SimpleQueue()
         # override default attributes.
         self._attributes_with_user_values = (
             set(attributes.keys()) if attributes is not None else set()
@@ -123,35 +77,9 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         """Start resource tracker processes."""
         try:
-            # create temporary files for both trackers,
-            # and pass only the filepath to the subprocess to avoid pickling the file objects
-            for tracker_name in ["pid_tracker", "system_tracker"]:
-                temp_file = NamedTemporaryFile(delete=False)
-                setattr(self, f"{tracker_name}_filepath", temp_file.name)
-                temp_file.close()
+            from .resource_tracker import ResourceTracker
 
-            self.pid_tracker_process = mpc.Process(
-                target=_run_tracker,
-                args=("pid", self.error_queue),
-                kwargs={
-                    "pid": getpid(),
-                    "interval": self.attributes["interval"],
-                    "output_file": self.pid_tracker_filepath,
-                },
-                daemon=True,
-            )
-            self.pid_tracker_process.start()
-
-            self.system_tracker_process = mpc.Process(
-                target=_run_tracker,
-                args=("system", self.error_queue),
-                kwargs={
-                    "interval": self.attributes["interval"],
-                    "output_file": self.system_tracker_filepath,
-                },
-                daemon=True,
-            )
-            self.system_tracker_process.start()
+            self.resource_tracker = ResourceTracker()
 
             self.cloud_info = None
             self.cloud_info_thread = Thread(
@@ -199,26 +127,19 @@ class ResourceTrackerDecorator(StepDecorator):
     ):
         """Store collected data as an artifact for card/user to process."""
         # check for previous errors in the subprocesses
-        if not self.error_queue.empty():
-            self.error_details = self.error_queue.get()
+        if not self.resource_tracker.error_queue.empty():
+            subprocess_error = self.resource_tracker.error_queue.get()
+            self.error_details = {
+                "error_message": subprocess_error["message"],
+                "error_type": subprocess_error["name"],
+                "traceback": subprocess_error["traceback"],
+            }
             self.logger(
                 f"*WARNING* [@resource_tracker] Subprocess failed: {self.error_details['error_type']} / {self.error_details['error_message']}",
                 timestamp=False,
             )
         # terminate tracker processes
-        for tracker_name in ["pid_tracker", "system_tracker"]:
-            process_attr = f"{tracker_name}_process"
-            if hasattr(self, process_attr):
-                process = getattr(self, process_attr)
-                if process.is_alive():
-                    with suppress(Exception):
-                        process.terminate()
-                        process.join(timeout=1.0)
-                        if process.is_alive():
-                            process.kill()
-                            process.join(timeout=1.0)
-                process.close()
-        self.error_queue.close()
+        self.resource_tracker.stop()
         # early return if there was an error either in the main process, threads, or in the subprocesses
         if self.error_details is not None:
             setattr(
@@ -231,9 +152,8 @@ class ResourceTrackerDecorator(StepDecorator):
             if self.cloud_info_thread.is_alive():
                 self.cloud_info_thread.join()
 
-            pid_tracker_data = TinyDataFrame(csv_file_path=self.pid_tracker_filepath)
-
             # nothing to report on
+            pid_tracker_data = self.resource_tracker.pid_tracker
             if len(pid_tracker_data) == 0:
                 if self.attributes["interval"] * 2 > (time() - self.start_time):
                     setattr(
@@ -260,9 +180,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     )
                 return
 
-            system_tracker_data = TinyDataFrame(
-                csv_file_path=self.system_tracker_filepath
-            )
+            system_tracker_data = self.resource_tracker.system_tracker
             historical_stats = self._get_historical_stats(flow, step_name)
 
             data = {
@@ -320,9 +238,6 @@ class ResourceTrackerDecorator(StepDecorator):
                 f"*WARNING* [@resource_tracker] Failed to process resource tracking results: {type(e).__name__} / {e}. See the artifact or card for more details, including the traceback.",
                 timestamp=False,
             )
-        finally:
-            unlink(self.pid_tracker_filepath)
-            unlink(self.system_tracker_filepath)
 
     def _get_historical_stats(self, flow, step_name):
         """Fetch historical resource stats from previous runs' artifacts."""
@@ -359,13 +274,21 @@ class ResourceTrackerDecorator(StepDecorator):
                     task = next(iter(step.tasks()), None)
                     if not task:
                         continue
-                    if not hasattr(task.data, self.attributes["artifact_name"]):
+                    # cannot use hasattr on the artifact object, so force try/catch to see if we have an artifact
+                    try:
+                        resource_data = getattr(
+                            task.data, self.attributes["artifact_name"]
+                        )
+                    except Exception:
+                        self.logger(
+                            f"*NOTE* [@resource_tracker] No historical data found for run {run.id}",
+                            timestamp=False,
+                        )
                         continue
-                    resource_data = getattr(task.data, self.attributes["artifact_name"])
                     # successful run, but tracker failed
                     if resource_data.get("error"):
                         self.logger(
-                            f"*NOTE* [@resource_tracker] No historical data found for run {run.id}",
+                            f"*NOTE* [@resource_tracker] Failed historical data found for run {run.id}",
                             timestamp=False,
                         )
                         continue

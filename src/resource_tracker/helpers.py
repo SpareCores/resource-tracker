@@ -1,5 +1,5 @@
 """
-Helpers for the resource tracker.
+General helpers.
 """
 
 import os
@@ -7,9 +7,11 @@ from contextlib import suppress
 from functools import cache
 from glob import glob
 from importlib.util import find_spec
+from multiprocessing import Process
+from os import unlink
 from re import search
 from subprocess import PIPE, Popen, TimeoutExpired
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 
 @cache
@@ -108,3 +110,33 @@ def get_zfs_pools_space() -> Dict[str, Dict[str, int]]:
         except Exception:
             pass
     return disks
+
+
+def cleanup_files(files: List[str]):
+    """Cleanup files.
+
+    Args:
+        files: List of file paths to cleanup.
+    """
+    for f in files:
+        with suppress(Exception):
+            unlink(f)
+
+
+def cleanup_processes(processes: List[Process]):
+    """Gracefully, then if needed forcefully terminate and close processes.
+
+    Args:
+        processes: List of `multiprocessing.Process` objects to cleanup.
+    """
+    for process in processes:
+        with suppress(Exception):
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=1.0)
+        with suppress(Exception):
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=1.0)
+        with suppress(Exception):
+            process.close()

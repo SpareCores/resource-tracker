@@ -8,7 +8,7 @@ import pytest
 @pytest.mark.skipif(
     system() == "Windows", reason="Metaflow is not supported on Windows"
 )
-def test_flow_execution():
+def test_flow_execution(artifacts_dir):
     """Test running a Metaflow flow and checking its artifacts."""
     from metaflow import Flow
     from metaflow.cards import get_cards
@@ -50,5 +50,11 @@ def test_flow_execution():
     card = cards[0]
     assert card.type == "tracked_resources"
     html = card.get()
-    assert "Server CPU usage" in html
+    assert "Task CPU usage" in html
+    assert "System CPU usage" in html
     assert len(html) > 100_000
+
+    # store html for inspection
+    html_path = artifacts_dir / "metaflow_resource_card.html"
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html)

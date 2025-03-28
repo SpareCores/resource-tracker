@@ -164,8 +164,18 @@ def test_systemstats_procfs_vs_psutil(
         )
 
 
-def wait_for_tracker(tracker, check_pid_tracker=True, check_system_tracker=True):
-    for i in range(50):
+def wait_for_tracker(
+    tracker, check_pid_tracker=True, check_system_tracker=True, timeout=5
+):
+    """Wait for the resource tracker to collect data.
+
+    Args:
+        tracker: The resource tracker to wait for.
+        check_pid_tracker: Whether to check the pid tracker.
+        check_system_tracker: Whether to check the system tracker.
+        timeout: The timeout in seconds.
+    """
+    for i in range(timeout * 10):
         checks_passed = 0
         if check_pid_tracker and len(tracker.pid_tracker) >= 1:
             checks_passed += 1

@@ -164,13 +164,22 @@ def test_systemstats_procfs_vs_psutil(
         )
 
 
+def wait_for_tracker(tracker, records=1):
+    for i in range(50):
+        if len(tracker.system_tracker) >= records:
+            break
+        sleep(0.1)
+    else:
+        pytest.fail("No data collected in pid_tracker after 5 seconds")
+
+
 def test_resource_tracker_subprocesses():
     """Test that the resource tracker subprocess is working."""
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
     tracker.start()
-    sleep(2)
+    wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.pid_tracker) > 0
     assert len(tracker.system_tracker) > 0
@@ -187,7 +196,7 @@ def test_resource_tracker_subprocess():
 
     tracker = ResourceTracker(track_processes=False)
     tracker.start()
-    sleep(2)
+    wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.pid_tracker) == 0
     assert len(tracker.system_tracker) > 0

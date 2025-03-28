@@ -50,5 +50,6 @@ def test_flow_execution():
     card = cards[0]
     assert card.type == "tracked_resources"
     html = card.get()
-    assert "Server CPU usage" in html
+    assert "Task CPU usage" in html
+    assert "System CPU usage" in html
     assert len(html) > 100_000

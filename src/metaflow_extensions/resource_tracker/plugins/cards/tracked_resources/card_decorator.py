@@ -25,11 +25,12 @@ SERVER_ALLOCATION_CHECKS = [
 class TrackedResourcesCard(MetaflowCard):
     """Card called by the track_resources step decorator, not for direct use."""
 
-    ALLOW_USER_COMPONENTS = True
-    RUNTIME_UPDATABLE = True
+    ALLOW_USER_COMPONENTS = False
+    RUNTIME_UPDATABLE = False
     type = "tracked_resources"
 
     def __init__(self, options={"artifact_name": "resource_tracker_data"}, **kwargs):
+        super().__init__(**kwargs)
         self._artifact_name = options.get("artifact_name", "resource_tracker_data")
 
     def _read_component_files(self):

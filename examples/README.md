@@ -62,6 +62,11 @@ df = Flow("MinimalFlow").latest_run.data.resource_tracker_data["pid_tracker"]
 print(df)
 ```
 
+The `1-minimal-failed.py` script is a variation of the previous example that
+raises an error right before finishing the step. This is to demonstrate that the
+resource tracking and related card generation still works even if an error occurs
+in the step.
+
 ### 2-multi-cpu.py
 
 This script extends the previous example by running the same step on 6 cores.

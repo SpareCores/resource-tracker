@@ -126,6 +126,71 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store collected data as an artifact for card/user to process."""
+        self._store_resource_tracking_data(flow, step_name)
+
+    def task_exception(
+        self,
+        exception,
+        step_name,
+        flow,
+        graph,
+        retry_count,
+        max_user_code_retries,
+    ):
+        """Store resource tracking data even when an exception occurs so that the card can be rendered."""
+        self._store_resource_tracking_data(flow, step_name)
+
+    def task_finished(
+        self,
+        step_name,
+        flow,
+        graph,
+        is_task_ok,
+        retry_count,
+        max_user_code_retries,
+    ):
+        """Render card for failed step."""
+        if not is_task_ok and self.attributes["create_card"]:
+            try:
+                # find our card decorator
+                for decorator in graph[step_name].decorators:
+                    if (
+                        getattr(decorator, "name", None) == "card"
+                        and getattr(decorator, "attributes", {}).get("id")
+                        == self.card_name
+                    ):
+                        # CardDecorator.task_finished but without
+                        # checking if task was OK and skipping the refresh
+                        create_options = dict(
+                            card_uuid=decorator._card_uuid,
+                            user_set_card_id=decorator._user_set_card_id,
+                            runtime_card=decorator._is_runtime_card,
+                            decorator_attributes=decorator.attributes,
+                            card_options=decorator.card_options,
+                            logger=self.logger,
+                        )
+                        decorator.card_creator.create(
+                            mode="render", final=True, **create_options
+                        )
+                        break
+            except Exception as e:
+                import traceback
+
+                self.logger(
+                    f"*WARNING* [@resource_tracker] Failed to render card for failed step: {type(e).__name__} / {e}\n{traceback.format_exc()}",
+                    timestamp=False,
+                )
+
+    def _store_resource_tracking_data(self, flow, step_name):
+        """Store collected resource tracking data as an artifact.
+
+        This method is used by both task_post_step and task_exception to ensure
+        resource data is captured regardless of how the step completes.
+
+        Args:
+            flow: The flow object to store data on
+            step_name: The name of the current step
+        """
         # check for previous errors in the subprocesses
         if not self.resource_tracker.error_queue.empty():
             subprocess_error = self.resource_tracker.error_queue.get()

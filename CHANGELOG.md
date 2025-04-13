@@ -1,3 +1,9 @@
+## v0.4.0 (dev)
+
+- Show card for failed step
+- Note failed step status in card
+- Standardize timestamp format and timezone
+
 ## v0.3.0 (March 27, 2025)
 
 - Extract background process management and related complexities from the `track_resources` decorator into the `ResourceTracker` class to track resource usage of a process and/or the system in a non-blocking way

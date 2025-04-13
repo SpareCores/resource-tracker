@@ -320,5 +320,5 @@ class TrackedResourcesCard(MetaflowCard):
 
         variables["resource_tracker"] = data["resource_tracker"]
         variables["timestamp"] = strftime("%Y-%m-%d %H:%M:%S %Z")
-
+        variables["step_failed"] = data["step_failed"]
         return chevron.render(variables["base_html"], variables)

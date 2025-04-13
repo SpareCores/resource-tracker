@@ -138,7 +138,7 @@ class ResourceTrackerDecorator(StepDecorator):
         max_user_code_retries,
     ):
         """Store resource tracking data even when an exception occurs so that the card can be rendered."""
-        self._store_resource_tracking_data(flow, step_name)
+        self._store_resource_tracking_data(flow, step_name, failed=True)
 
     def task_finished(
         self,
@@ -181,7 +181,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     timestamp=False,
                 )
 
-    def _store_resource_tracking_data(self, flow, step_name):
+    def _store_resource_tracking_data(self, flow, step_name, failed=False):
         """Store collected resource tracking data as an artifact.
 
         This method is used by both task_post_step and task_exception to ensure
@@ -190,6 +190,7 @@ class ResourceTrackerDecorator(StepDecorator):
         Args:
             flow: The flow object to store data on
             step_name: The name of the current step
+            failed: Whether the step failed
         """
         # check for previous errors in the subprocesses
         if not self.resource_tracker.error_queue.empty():
@@ -249,6 +250,7 @@ class ResourceTrackerDecorator(StepDecorator):
             historical_stats = self._get_historical_stats(flow, step_name)
 
             data = {
+                "step_failed": failed,
                 "resource_tracker": {
                     "version": __version__,
                     "implementation": "psutil" if is_psutil_available() else "procfs",

@@ -83,11 +83,22 @@ div.section .section-content-card-task {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s, box-shadow 0.2s;
 }
+div.section .section-content-card-failed {
+    background-color: #06263A;
+    padding: 15px;
+    min-width: 60px;
+    flex: 0 1 auto;
+    border-left: 3px solid #f56565;
+}
 div.section .section-content-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
 }
 div.section .section-content-card-task:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+div.section .section-content-card-failed:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
 }

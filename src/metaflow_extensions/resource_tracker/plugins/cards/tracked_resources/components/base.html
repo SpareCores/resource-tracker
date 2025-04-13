@@ -139,6 +139,20 @@
                         <div class="section-content-card-label">Duration</div>
                         <div class="section-content-card-value">{{{stats.duration}}} sec</div>
                     </div>
+                    {{#step_failed}}
+                    <div class="section-content-card-failed">
+                        <div class="section-content-card-label">Step Status</div>
+                        <div class="section-content-card-value">
+                            Failed
+                            <span class="info-icon" style="padding-bottom: 3px;">
+                                {{{icon_info}}}
+                                <div class="tooltip-content">
+                                    The step did not complete successfully, so resource usage data does not represent a complete run.
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                    {{/step_failed}}
                     {{#server_info.gpu_names}}
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">GPU</div>

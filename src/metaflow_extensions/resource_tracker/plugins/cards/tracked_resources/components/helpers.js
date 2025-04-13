@@ -1,10 +1,22 @@
-function prettyTimestamp(unixTimestamp) {
+function prettyTimestamp(unixTimestamp, granularity, opts, dygraph, fractionalSecondDigits = false) {
+    // 2-3-4 params are dummy placeholders for axisLabelFormatter
+    // so that it's not passing subseconds param
     const date = new Date(unixTimestamp);
     const options = {
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short'
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZoneName: 'short'
     };
-    // YYYY-MM-DD HH:MM:SS GMT+1
-    return date.toLocaleString('sv-SE', options);
+    if (fractionalSecondDigits !== false && fractionalSecondDigits >= 1 && fractionalSecondDigits <= 3) {
+        options.fractionalSecondDigits = fractionalSecondDigits;
+    }
+    // YYYY-MM-DD HH:MM:SS GMT+1 (with optional subseconds)
+    return date.toLocaleString('sv-SE', options).replace(/,/g, '.');
 };
 
 
@@ -49,7 +61,8 @@ function legendFormatter(data) {
         return html;
     }
 
-    var html = data.xHTML;
+    var xValue = new Date(data.x);
+    var html = prettyTimestamp(xValue, null, null, null, 1);
     const colorGroups = {};
     data.series.forEach(function(series) {
         if (!series.isVisible) return;

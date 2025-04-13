@@ -1,8 +1,8 @@
 from collections import Counter
-from datetime import datetime
 from math import ceil
 from os import listdir, path
 from statistics import mean
+from time import strftime
 
 from metaflow.cards import MetaflowCard
 from metaflow.plugins.cards.card_modules import chevron
@@ -319,6 +319,6 @@ class TrackedResourcesCard(MetaflowCard):
                 }
 
         variables["resource_tracker"] = data["resource_tracker"]
-        variables["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        variables["timestamp"] = strftime("%Y-%m-%d %H:%M:%S %Z")
 
         return chevron.render(variables["base_html"], variables)

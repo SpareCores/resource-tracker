@@ -1,6 +1,6 @@
-## v0.4.0 (dev)
+## v0.3.1 (May 30, 2025)
 
-- Show card for failed step
+- Generate card for failed step
 - Note failed step status in card
 - Standardize timestamp format and timezone
 

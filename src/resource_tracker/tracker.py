@@ -161,7 +161,8 @@ class PidTracker:
                     file_writer.writerow(current_stats.values())
                 if output_file:
                     file_handle.flush()
-                sleep(max(0, self.interval - (time() - current_time)))
+                # sleep until the next interval
+                sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()
@@ -328,7 +329,8 @@ class SystemTracker:
                     file_writer.writerow(current_stats.values())
                 if output_file:
                     file_handle.flush()
-                sleep(max(0, self.interval - (time() - current_time)))
+                # sleep until the next interval
+                sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()

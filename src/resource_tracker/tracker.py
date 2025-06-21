@@ -144,8 +144,10 @@ class PidTracker:
                     # the process has exited
                     self.status = "exited"
                     break
-                if self.cycle == 1 and print_header:
-                    file_writer.writerow(current_stats.keys())
+                # don't print values yet, we collect data for the 1st baseline
+                if self.cycle == 1:
+                    if print_header:
+                        file_writer.writerow(current_stats.keys())
                 else:
                     file_writer.writerow(current_stats.values())
                 if output_file:
@@ -302,8 +304,10 @@ class SystemTracker:
             while True:
                 current_time = time()
                 current_stats = self.diff_stats()
-                if self.cycle == 1 and print_header:
-                    file_writer.writerow(current_stats.keys())
+                # don't print values yet, we collect data for the 1st baseline
+                if self.cycle == 1:
+                    if print_header:
+                        file_writer.writerow(current_stats.keys())
                 else:
                     file_writer.writerow(current_stats.values())
                 if output_file:

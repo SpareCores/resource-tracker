@@ -1,3 +1,6 @@
+## dev
+
+- Fix `SystemTracker` and `PidTracker` to not print dummy stats on start when header is disabled
 ## v0.3.1 (May 30, 2025)
 
 - Generate card for failed step

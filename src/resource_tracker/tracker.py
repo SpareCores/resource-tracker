@@ -61,6 +61,7 @@ class PidTracker:
 
     Args:
         pid (int, optional): Process ID to track. Defaults to current process ID.
+        start_time: Time when to start tracking. Defaults to current time.
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
         children (bool, optional): Whether to track child processes. Defaults to True.
         autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
@@ -201,6 +202,7 @@ class SystemTracker:
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
+        start_time: Time when to start tracking. Defaults to current time.
         interval: Sampling interval in seconds. Defaults to 1.
         autostart: Whether to start tracking immediately. Defaults to True.
         output_file: File to write the output to. Defaults to None, print to stdout.

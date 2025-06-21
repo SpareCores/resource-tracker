@@ -69,6 +69,7 @@ class PidTracker:
     def __init__(
         self,
         pid: int = getpid(),
+        start_time: float = time(),
         interval: float = 1,
         children: bool = True,
         autostart: bool = True,
@@ -81,9 +82,16 @@ class PidTracker:
         self.interval = interval
         self.cycle = 0
         self.children = children
-        self.start_time = time()
+        self.start_time = start_time
+
+        # dummy data collection so that diffing on the first time does not fail
         self.stats = self.get_pid_stats(pid, children)
+
         if autostart:
+            # wait for the start time to be reached
+            if start_time > time():
+                sleep(start_time - time())
+            # we can now start. 1st interval used to collect baseline
             self.start_tracking(output_file)
 
     def __call__(self):
@@ -198,6 +206,7 @@ class SystemTracker:
 
     def __init__(
         self,
+        start_time: float = time(),
         interval: float = 1,
         autostart: bool = True,
         output_file: str = None,
@@ -207,10 +216,16 @@ class SystemTracker:
         self.status = "running"
         self.interval = interval
         self.cycle = 0
-        self.start_time = time()
+        self.start_time = start_time
 
+        # dummy data collection so that diffing on the first time does not fail
         self.stats = self.get_system_stats()
+
         if autostart:
+            # wait for the start time to be reached
+            if start_time > time():
+                sleep(start_time - time())
+            # we can now start. 1st interval used to collect baseline
             self.start_tracking(output_file)
 
     def __call__(self):

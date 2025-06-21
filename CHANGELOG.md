@@ -2,6 +2,7 @@
 
 - Fix `SystemTracker` and `PidTracker` to not print dummy stats on start when header is disabled
 - Add optional `start_time` parameter to `SystemTracker` and `PidTracker`
+- Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `PidTracker`
 ## v0.3.1 (May 30, 2025)
 
 - Generate card for failed step

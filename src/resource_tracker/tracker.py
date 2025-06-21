@@ -16,6 +16,7 @@ thread/process yourself.
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
 from logging import getLogger
+from math import ceil
 from multiprocessing import SimpleQueue, get_context
 from os import getpid
 from signal import SIGINT, SIGTERM, signal
@@ -471,6 +472,11 @@ class ResourceTracker:
     def start(self):
         """Start the selected resource trackers in the background as subprocess(es)."""
         self.start_time = time()
+        # round to the nearest interval in the future
+        self.start_time = ceil(self.start_time / self.interval) * self.interval
+        # leave at least 50 ms for trackers to start
+        if self.start_time - time() < 0.05:
+            self.start_time += self.interval
 
         if "pid_tracker" in self.trackers:
             self.pid_tracker_process = self.mpc.Process(
@@ -478,6 +484,7 @@ class ResourceTracker:
                 args=("pid", self.error_queue),
                 kwargs={
                     "pid": self.pid,
+                    "start_time": self.start_time,
                     "interval": self.interval,
                     "children": self.children,
                     "output_file": self.pid_tracker_filepath,
@@ -491,6 +498,7 @@ class ResourceTracker:
                 target=_run_tracker,
                 args=("system", self.error_queue),
                 kwargs={
+                    "start_time": self.start_time,
                     "interval": self.interval,
                     "output_file": self.system_tracker_filepath,
                 },

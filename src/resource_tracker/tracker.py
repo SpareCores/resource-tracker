@@ -626,3 +626,39 @@ class ResourceTracker:
             )
         except Exception:
             return []
+
+    @property
+    def combined_metrics(self) -> Union[TinyDataFrame, List]:
+        """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
+
+        This is effectively binding the two dataframes together by timestamp,
+        and adding a prefix to the column names to distinguish between the system and process metrics.
+
+        Returns:
+            A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
+        """
+        try:
+            process_metrics = self.process_metrics
+            system_metrics = self.system_metrics
+
+            # ensure both have the same length
+            if len(process_metrics) > len(system_metrics):
+                process_metrics = process_metrics[: len(system_metrics)]
+            elif len(system_metrics) > len(process_metrics):
+                system_metrics = system_metrics[: len(process_metrics)]
+
+            # nothing to report on
+            if len(process_metrics) == 0:
+                return []
+
+            # cbind the two dataframes with column name prefixes
+            combined = system_metrics.rename(
+                columns={n: "system_" + n for n in system_metrics.columns[1:]}
+            )
+            for col in process_metrics.columns[1:]:
+                if col not in combined.columns:
+                    combined["process_" + col] = process_metrics[col]
+
+            return combined
+        except Exception:
+            return []

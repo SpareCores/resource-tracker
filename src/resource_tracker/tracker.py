@@ -22,11 +22,14 @@ from os import getpid
 from signal import SIGINT, SIGTERM, signal
 from sys import platform, stdout
 from tempfile import NamedTemporaryFile
+from threading import Thread
 from time import sleep, time
 from typing import List, Optional, Union
 from weakref import finalize
 
+from .cloud_info import get_cloud_info
 from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
+from .server_info import get_server_info
 from .tiny_data_frame import TinyDataFrame
 
 logger = getLogger(__name__)
@@ -418,7 +421,16 @@ class ResourceTracker:
         track_processes: Whether to track resource usage at the process level.
             Defaults to True.
         track_system: Whether to track system-wide resource usage. Defaults to True.
+        discover_server: Whether to discover the server specs in the background at
+            startup. Defaults to True.
+        discover_cloud: Whether to discover the cloud environment in the background
+            at startup. Defaults to True.
     """
+
+    server_info: Optional[dict] = None
+    """Collected data via [resource_tracker.get_server_info][]."""
+    cloud_info: Optional[dict] = None
+    """Collected data via [resource_tracker.get_cloud_info][]."""
 
     def __init__(
         self,
@@ -429,6 +441,8 @@ class ResourceTracker:
         autostart: bool = True,
         track_processes: bool = True,
         track_system: bool = True,
+        discover_server: bool = True,
+        discover_cloud: bool = True,
     ):
         self.pid = pid
         self.children = children
@@ -440,6 +454,8 @@ class ResourceTracker:
             self.trackers.append("pid_tracker")
         if track_system:
             self.trackers.append("system_tracker")
+        self.discover_server = discover_server
+        self.discover_cloud = discover_cloud
 
         if method is None:
             # try to fork when possible due to leaked semaphores on older Python versions
@@ -509,6 +525,27 @@ class ResourceTracker:
                 daemon=True,
             )
             self.system_tracker_process.start()
+
+        def collect_server_info():
+            """Collect server info to be run in a background thread."""
+            try:
+                self.server_info = get_server_info()
+            except Exception as e:
+                logger.warning(f"Error fetching server info: {e}")
+
+        def collect_cloud_info():
+            """Collect cloud info to be run in a background thread."""
+            try:
+                self.cloud_info = get_cloud_info()
+            except Exception as e:
+                logger.warning(f"Error fetching cloud info: {e}")
+
+        if self.discover_server:
+            server_thread = Thread(target=collect_server_info, daemon=True)
+            server_thread.start()
+        if self.discover_cloud:
+            cloud_thread = Thread(target=collect_cloud_info, daemon=True)
+            cloud_thread.start()
 
         # make sure to cleanup the started subprocess(es)
         finalize(

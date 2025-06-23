@@ -1,13 +1,10 @@
 from statistics import mean
-from threading import Thread
 from time import time
 
 from metaflow.decorators import StepDecorator
 
 from .resource_tracker._version import __version__
-from .resource_tracker.cloud_info import get_cloud_info
 from .resource_tracker.helpers import is_psutil_available
-from .resource_tracker.server_info import get_server_info
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -80,15 +77,6 @@ class ResourceTrackerDecorator(StepDecorator):
             from .resource_tracker import ResourceTracker
 
             self.resource_tracker = ResourceTracker()
-
-            self.cloud_info = None
-            self.cloud_info_thread = Thread(
-                target=self._get_cloud_info_with_error_handling,
-                daemon=True,
-            )
-            self.cloud_info_thread.start()
-
-            self.server_info = get_server_info()
             self.start_time = time()
 
         except Exception as e:
@@ -103,19 +91,6 @@ class ResourceTrackerDecorator(StepDecorator):
                 f"*WARNING* [@resource_tracker] Failed to start resource tracker processes: {type(e).__name__} / {e}",
                 timestamp=False,
             )
-
-    def _get_cloud_info_with_error_handling(self):
-        """Get cloud info and capture any exceptions."""
-        try:
-            self.cloud_info = get_cloud_info()
-        except Exception as e:
-            import traceback
-
-            self.error_details = {
-                "error_message": str(e),
-                "error_type": type(e).__name__,
-                "traceback": traceback.format_exc(),
-            }
 
     def task_post_step(
         self,
@@ -214,10 +189,6 @@ class ResourceTrackerDecorator(StepDecorator):
             return
 
         try:
-            # wait for the cloud_info thread to complete
-            if self.cloud_info_thread.is_alive():
-                self.cloud_info_thread.join()
-
             # nothing to report on
             pid_tracker_data = self.resource_tracker.pid_tracker
             if len(pid_tracker_data) == 0:
@@ -248,7 +219,6 @@ class ResourceTrackerDecorator(StepDecorator):
 
             system_tracker_data = self.resource_tracker.system_tracker
             historical_stats = self._get_historical_stats(flow, step_name)
-
             data = {
                 "step_failed": failed,
                 "resource_tracker": {
@@ -257,8 +227,8 @@ class ResourceTrackerDecorator(StepDecorator):
                 },
                 "pid_tracker": pid_tracker_data,
                 "system_tracker": system_tracker_data,
-                "cloud_info": self.cloud_info,
-                "server_info": self.server_info,
+                "cloud_info": self.resource_tracker.cloud_info,
+                "server_info": self.resource_tracker.server_info,
                 "stats": {
                     "cpu_usage": {
                         "mean": round(mean(pid_tracker_data["cpu_usage"]), 2),

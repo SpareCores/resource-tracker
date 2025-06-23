@@ -24,6 +24,7 @@ def get_cloud_info() -> dict:
             - `vendor`: The cloud provider (aws, gcp, azure, hcloud, upcloud), or "unknown"
             - `instance_type`: The instance type/size/flavor, or "unknown"
             - `region`: The region/zone where the instance is running, or "unknown"
+            - `discovery_time`: The time taken to discover the cloud environment, in seconds
     """
     start_time = time()
     check_functions = [

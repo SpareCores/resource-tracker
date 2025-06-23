@@ -9,7 +9,7 @@ in Metaflow.
 The `resource_tracker` package provides the following classes that can be used to track
 resources of a running process (and its children) or system-wide resources.
 
-* `PidTracker`: Track resources of a running process and its children.
+* `ProcessTracker`: Track resources of a running process and its children.
 * `SystemTracker`: Track system-wide resources.
 
 ### benchmark.py

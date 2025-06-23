@@ -103,7 +103,7 @@ decorator without explicit `@pypi` config).
 
 The package comes with helper functions and classes for tracking resource usage,
 such as the `ResourceTracker` class that runs trackers in the background, or the
-underlying `PidTracker` and `SystemTracker` classes logging resource usage to
+underlying `ProcessTracker` and `SystemTracker` classes logging resource usage to
 the standard output or a file, both using either `procfs` or `psutil` under the
 hood, depending on which is available, with a preference for `psutil` when both
 are present.
@@ -136,7 +136,7 @@ It's possible to track only the system-wide or process resource usage by the
 related init parameters, just like controlling the sampling interval, or how to
 start (e.g. spawn or fork) the subprocesses of the trackers.
 
-For even more control, you can use the underlying `PidTracker` and
+For even more control, you can use the underlying `ProcessTracker` and
 `SystemTracker` classes directly, which are not starting and handling new
 processes, but simply log resource usage to the standard output or a file. For
 example, to track only the system-wide resource usage, you can use
@@ -162,12 +162,12 @@ The default stream can be redirected to a file by passing a path to the `csv_fil
 argument, and can use different intervals for sampling via the `interval`
 argument.
 
-The `PidTracker` class tracks resource usage of a running process (defaults to
+The `ProcessTracker` class tracks resource usage of a running process (defaults to
 the current process) and optionally all its children (recursively), in a similar
 manner, although somewhat limited in functionality, as e.g. `nvidia-smi pmon`
 can only track up-to 4 GPUs, and network traffic monitoring is not available.
 
-Helper functions are also provided, e.g. `get_pid_stats` and `get_system_stats`
+Helper functions are also provided, e.g. `get_process_stats` and `get_system_stats`
 from both the `tracker_procfs` and `tracker_psutil` modules, which are used
 internally by the above classes after diffing values between subsequent calls.
 

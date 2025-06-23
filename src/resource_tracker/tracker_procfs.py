@@ -151,7 +151,7 @@ def get_pid_proc_io(pid: int) -> Dict[str, int]:
         return {"read_bytes": 0, "write_bytes": 0}
 
 
-def get_pid_stats(
+def get_process_stats(
     pid: int, children: bool = True
 ) -> Dict[str, Union[int, float, None, Set[int]]]:
     """Collect current/cumulative stats of a process from procfs.

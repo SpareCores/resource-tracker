@@ -18,13 +18,13 @@ import pytest
         ),
     ],
 )
-def test_get_pid_stats_implementations(tracker_implementation):
-    """Test get_pid_stats from different implementations."""
+def test_get_process_stats_implementations(tracker_implementation):
+    """Test get_process_stats from different implementations."""
     module = import_module(tracker_implementation)
-    get_pid_stats = getattr(module, "get_pid_stats")
+    get_process_stats = getattr(module, "get_process_stats")
 
     pid = getpid()
-    stats = get_pid_stats(pid)
+    stats = get_process_stats(pid)
 
     # at least some values should be present
     assert stats["timestamp"] is not None
@@ -37,7 +37,7 @@ def test_get_pid_stats_implementations(tracker_implementation):
     # test memory allocation is tracked
     memory = stats["memory"]
     bigobj = bytearray(50 * 1024 * 1024)  # 50MB
-    stats = get_pid_stats(pid)
+    stats = get_process_stats(pid)
     assert stats["memory"] >= memory + 40 * 1024  # kB
     del bigobj
 
@@ -86,8 +86,12 @@ def test_get_system_stats_implementations(tracker_implementation):
 )
 def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold, unit):
     """Test that fields in procfs pidstats implementation match psutil implementation within thresholds."""
-    from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
-    from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
+    from resource_tracker.tracker_procfs import (
+        get_process_stats as procfs_process_stats,
+    )
+    from resource_tracker.tracker_psutil import (
+        get_process_stats as psutil_process_stats,
+    )
 
     # make use of memory for testing
     if field == "memory":
@@ -98,8 +102,8 @@ def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold,
             i**i
 
     pid = getpid()
-    procfs_stats = procfs_pidstats(pid)
-    psutil_stats = psutil_pidstats(pid)
+    procfs_stats = procfs_process_stats(pid)
+    psutil_stats = psutil_process_stats(pid)
 
     value1 = procfs_stats[field]
     value2 = psutil_stats[field]

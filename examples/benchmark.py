@@ -2,12 +2,9 @@ import argparse
 import os
 import time
 
-from resource_tracker.tracker_procfs import get_pid_stats as get_pid_stats_procfs
-from resource_tracker.tracker_psutil import get_pid_stats as get_pid_stats_psutil
 
-
-def compare_get_pid_stats_performance(pid=None, iterations=10):
-    """Compare performance between psutil and procfs implementations of get_pid_stats.
+def compare_get_process_stats_performance(pid=None, iterations=10):
+    """Compare performance between psutil and procfs implementations of get_process_stats.
 
     Args:
         pid: Process ID to analyze. Defaults to current process if None.
@@ -23,14 +20,14 @@ def compare_get_pid_stats_performance(pid=None, iterations=10):
     psutil_times = []
     for _ in range(iterations):
         start_time = time.time()
-        get_pid_stats_psutil(pid)
+        get_process_stats_psutil(pid)
         psutil_times.append(time.time() - start_time)
 
     # Benchmark procfs implementation
     procfs_times = []
     for _ in range(iterations):
         start_time = time.time()
-        get_pid_stats_procfs(pid)
+        get_process_stats_procfs(pid)
         procfs_times.append(time.time() - start_time)
 
     results = {
@@ -73,4 +70,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    compare_get_pid_stats_performance(pid=args.pid, iterations=args.iterations)
+    compare_get_process_stats_performance(pid=args.pid, iterations=args.iterations)

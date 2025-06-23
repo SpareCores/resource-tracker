@@ -1,5 +1,9 @@
 ## dev
 
+Refactoring and cleanup release:
+
+- Renamed `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
+- Renamed `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
 - Fix `SystemTracker` and `PidTracker` to not print dummy stats on start when header is disabled
 - Add optional `start_time` parameter to `SystemTracker` and `PidTracker`
 - Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `PidTracker`

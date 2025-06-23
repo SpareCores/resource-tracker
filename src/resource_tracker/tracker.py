@@ -7,7 +7,7 @@ main process and will allow you to access the collected data via the
 `pid_tracker` and `system_tracker` properties of the instance in real-time, or
 after stopping the resource tracker(s).
 
-For more custom use cases, you can also use the [resource_tracker.PidTracker][]
+For more custom use cases, you can also use the [resource_tracker.ProcessTracker][]
 and [resource_tracker.SystemTracker][] classes directly logging either to the
 standard output or a file, and handle putting those into a background
 thread/process yourself.
@@ -25,6 +25,7 @@ from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import sleep, time
 from typing import List, Optional, Union
+from warnings import warn
 from weakref import finalize
 
 from .cloud_info import get_cloud_info
@@ -35,7 +36,7 @@ from .tiny_data_frame import TinyDataFrame
 logger = getLogger(__name__)
 
 
-class PidTracker:
+class ProcessTracker:
     """Track resource usage of a process and optionally its children.
 
     This class monitors system resources like CPU times and usage, memory usage,
@@ -80,7 +81,7 @@ class PidTracker:
         autostart: bool = True,
         output_file: str = None,
     ):
-        self.get_pid_stats, _ = get_tracker_implementation()
+        self.get_process_stats, _ = get_tracker_implementation()
 
         self.pid = pid
         self.status = "running"
@@ -90,7 +91,7 @@ class PidTracker:
         self.start_time = start_time
 
         # dummy data collection so that diffing on the first time does not fail
-        self.stats = self.get_pid_stats(pid, children)
+        self.stats = self.get_process_stats(pid, children)
 
         if autostart:
             # wait for the start time to be reached
@@ -106,7 +107,7 @@ class PidTracker:
     def diff_stats(self):
         """Calculate stats since last call."""
         last_stats = self.stats
-        self.stats = self.get_pid_stats(self.pid, self.children)
+        self.stats = self.get_process_stats(self.pid, self.children)
         self.cycle += 1
 
         return {
@@ -170,6 +171,22 @@ class PidTracker:
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()
+
+
+class PidTracker(ProcessTracker):
+    """Old name for [resource_tracker.ProcessTracker][].
+
+    This class is deprecated and will be removed in the future.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warn(
+            "PidTracker is deprecated and will be removed in a future release. "
+            "Please use ProcessTracker instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class SystemTracker:
@@ -342,7 +359,7 @@ class SystemTracker:
 
 
 def _run_tracker(tracker_type, error_queue, **kwargs):
-    """Run either PidTracker or SystemTracker with dynamic import resolution and error handling.
+    """Run either ProcessTracker or SystemTracker with dynamic import resolution and error handling.
 
     This functions is standalone so that it can be pickled by multiprocessing,
     and tries to clean up resources before exiting.
@@ -368,7 +385,7 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
             ".resource_tracker.tracker",
         ]
         class_names = {
-            "pid": "PidTracker",
+            "process": "ProcessTracker",
             "system": "SystemTracker",
         }
 
@@ -407,7 +424,7 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
 class ResourceTracker:
     """Track resource usage of processes and the system in a non-blocking way.
 
-    Start a [resource_tracker.PidTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
+    Start a [resource_tracker.ProcessTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
     or forked process(es), and make the collected data available easily in the
     main process via the `pid_tracker` and `system_tracker` properties.
 
@@ -451,7 +468,7 @@ class ResourceTracker:
         self.autostart = autostart
         self.trackers = []
         if track_processes:
-            self.trackers.append("pid_tracker")
+            self.trackers.append("process_tracker")
         if track_system:
             self.trackers.append("system_tracker")
         self.discover_server = discover_server
@@ -498,20 +515,20 @@ class ResourceTracker:
         if self.start_time - time() < 0.05:
             self.start_time += self.interval
 
-        if "pid_tracker" in self.trackers:
-            self.pid_tracker_process = self.mpc.Process(
+        if "process_tracker" in self.trackers:
+            self.process_tracker_process = self.mpc.Process(
                 target=_run_tracker,
-                args=("pid", self.error_queue),
+                args=("process", self.error_queue),
                 kwargs={
                     "pid": self.pid,
                     "start_time": self.start_time,
                     "interval": self.interval,
                     "children": self.children,
-                    "output_file": self.pid_tracker_filepath,
+                    "output_file": self.process_tracker_filepath,
                 },
                 daemon=True,
             )
-            self.pid_tracker_process.start()
+            self.process_tracker_process.start()
 
         if "system_tracker" in self.trackers:
             self.system_tracker_process = self.mpc.Process(
@@ -584,14 +601,14 @@ class ResourceTracker:
 
     @property
     def pid_tracker(self) -> Union[TinyDataFrame, List]:
-        """Collected data from the [resource_tracker.PidTracker][].
+        """Collected data from the [resource_tracker.ProcessTracker][].
 
         Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.PidTracker][] is not running.
+            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.ProcessTracker][] is not running.
         """
         try:
             return TinyDataFrame(
-                csv_file_path=self.pid_tracker_filepath,
+                csv_file_path=self.process_tracker_filepath,
             )
         except Exception:
             return []

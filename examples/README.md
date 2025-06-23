@@ -15,7 +15,7 @@ resources of a running process (and its children) or system-wide resources.
 ### benchmark.py
 
 This script compares the performance of the `procfs` and `psutil` implementations
-of the `get_pid_stats` function.
+of the `get_process_stats` function.
 
 Example run:
 

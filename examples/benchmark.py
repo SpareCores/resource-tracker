@@ -2,6 +2,13 @@ import argparse
 import os
 import time
 
+from resource_tracker.tracker_procfs import (
+    get_process_stats as get_process_stats_procfs,
+)
+from resource_tracker.tracker_psutil import (
+    get_process_stats as get_process_stats_psutil,
+)
+
 
 def compare_get_process_stats_performance(pid=None, iterations=10):
     """Compare performance between psutil and procfs implementations of get_process_stats.

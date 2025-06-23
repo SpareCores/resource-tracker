@@ -111,11 +111,11 @@ class ProcessTracker:
         self.cycle += 1
 
         return {
-            "timestamp": self.stats["timestamp"],
+            "timestamp": round(self.stats["timestamp"], 3),
             "pid": self.pid,
             "children": self.stats["children"],
-            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
-            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
+            "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
                 max(
                     0,
@@ -289,10 +289,10 @@ class SystemTracker:
             disk_space_free += disk_space["free"]
 
         return {
-            "timestamp": self.stats["timestamp"],
+            "timestamp": round(self.stats["timestamp"], 3),
             "processes": self.stats["processes"],
-            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
-            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
+            "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
                 max(
                     0,

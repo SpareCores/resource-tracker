@@ -6,11 +6,12 @@ Refactoring and cleanup release:
 - Renamed `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
 - Renamed the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
 - Renamed process-related helpers in the ProcFS implementation from `pid` prefix to `process` prefix.
-- Fix `SystemTracker` and `PidTracker` to not print dummy stats on start when header is disabled
-- Add optional `start_time` parameter to `SystemTracker` and `PidTracker`
-- Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `PidTracker`
-- Fix `SystemTracker` and `PidTracker` to not drift by a few nanoseconds in every interval
+- Fix `SystemTracker` and `ProcessTracker` to not print dummy stats on start when header is disabled
+- Add optional `start_time` parameter to `SystemTracker` and `ProcessTracker`
+- Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `ProcessTracker`
+- Fix `SystemTracker` and `ProcessTracker` to not drift by a few nanoseconds in every interval
 - Move cloud and server discovery to the `ResourceTracker` class from the Metaflow-specific decorators
+- Round timestamp and user/system time to reasonable (6/4) decimal places.
 
 ## v0.3.1 (May 30, 2025)
 

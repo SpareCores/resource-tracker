@@ -47,6 +47,7 @@ def get_sector_sizes() -> Dict[str, int]:
     return sector_sizes
 
 
+# TODO rename all these to process!
 def get_pid_children(pid: int) -> Set[int]:
     """Get all descendant processes recursively.
 

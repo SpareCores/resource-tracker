@@ -58,7 +58,7 @@ around a dictionary of column vectors. To get a quick overview of the data, you
 can use the `print` method, printing the first 10 rows in a human-readable table:
 
 ```python
-df = Flow("MinimalFlow").latest_run.data.resource_tracker_data["pid_tracker"]
+df = Flow("MinimalFlow").latest_run.data.resource_tracker_data["process_metrics"]
 print(df)
 ```
 

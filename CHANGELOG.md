@@ -4,6 +4,7 @@ Refactoring and cleanup release:
 
 - Renamed `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
 - Renamed `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
+- Renamed the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
 - Fix `SystemTracker` and `PidTracker` to not print dummy stats on start when header is disabled
 - Add optional `start_time` parameter to `SystemTracker` and `PidTracker`
 - Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `PidTracker`

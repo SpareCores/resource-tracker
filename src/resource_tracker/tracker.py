@@ -4,7 +4,7 @@ Track resource usage of a process and/or the system.
 To start tracker(s) in the background as spawned or forked process(es), use the
 [resource_tracker.ResourceTracker][] class. Starting this will not block the
 main process and will allow you to access the collected data via the
-`pid_tracker` and `system_tracker` properties of the instance in real-time, or
+`process_metrics` and `system_metrics` properties of the instance in real-time, or
 after stopping the resource tracker(s).
 
 For more custom use cases, you can also use the [resource_tracker.ProcessTracker][]
@@ -426,7 +426,7 @@ class ResourceTracker:
 
     Start a [resource_tracker.ProcessTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
     or forked process(es), and make the collected data available easily in the
-    main process via the `pid_tracker` and `system_tracker` properties.
+    main process via the `process_metrics` and `system_metrics` properties.
 
     Args:
         pid: Process ID to track. Defaults to current process ID.
@@ -595,12 +595,12 @@ class ResourceTracker:
         logger.debug(
             "Resource tracker stopped after %s seconds, logging %d process-level and %d system-wide records",
             self.stop_time - self.start_time,
-            len(self.pid_tracker),
-            len(self.system_tracker),
+            len(self.process_metrics),
+            len(self.system_metrics),
         )
 
     @property
-    def pid_tracker(self) -> Union[TinyDataFrame, List]:
+    def process_metrics(self) -> Union[TinyDataFrame, List]:
         """Collected data from the [resource_tracker.ProcessTracker][].
 
         Returns:
@@ -614,7 +614,7 @@ class ResourceTracker:
             return []
 
     @property
-    def system_tracker(self) -> Union[TinyDataFrame, List]:
+    def system_metrics(self) -> Union[TinyDataFrame, List]:
         """Collected data from the [resource_tracker.SystemTracker][].
 
         Returns:

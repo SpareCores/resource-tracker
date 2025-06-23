@@ -190,8 +190,8 @@ class ResourceTrackerDecorator(StepDecorator):
 
         try:
             # nothing to report on
-            pid_tracker_data = self.resource_tracker.pid_tracker
-            if len(pid_tracker_data) == 0:
+            process_metrics = self.resource_tracker.process_metrics
+            if len(process_metrics) == 0:
                 if self.attributes["interval"] * 2 > (time() - self.start_time):
                     setattr(
                         flow,
@@ -217,7 +217,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     )
                 return
 
-            system_tracker_data = self.resource_tracker.system_tracker
+            system_metrics = self.resource_tracker.system_metrics
             historical_stats = self._get_historical_stats(flow, step_name)
             data = {
                 "step_failed": failed,
@@ -225,37 +225,37 @@ class ResourceTrackerDecorator(StepDecorator):
                     "version": __version__,
                     "implementation": "psutil" if is_psutil_available() else "procfs",
                 },
-                "pid_tracker": pid_tracker_data,
-                "system_tracker": system_tracker_data,
+                "process_metrics": process_metrics,
+                "system_metrics": system_metrics,
                 "cloud_info": self.resource_tracker.cloud_info,
                 "server_info": self.resource_tracker.server_info,
                 "stats": {
                     "cpu_usage": {
-                        "mean": round(mean(pid_tracker_data["cpu_usage"]), 2),
-                        "max": round(max(pid_tracker_data["cpu_usage"]), 2),
+                        "mean": round(mean(process_metrics["cpu_usage"]), 2),
+                        "max": round(max(process_metrics["cpu_usage"]), 2),
                     },
                     "memory_usage": {
-                        "mean": round(mean(pid_tracker_data["memory"]), 2),
-                        "max": round(max(pid_tracker_data["memory"]), 2),
+                        "mean": round(mean(process_metrics["memory"]), 2),
+                        "max": round(max(process_metrics["memory"]), 2),
                     },
                     "gpu_usage": {
-                        "mean": round(mean(pid_tracker_data["gpu_usage"]), 2),
-                        "max": round(max(pid_tracker_data["gpu_usage"]), 2),
+                        "mean": round(mean(process_metrics["gpu_usage"]), 2),
+                        "max": round(max(process_metrics["gpu_usage"]), 2),
                     },
                     "gpu_vram": {
-                        "mean": round(mean(pid_tracker_data["gpu_vram"]), 2),
-                        "max": round(max(pid_tracker_data["gpu_vram"]), 2),
+                        "mean": round(mean(process_metrics["gpu_vram"]), 2),
+                        "max": round(max(process_metrics["gpu_vram"]), 2),
                     },
                     "gpu_utilized": {
-                        "mean": round(mean(pid_tracker_data["gpu_utilized"]), 2),
-                        "max": round(max(pid_tracker_data["gpu_utilized"]), 2),
+                        "mean": round(mean(process_metrics["gpu_utilized"]), 2),
+                        "max": round(max(process_metrics["gpu_utilized"]), 2),
                     },
                     "disk_usage": {
-                        "max": round(max(system_tracker_data["disk_space_used_gb"]), 2),
+                        "max": round(max(system_metrics["disk_space_used_gb"]), 2),
                     },
                     "traffic": {
-                        "inbound": sum(system_tracker_data["net_recv_bytes"]),
-                        "outbound": sum(system_tracker_data["net_sent_bytes"]),
+                        "inbound": sum(system_metrics["net_recv_bytes"]),
+                        "outbound": sum(system_metrics["net_sent_bytes"]),
                     },
                     "duration": round(time() - self.start_time, 2),
                 },

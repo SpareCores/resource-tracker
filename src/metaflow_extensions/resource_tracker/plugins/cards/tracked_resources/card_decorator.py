@@ -84,20 +84,20 @@ class TrackedResourcesCard(MetaflowCard):
                 )
             return error_html
 
-        pid = data["pid_tracker"]
-        system = data["system_tracker"]
+        process_metrics = data["process_metrics"]
+        system_metrics = data["system_metrics"]
 
         # ensure both have the same length
-        if len(pid) > len(system):
-            pid = pid[: len(system)]
-        elif len(system) > len(pid):
-            system = system[: len(pid)]
+        if len(process_metrics) > len(system_metrics):
+            process_metrics = process_metrics[: len(system_metrics)]
+        elif len(system_metrics) > len(process_metrics):
+            system_metrics = system_metrics[: len(process_metrics)]
 
         # nothing to report on
-        if len(pid) == 0:
+        if len(process_metrics) == 0:
             return "The tracker did not collect any data. Please check if the step run for longer than the specified interval."
 
-        joined = system[
+        joined = system_metrics[
             [
                 "timestamp",
                 "cpu_usage",
@@ -127,13 +127,13 @@ class TrackedResourcesCard(MetaflowCard):
             }
         )
         # dummy merge
-        joined["Task CPU usage"] = pid["cpu_usage"]
-        joined["Task memory usage"] = pid["memory"]
-        joined["Task disk read"] = pid["read_bytes"]
-        joined["Task disk write"] = pid["write_bytes"]
-        joined["Task GPU usage"] = pid["gpu_usage"]
-        joined["Task GPUs in use"] = pid["gpu_utilized"]
-        joined["Task VRAM used"] = pid["gpu_vram"]
+        joined["Task CPU usage"] = process_metrics["cpu_usage"]
+        joined["Task memory usage"] = process_metrics["memory"]
+        joined["Task disk read"] = process_metrics["read_bytes"]
+        joined["Task disk write"] = process_metrics["write_bytes"]
+        joined["Task GPU usage"] = process_metrics["gpu_usage"]
+        joined["Task GPUs in use"] = process_metrics["gpu_utilized"]
+        joined["Task VRAM used"] = process_metrics["gpu_vram"]
         # convert memory usage to bytes so that we can pretty format on the client side
         for col in ["Task memory usage", "System memory usage"]:  # KiB -> B
             joined[col] = [m * 1024 for m in joined[col]]
@@ -204,7 +204,7 @@ class TrackedResourcesCard(MetaflowCard):
         else:
             variables["server_info"]["gpu_name"] = ""
         variables["server_info"]["disk_space_total_gb"] = pretty_number(
-            system["disk_space_total_gb"][0], 0
+            system_metrics["disk_space_total_gb"][0], 0
         )
         variables["server_info"]["allocation"] = "Dedicated"
         for check in SERVER_ALLOCATION_CHECKS:

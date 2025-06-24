@@ -55,6 +55,24 @@ def sample_data():
     }
 
 
+def test_initialization_with_dict_of_lists(sample_data):
+    """Test TinyDataFrame initialization with a dict of lists"""
+    df = TinyDataFrame(sample_data)
+    assert df.columns == ["timestamp", "cpu", "memory"]
+    assert len(df) == 12
+
+
+def test_initialization_with_list_of_dicts(sample_data):
+    """Test TinyDataFrame initialization with a list of dicts"""
+    sample_data_list = [
+        {k: sample_data[k][i] for k in sample_data.keys()}
+        for i in range(len(next(iter(sample_data.values()))))
+    ]
+    df = TinyDataFrame(sample_data_list)
+    assert df.columns == ["timestamp", "cpu", "memory"]
+    assert len(df) == 12
+
+
 def test_initialization(sample_data):
     """Test TinyDataFrame initialization"""
     df = TinyDataFrame(sample_data)

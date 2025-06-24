@@ -185,6 +185,8 @@ def test_invalid_access():
     # Test invalid column name
     with pytest.raises(KeyError):
         _ = df["non_existent"]
+    with pytest.raises(KeyError):
+        _ = df[["non_existent1", "non_existent2"]]
 
     # Test invalid key type
     with pytest.raises(TypeError):

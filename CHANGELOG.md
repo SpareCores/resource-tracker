@@ -11,7 +11,8 @@ Refactoring and cleanup release:
 - Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `ProcessTracker`
 - Fix `SystemTracker` and `ProcessTracker` to not drift by a few nanoseconds in every interval
 - Move cloud and server discovery to the `ResourceTracker` class from the Metaflow-specific decorators
-- Round timestamp and user/system time to reasonable (6/4) decimal places.
+- Round timestamp and user/system time to reasonable (6/4) decimal places
+- Rework internal data structure of `TinyDataFrame` to use a list of lists instead of a dictionary of lists to support more efficient slicing and column renaming
 
 ## v0.3.1 (May 30, 2025)
 

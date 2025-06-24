@@ -13,6 +13,8 @@ Refactoring and cleanup release:
 - Move cloud and server discovery to the `ResourceTracker` class from the Metaflow-specific decorators
 - Round timestamp and user/system time to reasonable (6/4) decimal places
 - Rework internal data structure of `TinyDataFrame` to use a list of lists instead of a dictionary of lists to support more efficient slicing and column renaming
+- Add `get_combined_metrics` method to `ResourceTracker` to combine `process_metrics` and `system_metrics` into a single data frame, optionally with all metrics converted to bytes, and columns renamed to use human-friendly names
+
 
 ## v0.3.1 (May 30, 2025)
 

@@ -224,3 +224,29 @@ def test_resource_tracker_subprocess():
     assert tracker.system_metrics[0]["utime"] >= 0
     assert tracker.system_metrics[0]["memory_used"] > 0
     assert tracker.system_metrics[0]["processes"] > 0
+
+
+def test_resource_tracker_combined_metrics():
+    """Test that the combined metrics getter is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    tracker.start()
+    wait_for_tracker(tracker)
+    tracker.stop()
+    assert len(tracker.get_combined_metrics()) > 0
+    assert tracker.get_combined_metrics()[0]["system_utime"] >= 0
+    assert (
+        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"] >= 0
+    )
+    assert tracker.get_combined_metrics()[0]["process_utime"] >= 0
+    assert (
+        tracker.get_combined_metrics(human_names=True)[0]["Process CPU time (user)"]
+        >= 0
+    )
+    assert tracker.get_combined_metrics()[0]["system_memory_used"] > 0
+    assert tracker.get_combined_metrics()[0]["process_memory"] > 0
+    assert (
+        tracker.get_combined_metrics(bytes=True)[0]["process_memory"]
+        > tracker.get_combined_metrics(bytes=False)[0]["process_memory"]
+    )

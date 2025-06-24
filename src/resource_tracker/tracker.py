@@ -627,12 +627,23 @@ class ResourceTracker:
         except Exception:
             return []
 
-    @property
-    def combined_metrics(self) -> Union[TinyDataFrame, List]:
+    def get_combined_metrics(
+        self,
+        bytes: bool = False,
+        human_names: bool = False,
+        system_prefix: Optional[str] = None,
+        process_prefix: Optional[str] = None,
+    ) -> Union[TinyDataFrame, List]:
         """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
         This is effectively binding the two dataframes together by timestamp,
         and adding a prefix to the column names to distinguish between the system and process metrics.
+
+        Args:
+            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
+            human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
+            system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
+            process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
 
         Returns:
             A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
@@ -651,14 +662,85 @@ class ResourceTracker:
             if len(process_metrics) == 0:
                 return []
 
-            # cbind the two dataframes with column name prefixes
+            if bytes:
+
+                def multi1024(values, times=1):
+                    return [v * 1024**times for v in values]
+
+                # KiB -> B
+                process_metrics["memory"] = multi1024(process_metrics["memory"])
+                for col in [
+                    "memory_free",
+                    "memory_used",
+                    "memory_buffers",
+                    "memory_cached",
+                    "memory_active",
+                    "memory_inactive",
+                ]:
+                    system_metrics[col] = multi1024(system_metrics[col], 1)
+                # MiB -> B
+                for df in [system_metrics, process_metrics]:
+                    df["gpu_vram"] = multi1024(df["gpu_vram"], 2)
+                # GiB -> B
+                for col in [
+                    "disk_space_total_gb",
+                    "disk_space_used_gb",
+                    "disk_space_free_gb",
+                ]:
+                    system_metrics[col] = multi1024(system_metrics[col], 3)
+
+            if system_prefix is None:
+                system_prefix = "system_" if not human_names else "System "
+            if process_prefix is None:
+                process_prefix = "process_" if not human_names else "Process "
+
+            # cbind the two dataframes with column name prefixes and optional human-friendly names
+            human_names_mapping = {
+                "timestamp": "Timestamp",
+                # system-level metrics
+                "processes": "processes",
+                "utime": "CPU time (user)",
+                "stime": "CPU time (system)",
+                "cpu_usage": "CPU usage",
+                "memory_free": "free memory",
+                "memory_used": "used memory",
+                "memory_buffers": "memory buffers",
+                "memory_cached": "memory page/file cached",
+                "memory_active": "active memory",
+                "memory_inactive": "inactive memory",
+                "disk_read_bytes": "disk read",
+                "disk_write_bytes": "disk write",
+                "disk_space_total_gb": "disk space total",
+                "disk_space_used_gb": "disk space used",
+                "disk_space_free_gb": "disk space free",
+                "net_recv_bytes": "inbound network traffic",
+                "net_sent_bytes": "outbound network traffic",
+                "gpu_usage": "GPU usage",
+                "gpu_vram": "VRAM used",
+                "gpu_utilized": "GPUs in use",
+                # process-level metrics
+                "pid": "PID",
+                "children": "children",
+                "memory": "memory usage",
+                "read_bytes": "disk read",
+                "write_bytes": "disk write",
+            }
             combined = system_metrics.rename(
-                columns={n: "system_" + n for n in system_metrics.columns[1:]}
+                columns={
+                    n: (
+                        (system_prefix if n != "timestamp" else "")
+                        + (n if not human_names else human_names_mapping.get(n, n))
+                    )
+                    for n in system_metrics.columns
+                }
             )
             for col in process_metrics.columns[1:]:
-                if col not in combined.columns:
-                    combined["process_" + col] = process_metrics[col]
+                combined[
+                    process_prefix
+                    + (col if not human_names else human_names_mapping.get(col, col))
+                ] = process_metrics[col]
 
             return combined
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error getting combined metrics: {e}")
             return []

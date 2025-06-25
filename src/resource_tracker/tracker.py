@@ -664,10 +664,10 @@ class ResourceTracker:
                 return []
 
             if bytes:
-                for col in BYTE_MAPPING:
-                    for df in [system_metrics, process_metrics]:
-                        if col in df:
-                            df[col] = [v * BYTE_MAPPING[col] for v in df[col]]
+                for col, factor in BYTE_MAPPING.items():
+                    for metrics in (system_metrics, process_metrics):
+                        if col in metrics.columns:
+                            metrics[col] = [v * factor for v in metrics[col]]
 
             if system_prefix is None:
                 system_prefix = "system_" if not human_names else "System "

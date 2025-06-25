@@ -445,9 +445,9 @@ class ResourceTracker:
     """
 
     server_info: Optional[dict] = None
-    """Collected data via [resource_tracker.get_server_info][]."""
+    """Collected data from [resource_tracker.get_server_info][]."""
     cloud_info: Optional[dict] = None
-    """Collected data via [resource_tracker.get_cloud_info][]."""
+    """Collected data from [resource_tracker.get_cloud_info][]."""
 
     def __init__(
         self,
@@ -601,7 +601,7 @@ class ResourceTracker:
 
     @property
     def process_metrics(self) -> Union[TinyDataFrame, List]:
-        """Collected data from the [resource_tracker.ProcessTracker][].
+        """Collected data from [resource_tracker.ProcessTracker][].
 
         Returns:
             A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.ProcessTracker][] is not running.
@@ -615,7 +615,7 @@ class ResourceTracker:
 
     @property
     def system_metrics(self) -> Union[TinyDataFrame, List]:
-        """Collected data from the [resource_tracker.SystemTracker][].
+        """Collected data from [resource_tracker.SystemTracker][].
 
         Returns:
             A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.SystemTracker][] is not running.

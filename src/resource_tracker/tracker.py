@@ -29,6 +29,7 @@ from warnings import warn
 from weakref import finalize
 
 from .cloud_info import get_cloud_info
+from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING
 from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
 from .server_info import get_server_info
 from .tiny_data_frame import TinyDataFrame
@@ -663,31 +664,10 @@ class ResourceTracker:
                 return []
 
             if bytes:
-
-                def multi1024(values, times=1):
-                    return [v * 1024**times for v in values]
-
-                # KiB -> B
-                process_metrics["memory"] = multi1024(process_metrics["memory"])
-                for col in [
-                    "memory_free",
-                    "memory_used",
-                    "memory_buffers",
-                    "memory_cached",
-                    "memory_active",
-                    "memory_inactive",
-                ]:
-                    system_metrics[col] = multi1024(system_metrics[col], 1)
-                # MiB -> B
-                for df in [system_metrics, process_metrics]:
-                    df["gpu_vram"] = multi1024(df["gpu_vram"], 2)
-                # GiB -> B
-                for col in [
-                    "disk_space_total_gb",
-                    "disk_space_used_gb",
-                    "disk_space_free_gb",
-                ]:
-                    system_metrics[col] = multi1024(system_metrics[col], 3)
+                for col in BYTE_MAPPING:
+                    for df in [system_metrics, process_metrics]:
+                        if col in df:
+                            df[col] = [v * BYTE_MAPPING[col] for v in df[col]]
 
             if system_prefix is None:
                 system_prefix = "system_" if not human_names else "System "
@@ -695,41 +675,11 @@ class ResourceTracker:
                 process_prefix = "process_" if not human_names else "Process "
 
             # cbind the two dataframes with column name prefixes and optional human-friendly names
-            human_names_mapping = {
-                "timestamp": "Timestamp",
-                # system-level metrics
-                "processes": "processes",
-                "utime": "CPU time (user)",
-                "stime": "CPU time (system)",
-                "cpu_usage": "CPU usage",
-                "memory_free": "free memory",
-                "memory_used": "used memory",
-                "memory_buffers": "memory buffers",
-                "memory_cached": "memory page/file cached",
-                "memory_active": "active memory",
-                "memory_inactive": "inactive memory",
-                "disk_read_bytes": "disk read",
-                "disk_write_bytes": "disk write",
-                "disk_space_total_gb": "disk space total",
-                "disk_space_used_gb": "disk space used",
-                "disk_space_free_gb": "disk space free",
-                "net_recv_bytes": "inbound network traffic",
-                "net_sent_bytes": "outbound network traffic",
-                "gpu_usage": "GPU usage",
-                "gpu_vram": "VRAM used",
-                "gpu_utilized": "GPUs in use",
-                # process-level metrics
-                "pid": "PID",
-                "children": "children",
-                "memory": "memory usage",
-                "read_bytes": "disk read",
-                "write_bytes": "disk write",
-            }
             combined = system_metrics.rename(
                 columns={
                     n: (
                         (system_prefix if n != "timestamp" else "")
-                        + (n if not human_names else human_names_mapping.get(n, n))
+                        + (n if not human_names else HUMAN_NAMES_MAPPING.get(n, n))
                     )
                     for n in system_metrics.columns
                 }
@@ -737,7 +687,7 @@ class ResourceTracker:
             for col in process_metrics.columns[1:]:
                 combined[
                     process_prefix
-                    + (col if not human_names else human_names_mapping.get(col, col))
+                    + (col if not human_names else HUMAN_NAMES_MAPPING.get(col, col))
                 ] = process_metrics[col]
 
             return combined

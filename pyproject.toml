@@ -41,8 +41,8 @@ mkdocs = [
 # TODO reenable when fix/workaround is available
 #all = ["resource-tracker[metaflow]"]
 
-[tool.setuptools]
-include-package-data = true
+[tool.setuptools.package-data]
+"metaflow_extensions.resource_tracker.plugins.cards.tracked_resources.components" = ["**/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "resource_tracker._version.__version__"}

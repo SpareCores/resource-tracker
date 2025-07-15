@@ -1,2 +1,0 @@
-include README.md
-recursive-include src/metaflow_extensions/resource_tracker/plugins/cards/tracked_resources/components *

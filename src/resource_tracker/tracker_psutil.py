@@ -26,7 +26,7 @@ from .nvidia import (
 )
 
 
-def get_pid_stats(
+def get_process_stats(
     pid: int, children: bool = True
 ) -> Dict[str, Union[int, float, None, Set[int]]]:
     """Collect current/cumulative stats of a process via psutil.

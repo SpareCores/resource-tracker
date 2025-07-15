@@ -4,10 +4,10 @@ Track resource usage of a process and/or the system.
 To start tracker(s) in the background as spawned or forked process(es), use the
 [resource_tracker.ResourceTracker][] class. Starting this will not block the
 main process and will allow you to access the collected data via the
-`pid_tracker` and `system_tracker` properties of the instance in real-time, or
+`process_metrics` and `system_metrics` properties of the instance in real-time, or
 after stopping the resource tracker(s).
 
-For more custom use cases, you can also use the [resource_tracker.PidTracker][]
+For more custom use cases, you can also use the [resource_tracker.ProcessTracker][]
 and [resource_tracker.SystemTracker][] classes directly logging either to the
 standard output or a file, and handle putting those into a background
 thread/process yourself.
@@ -16,22 +16,28 @@ thread/process yourself.
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
 from logging import getLogger
+from math import ceil
 from multiprocessing import SimpleQueue, get_context
 from os import getpid
 from signal import SIGINT, SIGTERM, signal
 from sys import platform, stdout
 from tempfile import NamedTemporaryFile
+from threading import Thread
 from time import sleep, time
 from typing import List, Optional, Union
+from warnings import warn
 from weakref import finalize
 
+from .cloud_info import get_cloud_info
+from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING
 from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
+from .server_info import get_server_info
 from .tiny_data_frame import TinyDataFrame
 
 logger = getLogger(__name__)
 
 
-class PidTracker:
+class ProcessTracker:
     """Track resource usage of a process and optionally its children.
 
     This class monitors system resources like CPU times and usage, memory usage,
@@ -60,6 +66,7 @@ class PidTracker:
 
     Args:
         pid (int, optional): Process ID to track. Defaults to current process ID.
+        start_time: Time when to start tracking. Defaults to current time.
         interval (float, optional): Sampling interval in seconds. Defaults to 1.
         children (bool, optional): Whether to track child processes. Defaults to True.
         autostart (bool, optional): Whether to start tracking immediately. Defaults to True.
@@ -69,21 +76,29 @@ class PidTracker:
     def __init__(
         self,
         pid: int = getpid(),
+        start_time: float = time(),
         interval: float = 1,
         children: bool = True,
         autostart: bool = True,
         output_file: str = None,
     ):
-        self.get_pid_stats, _ = get_tracker_implementation()
+        self.get_process_stats, _ = get_tracker_implementation()
 
         self.pid = pid
         self.status = "running"
         self.interval = interval
         self.cycle = 0
         self.children = children
-        self.start_time = time()
-        self.stats = self.get_pid_stats(pid, children)
+        self.start_time = start_time
+
+        # dummy data collection so that diffing on the first time does not fail
+        self.stats = self.get_process_stats(pid, children)
+
         if autostart:
+            # wait for the start time to be reached
+            if start_time > time():
+                sleep(start_time - time())
+            # we can now start. 1st interval used to collect baseline
             self.start_tracking(output_file)
 
     def __call__(self):
@@ -93,15 +108,15 @@ class PidTracker:
     def diff_stats(self):
         """Calculate stats since last call."""
         last_stats = self.stats
-        self.stats = self.get_pid_stats(self.pid, self.children)
+        self.stats = self.get_process_stats(self.pid, self.children)
         self.cycle += 1
 
         return {
-            "timestamp": self.stats["timestamp"],
+            "timestamp": round(self.stats["timestamp"], 3),
             "pid": self.pid,
             "children": self.stats["children"],
-            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
-            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
+            "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
                 max(
                     0,
@@ -144,16 +159,35 @@ class PidTracker:
                     # the process has exited
                     self.status = "exited"
                     break
-                if self.cycle == 1 and print_header:
-                    file_writer.writerow(current_stats.keys())
+                # don't print values yet, we collect data for the 1st baseline
+                if self.cycle == 1:
+                    if print_header:
+                        file_writer.writerow(current_stats.keys())
                 else:
                     file_writer.writerow(current_stats.values())
                 if output_file:
                     file_handle.flush()
-                sleep(max(0, self.interval - (time() - current_time)))
+                # sleep until the next interval
+                sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()
+
+
+class PidTracker(ProcessTracker):
+    """Old name for [resource_tracker.ProcessTracker][].
+
+    This class is deprecated and will be removed in the future.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warn(
+            "PidTracker is deprecated and will be removed in a future release. "
+            "Please use ProcessTracker instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class SystemTracker:
@@ -189,6 +223,7 @@ class SystemTracker:
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
+        start_time: Time when to start tracking. Defaults to current time.
         interval: Sampling interval in seconds. Defaults to 1.
         autostart: Whether to start tracking immediately. Defaults to True.
         output_file: File to write the output to. Defaults to None, print to stdout.
@@ -196,6 +231,7 @@ class SystemTracker:
 
     def __init__(
         self,
+        start_time: float = time(),
         interval: float = 1,
         autostart: bool = True,
         output_file: str = None,
@@ -205,10 +241,16 @@ class SystemTracker:
         self.status = "running"
         self.interval = interval
         self.cycle = 0
-        self.start_time = time()
+        self.start_time = start_time
 
+        # dummy data collection so that diffing on the first time does not fail
         self.stats = self.get_system_stats()
+
         if autostart:
+            # wait for the start time to be reached
+            if start_time > time():
+                sleep(start_time - time())
+            # we can now start. 1st interval used to collect baseline
             self.start_tracking(output_file)
 
     def __call__(self):
@@ -248,10 +290,10 @@ class SystemTracker:
             disk_space_free += disk_space["free"]
 
         return {
-            "timestamp": self.stats["timestamp"],
+            "timestamp": round(self.stats["timestamp"], 3),
             "processes": self.stats["processes"],
-            "utime": max(0, self.stats["utime"] - last_stats["utime"]),
-            "stime": max(0, self.stats["stime"] - last_stats["stime"]),
+            "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
+            "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
                 max(
                     0,
@@ -302,20 +344,23 @@ class SystemTracker:
             while True:
                 current_time = time()
                 current_stats = self.diff_stats()
-                if self.cycle == 1 and print_header:
-                    file_writer.writerow(current_stats.keys())
+                # don't print values yet, we collect data for the 1st baseline
+                if self.cycle == 1:
+                    if print_header:
+                        file_writer.writerow(current_stats.keys())
                 else:
                     file_writer.writerow(current_stats.values())
                 if output_file:
                     file_handle.flush()
-                sleep(max(0, self.interval - (time() - current_time)))
+                # sleep until the next interval
+                sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
             if output_file and not file_handle.closed:
                 file_handle.close()
 
 
 def _run_tracker(tracker_type, error_queue, **kwargs):
-    """Run either PidTracker or SystemTracker with dynamic import resolution and error handling.
+    """Run either ProcessTracker or SystemTracker with dynamic import resolution and error handling.
 
     This functions is standalone so that it can be pickled by multiprocessing,
     and tries to clean up resources before exiting.
@@ -341,7 +386,7 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
             ".resource_tracker.tracker",
         ]
         class_names = {
-            "pid": "PidTracker",
+            "process": "ProcessTracker",
             "system": "SystemTracker",
         }
 
@@ -380,9 +425,9 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
 class ResourceTracker:
     """Track resource usage of processes and the system in a non-blocking way.
 
-    Start a [resource_tracker.PidTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
+    Start a [resource_tracker.ProcessTracker][] and/or a [resource_tracker.SystemTracker][] in the background as spawned
     or forked process(es), and make the collected data available easily in the
-    main process via the `pid_tracker` and `system_tracker` properties.
+    main process via the `process_metrics` and `system_metrics` properties.
 
     Args:
         pid: Process ID to track. Defaults to current process ID.
@@ -394,7 +439,16 @@ class ResourceTracker:
         track_processes: Whether to track resource usage at the process level.
             Defaults to True.
         track_system: Whether to track system-wide resource usage. Defaults to True.
+        discover_server: Whether to discover the server specs in the background at
+            startup. Defaults to True.
+        discover_cloud: Whether to discover the cloud environment in the background
+            at startup. Defaults to True.
     """
+
+    server_info: Optional[dict] = None
+    """Collected data from [resource_tracker.get_server_info][]."""
+    cloud_info: Optional[dict] = None
+    """Collected data from [resource_tracker.get_cloud_info][]."""
 
     def __init__(
         self,
@@ -405,6 +459,8 @@ class ResourceTracker:
         autostart: bool = True,
         track_processes: bool = True,
         track_system: bool = True,
+        discover_server: bool = True,
+        discover_cloud: bool = True,
     ):
         self.pid = pid
         self.children = children
@@ -413,9 +469,11 @@ class ResourceTracker:
         self.autostart = autostart
         self.trackers = []
         if track_processes:
-            self.trackers.append("pid_tracker")
+            self.trackers.append("process_tracker")
         if track_system:
             self.trackers.append("system_tracker")
+        self.discover_server = discover_server
+        self.discover_cloud = discover_cloud
 
         if method is None:
             # try to fork when possible due to leaked semaphores on older Python versions
@@ -452,32 +510,60 @@ class ResourceTracker:
     def start(self):
         """Start the selected resource trackers in the background as subprocess(es)."""
         self.start_time = time()
+        # round to the nearest interval in the future
+        self.start_time = ceil(self.start_time / self.interval) * self.interval
+        # leave at least 50 ms for trackers to start
+        if self.start_time - time() < 0.05:
+            self.start_time += self.interval
 
-        if "pid_tracker" in self.trackers:
-            self.pid_tracker_process = self.mpc.Process(
+        if "process_tracker" in self.trackers:
+            self.process_tracker_process = self.mpc.Process(
                 target=_run_tracker,
-                args=("pid", self.error_queue),
+                args=("process", self.error_queue),
                 kwargs={
                     "pid": self.pid,
+                    "start_time": self.start_time,
                     "interval": self.interval,
                     "children": self.children,
-                    "output_file": self.pid_tracker_filepath,
+                    "output_file": self.process_tracker_filepath,
                 },
                 daemon=True,
             )
-            self.pid_tracker_process.start()
+            self.process_tracker_process.start()
 
         if "system_tracker" in self.trackers:
             self.system_tracker_process = self.mpc.Process(
                 target=_run_tracker,
                 args=("system", self.error_queue),
                 kwargs={
+                    "start_time": self.start_time,
                     "interval": self.interval,
                     "output_file": self.system_tracker_filepath,
                 },
                 daemon=True,
             )
             self.system_tracker_process.start()
+
+        def collect_server_info():
+            """Collect server info to be run in a background thread."""
+            try:
+                self.server_info = get_server_info()
+            except Exception as e:
+                logger.warning(f"Error fetching server info: {e}")
+
+        def collect_cloud_info():
+            """Collect cloud info to be run in a background thread."""
+            try:
+                self.cloud_info = get_cloud_info()
+            except Exception as e:
+                logger.warning(f"Error fetching cloud info: {e}")
+
+        if self.discover_server:
+            server_thread = Thread(target=collect_server_info, daemon=True)
+            server_thread.start()
+        if self.discover_cloud:
+            cloud_thread = Thread(target=collect_cloud_info, daemon=True)
+            cloud_thread.start()
 
         # make sure to cleanup the started subprocess(es)
         finalize(
@@ -510,27 +596,27 @@ class ResourceTracker:
         logger.debug(
             "Resource tracker stopped after %s seconds, logging %d process-level and %d system-wide records",
             self.stop_time - self.start_time,
-            len(self.pid_tracker),
-            len(self.system_tracker),
+            len(self.process_metrics),
+            len(self.system_metrics),
         )
 
     @property
-    def pid_tracker(self) -> Union[TinyDataFrame, List]:
-        """Collected data from the [resource_tracker.PidTracker][].
+    def process_metrics(self) -> Union[TinyDataFrame, List]:
+        """Collected data from [resource_tracker.ProcessTracker][].
 
         Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.PidTracker][] is not running.
+            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.ProcessTracker][] is not running.
         """
         try:
             return TinyDataFrame(
-                csv_file_path=self.pid_tracker_filepath,
+                csv_file_path=self.process_tracker_filepath,
             )
         except Exception:
             return []
 
     @property
-    def system_tracker(self) -> Union[TinyDataFrame, List]:
-        """Collected data from the [resource_tracker.SystemTracker][].
+    def system_metrics(self) -> Union[TinyDataFrame, List]:
+        """Collected data from [resource_tracker.SystemTracker][].
 
         Returns:
             A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.SystemTracker][] is not running.
@@ -541,3 +627,103 @@ class ResourceTracker:
             )
         except Exception:
             return []
+
+    @staticmethod
+    def join_combined_metrics(
+        system_metrics: TinyDataFrame,
+        process_metrics: TinyDataFrame,
+        bytes: bool = False,
+        human_names: bool = False,
+        system_prefix: Optional[str] = None,
+        process_prefix: Optional[str] = None,
+    ) -> Union[TinyDataFrame, List]:
+        """Join system and process metrics into a single dataframe.
+
+        Note that [resource_tracker.ProcessTracker][] comes with the
+        `get_combined_metrics` method that makes calling this more convenient,
+        but this static method can be useful to join system and process metrics
+        exported from a tracker, which instance is not running anymore.
+
+        Args:
+            system_metrics: System metrics [resource_tracker.TinyDataFrame][], collected by [resource_tracker.SystemTracker][] or [resource_tracker.ResourceTracker][].
+            process_metrics: Process metrics [resource_tracker.TinyDataFrame][], collected by [resource_tracker.ProcessTracker][] or [resource_tracker.ResourceTracker][].
+            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
+            human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
+            system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
+            process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
+
+        Returns:
+            A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
+        """
+        try:
+            # ensure both have the same length
+            if len(process_metrics) > len(system_metrics):
+                process_metrics = process_metrics[: len(system_metrics)]
+            elif len(system_metrics) > len(process_metrics):
+                system_metrics = system_metrics[: len(process_metrics)]
+
+            # nothing to report on
+            if len(process_metrics) == 0:
+                return []
+
+            if bytes:
+                for col, factor in BYTE_MAPPING.items():
+                    for metrics in (system_metrics, process_metrics):
+                        if col in metrics.columns:
+                            metrics[col] = [v * factor for v in metrics[col]]
+
+            if system_prefix is None:
+                system_prefix = "system_" if not human_names else "System "
+            if process_prefix is None:
+                process_prefix = "process_" if not human_names else "Process "
+
+            # cbind the two dataframes with column name prefixes and optional human-friendly names
+            combined = system_metrics.rename(
+                columns={
+                    n: (
+                        (system_prefix if n != "timestamp" else "")
+                        + (n if not human_names else HUMAN_NAMES_MAPPING.get(n, n))
+                    )
+                    for n in system_metrics.columns
+                }
+            )
+            for col in process_metrics.columns[1:]:
+                combined[
+                    process_prefix
+                    + (col if not human_names else HUMAN_NAMES_MAPPING.get(col, col))
+                ] = process_metrics[col]
+
+            return combined
+        except Exception as e:
+            logger.error(f"Error getting combined metrics: {e}")
+            return []
+
+    def get_combined_metrics(
+        self,
+        bytes: bool = False,
+        human_names: bool = False,
+        system_prefix: Optional[str] = None,
+        process_prefix: Optional[str] = None,
+    ) -> Union[TinyDataFrame, List]:
+        """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
+
+        This is effectively binding the two dataframes together by timestamp,
+        and adding a prefix to the column names to distinguish between the system and process metrics.
+
+        Args:
+            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
+            human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
+            system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
+            process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
+
+        Returns:
+            A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
+        """
+        return self.join_combined_metrics(
+            system_metrics=self.system_metrics,
+            process_metrics=self.process_metrics,
+            bytes=bytes,
+            human_names=human_names,
+            system_prefix=system_prefix,
+            process_prefix=process_prefix,
+        )

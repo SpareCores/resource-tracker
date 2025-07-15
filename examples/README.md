@@ -9,13 +9,13 @@ in Metaflow.
 The `resource_tracker` package provides the following classes that can be used to track
 resources of a running process (and its children) or system-wide resources.
 
-* `PidTracker`: Track resources of a running process and its children.
+* `ProcessTracker`: Track resources of a running process and its children.
 * `SystemTracker`: Track system-wide resources.
 
 ### benchmark.py
 
 This script compares the performance of the `procfs` and `psutil` implementations
-of the `get_pid_stats` function.
+of the `get_process_stats` function.
 
 Example run:
 
@@ -58,7 +58,7 @@ around a dictionary of column vectors. To get a quick overview of the data, you
 can use the `print` method, printing the first 10 rows in a human-readable table:
 
 ```python
-df = Flow("MinimalFlow").latest_run.data.resource_tracker_data["pid_tracker"]
+df = Flow("MinimalFlow").latest_run.data.resource_tracker_data["process_metrics"]
 print(df)
 ```
 

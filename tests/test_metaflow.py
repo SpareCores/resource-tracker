@@ -33,13 +33,13 @@ def test_flow_execution(artifacts_dir):
     assert hasattr(run.data, "resource_tracker_data")
     tracker_data = run.data.resource_tracker_data
 
-    pid = tracker_data["pid_tracker"]
-    assert max(pid["cpu_usage"]) > 0
-    assert max(pid["memory"]) > 0
+    process_metrics = tracker_data["process_metrics"]
+    assert max(process_metrics["cpu_usage"]) > 0
+    assert max(process_metrics["memory"]) > 0
 
-    system = tracker_data["system_tracker"]
-    assert max(system["cpu_usage"]) > 0
-    assert max(system["memory_used"]) > 0
+    system_metrics = tracker_data["system_metrics"]
+    assert max(system_metrics["cpu_usage"]) > 0
+    assert max(system_metrics["memory_used"]) > 0
 
     assert tracker_data["stats"]["duration"] > 0
 
@@ -123,13 +123,13 @@ def test_flow_execution_failed(artifacts_dir):
         tracker_data = tracker_data[list(tracker_data)[0]]["resource_tracker_data"]
     os.unlink(temp_path)
 
-    pid = tracker_data["pid_tracker"]
-    assert max(pid["cpu_usage"]) > 0
-    assert max(pid["memory"]) > 0
+    process_metrics = tracker_data["process_metrics"]
+    assert max(process_metrics["cpu_usage"]) > 0
+    assert max(process_metrics["memory"]) > 0
 
-    system = tracker_data["system_tracker"]
-    assert max(system["cpu_usage"]) > 0
-    assert max(system["memory_used"]) > 0
+    system_metrics = tracker_data["system_metrics"]
+    assert max(system_metrics["cpu_usage"]) > 0
+    assert max(system_metrics["memory_used"]) > 0
 
     assert tracker_data["stats"]["duration"] > 0
 

@@ -2,7 +2,7 @@
 A very inefficient data-frame implementation for manipulating resource usage data.
 
 If you don't like this helper class, grab the `_data` instance attribute that is
-a dictionary of lists (keyed by column name) and do whatever you want with it.
+a list of lists (column vectors) and do whatever you want with it.
 """
 
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
@@ -55,6 +55,11 @@ class TinyDataFrame:
         "Hornet Sportabout",175.0
     """
 
+    _data: List[List[float]] = []
+    """Column vectors"""
+    columns: List[str] = []
+    """Column names"""
+
     def __init__(
         self,
         data: Optional[Union[Dict[str, List[float]], List[Dict[str, float]]]] = None,
@@ -67,9 +72,6 @@ class TinyDataFrame:
         - List of dictionaries
         - CSV file path
         """
-        self.columns = []
-        self._data = {}
-
         assert data is not None or csv_file_path is not None, (
             "either data or csv_file_path must be provided"
         )
@@ -87,10 +89,10 @@ class TinyDataFrame:
             data = self._read_csv(csv_file_path)
 
         if isinstance(data, dict):
-            self._data = {k: list(v) for k, v in data.items()}
-            self.columns = list(self._data.keys())
+            self._data = list(data.values())
+            self.columns = list(data.keys())
         elif isinstance(data, list) and data and isinstance(data[0], dict):
-            # let's preserve column order
+            # let's preserve column order as seen in the first row(s)
             self.columns = []
             seen_columns = set()
             for row in data:
@@ -98,7 +100,7 @@ class TinyDataFrame:
                     if col not in seen_columns:
                         self.columns.append(col)
                         seen_columns.add(col)
-            self._data = {col: [row.get(col) for row in data] for col in self.columns}
+            self._data = [[row.get(col) for row in data] for col in self.columns]
 
     def _read_csv(self, csv_file_path: str) -> list[dict]:
         """Read a CSV file and return a list of dictionaries.
@@ -127,7 +129,7 @@ class TinyDataFrame:
 
     def __len__(self):
         """Return the number of rows in the data-frame"""
-        return len(next(iter(self._data.values()))) if self.columns else 0
+        return len(self._data[0]) if self.columns else 0
 
     def __getitem__(
         self, key: Union[str, List[str], int, slice]
@@ -142,18 +144,26 @@ class TinyDataFrame:
         """
         # a single column
         if isinstance(key, str):
-            return self._data[key]
+            if key in self.columns:
+                return self._data[self.columns.index(key)]
+            else:
+                raise KeyError(f"Column '{key}' not found")
         # multiple columns
         elif isinstance(key, List) and all(isinstance(k, str) for k in key):
+            for k in key:
+                if k not in self.columns:
+                    raise KeyError(f"Column '{k}' not found")
             return TinyDataFrame(
-                {col: self._data[col] for col in key if col in self._data}
+                {col: self._data[self.columns.index(col)] for col in key}
             )
         # row index
         elif isinstance(key, int):
-            return {col: self._data[col][key] for col in self.columns}
+            return {col: self._data[i][key] for i, col in enumerate(self.columns)}
         # row indexes
         elif isinstance(key, slice):
-            return TinyDataFrame({col: self._data[col][key] for col in self.columns})
+            return TinyDataFrame(
+                {col: self._data[i][key] for i, col in enumerate(self.columns)}
+            )
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
@@ -176,10 +186,11 @@ class TinyDataFrame:
                 f"Length of values ({len(value)}) must match dataframe length ({len(self)})"
             )
 
-        if key not in self.columns:
+        if key in self.columns:
+            self._data[self.columns.index(key)] = value
+        else:
             self.columns.append(key)
-
-        self._data[key] = list(value)
+            self._data.append(value)
 
     def head(self, n: int = 5) -> "TinyDataFrame":
         """Return first n rows as a new TinyDataFrame."""
@@ -207,7 +218,7 @@ class TinyDataFrame:
         for col in self.columns:
             col_widths[col] = len(str(col))
             for i in range(max_rows):
-                col_widths[col] = max(col_widths[col], len(str(self._data[col][i])))
+                col_widths[col] = max(col_widths[col], len(str(self[col][i])))
 
         rows = []
         header_row = " | ".join(str(col).ljust(col_widths[col]) for col in self.columns)
@@ -218,7 +229,7 @@ class TinyDataFrame:
         for i in range(max_rows):
             row_values = []
             for col in self.columns:
-                value = str(self._data[col][i])
+                value = str(self[col][i])
                 # right-align numbers, left-align strings
                 try:
                     float(value)  # check if it's a number
@@ -252,7 +263,7 @@ class TinyDataFrame:
             )
             writer.writerow(self.columns)
             for i in range(len(self)):
-                writer.writerow([self._data[col][i] for col in self.columns])
+                writer.writerow([self[col][i] for col in self.columns])
 
             if not csv_file_path:
                 return f.getvalue()
@@ -275,11 +286,5 @@ class TinyDataFrame:
             if old_name not in self.columns:
                 raise KeyError(f"Column '{old_name}' not found in dataframe")
 
-        for i, col in enumerate(self.columns):
-            if col in columns:
-                self.columns[i] = columns[col]
-        # note that order of columns might change, but self.columns matters anyway
-        for old_name, new_name in columns.items():
-            self._data[new_name] = self._data.pop(old_name)
-
+        self.columns = [columns.get(col, col) for col in self.columns]
         return self

@@ -68,20 +68,20 @@ def get_tracker_implementation() -> tuple[Callable, Callable]:
     Determine which tracker implementation to use based on available system resources.
 
     Returns:
-        tuple: A tuple containing (get_pid_stats, get_system_stats) functions from the appropriate implementation module.
+        tuple: A tuple containing (get_process_stats, get_system_stats) functions from the appropriate implementation module.
 
     Raises:
         ImportError: If no suitable implementation is available.
     """
     if is_psutil_available():
-        from .tracker_psutil import get_pid_stats, get_system_stats
+        from .tracker_psutil import get_process_stats, get_system_stats
     elif is_procfs_available():
-        from .tracker_procfs import get_pid_stats, get_system_stats
+        from .tracker_procfs import get_process_stats, get_system_stats
     else:
         raise ImportError(
             "No tracker implementation available - install psutil or use a Linux system with procfs."
         )
-    return get_pid_stats, get_system_stats
+    return get_process_stats, get_system_stats
 
 
 def get_zfs_pools_space() -> Dict[str, Dict[str, int]]:

@@ -18,13 +18,13 @@ import pytest
         ),
     ],
 )
-def test_get_pid_stats_implementations(tracker_implementation):
-    """Test get_pid_stats from different implementations."""
+def test_get_process_stats_implementations(tracker_implementation):
+    """Test get_process_stats from different implementations."""
     module = import_module(tracker_implementation)
-    get_pid_stats = getattr(module, "get_pid_stats")
+    get_process_stats = getattr(module, "get_process_stats")
 
     pid = getpid()
-    stats = get_pid_stats(pid)
+    stats = get_process_stats(pid)
 
     # at least some values should be present
     assert stats["timestamp"] is not None
@@ -37,7 +37,7 @@ def test_get_pid_stats_implementations(tracker_implementation):
     # test memory allocation is tracked
     memory = stats["memory"]
     bigobj = bytearray(50 * 1024 * 1024)  # 50MB
-    stats = get_pid_stats(pid)
+    stats = get_process_stats(pid)
     assert stats["memory"] >= memory + 40 * 1024  # kB
     del bigobj
 
@@ -84,10 +84,16 @@ def test_get_system_stats_implementations(tracker_implementation):
         ("write_bytes", 10, None, "B"),
     ],
 )
-def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold, unit):
-    """Test that fields in procfs pidstats implementation match psutil implementation within thresholds."""
-    from resource_tracker.tracker_procfs import get_pid_stats as procfs_pidstats
-    from resource_tracker.tracker_psutil import get_pid_stats as psutil_pidstats
+def test_process_stats_procfs_vs_psutil(
+    field, percent_threshold, absolute_threshold, unit
+):
+    """Test that fields in procfs process_stats implementation match psutil implementation within thresholds."""
+    from resource_tracker.tracker_procfs import (
+        get_process_stats as procfs_process_stats,
+    )
+    from resource_tracker.tracker_psutil import (
+        get_process_stats as psutil_process_stats,
+    )
 
     # make use of memory for testing
     if field == "memory":
@@ -98,8 +104,8 @@ def test_pidstats_procfs_vs_psutil(field, percent_threshold, absolute_threshold,
             i**i
 
     pid = getpid()
-    procfs_stats = procfs_pidstats(pid)
-    psutil_stats = psutil_pidstats(pid)
+    procfs_stats = procfs_process_stats(pid)
+    psutil_stats = psutil_process_stats(pid)
 
     value1 = procfs_stats[field]
     value2 = psutil_stats[field]
@@ -165,27 +171,27 @@ def test_systemstats_procfs_vs_psutil(
 
 
 def wait_for_tracker(
-    tracker, check_pid_tracker=True, check_system_tracker=True, timeout=5
+    tracker, check_process_tracker=True, check_system_tracker=True, timeout=5
 ):
     """Wait for the resource tracker to collect data.
 
     Args:
         tracker: The resource tracker to wait for.
-        check_pid_tracker: Whether to check the pid tracker.
+        check_process_tracker: Whether to check the process tracker.
         check_system_tracker: Whether to check the system tracker.
         timeout: The timeout in seconds.
     """
     for i in range(timeout * 10):
         checks_passed = 0
-        if check_pid_tracker and len(tracker.pid_tracker) >= 1:
+        if check_process_tracker and len(tracker.process_metrics) >= 1:
             checks_passed += 1
-        if check_system_tracker and len(tracker.system_tracker) >= 1:
+        if check_system_tracker and len(tracker.system_metrics) >= 1:
             checks_passed += 1
-        if checks_passed == int(check_pid_tracker) + int(check_system_tracker):
+        if checks_passed == int(check_process_tracker) + int(check_system_tracker):
             break
         sleep(0.1)
     else:
-        pytest.fail("No data collected in pid_tracker after 5 seconds")
+        pytest.fail("No data collected after 5 seconds")
 
 
 def test_resource_tracker_subprocesses():
@@ -196,13 +202,13 @@ def test_resource_tracker_subprocesses():
     tracker.start()
     wait_for_tracker(tracker)
     tracker.stop()
-    assert len(tracker.pid_tracker) > 0
-    assert len(tracker.system_tracker) > 0
-    assert tracker.pid_tracker[0]["utime"] >= 0
-    assert tracker.system_tracker[0]["utime"] >= 0
-    assert tracker.pid_tracker[0]["memory"] > 0
-    assert tracker.system_tracker[0]["memory_used"] > 0
-    assert tracker.system_tracker[0]["processes"] > 0
+    assert len(tracker.process_metrics) > 0
+    assert len(tracker.system_metrics) > 0
+    assert tracker.process_metrics[0]["utime"] >= 0
+    assert tracker.system_metrics[0]["utime"] >= 0
+    assert tracker.process_metrics[0]["memory"] > 0
+    assert tracker.system_metrics[0]["memory_used"] > 0
+    assert tracker.system_metrics[0]["processes"] > 0
 
 
 def test_resource_tracker_subprocess():
@@ -211,10 +217,36 @@ def test_resource_tracker_subprocess():
 
     tracker = ResourceTracker(track_processes=False)
     tracker.start()
-    wait_for_tracker(tracker, check_pid_tracker=False)
+    wait_for_tracker(tracker, check_process_tracker=False)
     tracker.stop()
-    assert len(tracker.pid_tracker) == 0
-    assert len(tracker.system_tracker) > 0
-    assert tracker.system_tracker[0]["utime"] >= 0
-    assert tracker.system_tracker[0]["memory_used"] > 0
-    assert tracker.system_tracker[0]["processes"] > 0
+    assert len(tracker.process_metrics) == 0
+    assert len(tracker.system_metrics) > 0
+    assert tracker.system_metrics[0]["utime"] >= 0
+    assert tracker.system_metrics[0]["memory_used"] > 0
+    assert tracker.system_metrics[0]["processes"] > 0
+
+
+def test_resource_tracker_combined_metrics():
+    """Test that the combined metrics getter is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    tracker.start()
+    wait_for_tracker(tracker)
+    tracker.stop()
+    assert len(tracker.get_combined_metrics()) > 0
+    assert tracker.get_combined_metrics()[0]["system_utime"] >= 0
+    assert (
+        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"] >= 0
+    )
+    assert tracker.get_combined_metrics()[0]["process_utime"] >= 0
+    assert (
+        tracker.get_combined_metrics(human_names=True)[0]["Process CPU time (user)"]
+        >= 0
+    )
+    assert tracker.get_combined_metrics()[0]["system_memory_used"] > 0
+    assert tracker.get_combined_metrics()[0]["process_memory"] > 0
+    assert (
+        tracker.get_combined_metrics(bytes=True)[0]["process_memory"]
+        > tracker.get_combined_metrics(bytes=False)[0]["process_memory"]
+    )

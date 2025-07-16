@@ -10,7 +10,7 @@ Refactoring and cleanup release:
 - Add optional `start_time` parameter to `SystemTracker` and `ProcessTracker`
 - Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `ProcessTracker`
 - Fix `SystemTracker` and `ProcessTracker` to not drift by a few nanoseconds in every interval
-- Move cloud and server discovery to the `ResourceTracker` class from the Metaflow-specific decorators
+- Move cloud and server discovery along with the server allocation check to the `ResourceTracker` class from the Metaflow-specific decorators
 - Extract serialization and deserialization of `ResourceTracker` from the Metaflow extension into the `ResourceTracker` class with `snapshot` and `dump(s)`/`load(s)` methods
 - Round timestamp and user/system time to reasonable (6/4) decimal places
 - Rework internal data structure of `TinyDataFrame` to use a list of lists instead of a dictionary of lists to support more efficient slicing and column renaming

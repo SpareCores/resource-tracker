@@ -34,7 +34,7 @@ from weakref import finalize
 
 from ._version import __version__
 from .cloud_info import get_cloud_info
-from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING
+from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING, SERVER_ALLOCATION_CHECKS
 from .helpers import (
     cleanup_files,
     cleanup_processes,
@@ -455,10 +455,8 @@ class ResourceTracker:
             at startup. Defaults to True.
     """
 
-    server_info: Optional[dict] = None
-    """Collected data from [resource_tracker.get_server_info][]."""
-    cloud_info: Optional[dict] = None
-    """Collected data from [resource_tracker.get_cloud_info][]."""
+    _server_info: Optional[dict] = None
+    _cloud_info: Optional[dict] = None
 
     def __init__(
         self,
@@ -557,14 +555,14 @@ class ResourceTracker:
         def collect_server_info():
             """Collect server info to be run in a background thread."""
             try:
-                self.server_info = get_server_info()
+                self._server_info = get_server_info()
             except Exception as e:
                 logger.warning(f"Error fetching server info: {e}")
 
         def collect_cloud_info():
             """Collect cloud info to be run in a background thread."""
             try:
-                self.cloud_info = get_cloud_info()
+                self._cloud_info = get_cloud_info()
             except Exception as e:
                 logger.warning(f"Error fetching cloud info: {e}")
 
@@ -609,6 +607,38 @@ class ResourceTracker:
             len(self.process_metrics),
             len(self.system_metrics),
         )
+
+    @property
+    def server_info(self) -> dict:
+        """High-level server info.
+
+        Collected data from [resource_tracker.get_server_info][] plus a guess
+        for the allocation type of the server: if it's dedicated to the tracked
+        process(es) or shared with other processes. The guess is based on the
+        [resource_tracker.column_maps.SERVER_ALLOCATION_CHECKS][] checks.
+        """
+        server_info = self._server_info
+        if server_info:
+            server_info["allocation"] = None
+        if len(self.get_combined_metrics()) > 0:
+            for check in SERVER_ALLOCATION_CHECKS:
+                system_val = mean(self.system_metrics[check["system_column"]])
+                task_val = mean(self.process_metrics[check["process_column"]])
+                if (system_val > task_val * check["percent"]) or (
+                    system_val > task_val + check["absolute"]
+                ):
+                    server_info["allocation"] = "shared"
+                    break
+            server_info["allocation"] = server_info.get("allocation", "dedicated")
+        return server_info
+
+    @property
+    def cloud_info(self) -> dict:
+        """High-level cloud info.
+
+        Collected data from [resource_tracker.get_cloud_info][].
+        """
+        return self._cloud_info
 
     @property
     def process_metrics(self) -> Union[TinyDataFrame, List]:
@@ -690,8 +720,8 @@ class ResourceTracker:
         )
         tracker.start_time = snapshot["metadata"]["start_time"]
         tracker.stop_time = snapshot["metadata"]["stop_time"]
-        tracker.server_info = snapshot["server_info"]
-        tracker.cloud_info = snapshot["cloud_info"]
+        tracker._server_info = snapshot["server_info"]
+        tracker._cloud_info = snapshot["cloud_info"]
         TinyDataFrame(data=snapshot["process_metrics"]).to_csv(
             tracker.process_tracker_filepath
         )

@@ -45,3 +45,30 @@ BYTE_MAPPING = {
     "disk_space_used_gb": 1024 * 1024 * 1024,
     "disk_space_free_gb": 1024 * 1024 * 1024,
 }
+
+SERVER_ALLOCATION_CHECKS = [
+    {
+        "process_column": "cpu_usage",
+        "system_column": "cpu_usage",
+        "percent": 1.25,
+        "absolute": 0.25,
+    },
+    {
+        "process_column": "memory",
+        "system_column": "memory_used",
+        "percent": 1.5,
+        "absolute": 512 * 1024,  # 512 MiB
+    },
+    {
+        "process_column": "gpu_usage",
+        "system_column": "gpu_usage",
+        "percent": 1.25,
+        "absolute": 0.2,
+    },
+    {
+        "process_column": "gpu_vram",
+        "system_column": "gpu_vram",
+        "percent": 1.25,
+        "absolute": 512,  # 512 MiB
+    },
+]

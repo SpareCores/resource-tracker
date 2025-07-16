@@ -17,6 +17,7 @@ from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
 from gzip import open as gzip_open
 from json import dumps as json_dumps
+from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import SimpleQueue, get_context
@@ -690,8 +691,12 @@ class ResourceTracker:
         tracker.stop_time = snapshot["metadata"]["stop_time"]
         tracker.server_info = snapshot["server_info"]
         tracker.cloud_info = snapshot["cloud_info"]
-        snapshot["process_metrics"].to_csv(tracker.process_tracker_filepath)
-        snapshot["system_metrics"].to_csv(tracker.system_tracker_filepath)
+        TinyDataFrame(data=snapshot["process_metrics"]).to_csv(
+            tracker.process_tracker_filepath
+        )
+        TinyDataFrame(data=snapshot["system_metrics"]).to_csv(
+            tracker.system_tracker_filepath
+        )
         return tracker
 
     def dumps(self) -> str:
@@ -702,6 +707,14 @@ class ResourceTracker:
         """
         return json_dumps(self.snapshot())
 
+    @classmethod
+    def loads(cls, s: str):
+        """Deserialize the resource tracker from a JSON string.
+
+        Args:
+            s: The JSON string to deserialize the resource tracker from.
+        """
+        return cls.from_snapshot(json_loads(s))
     def dump(self, file: str):
         """Serialize the resource tracker to a gzipped JSON file.
 
@@ -710,6 +723,16 @@ class ResourceTracker:
         """
         with gzip_open(file, "wb") as f:
             f.write(self.dumps().encode())
+
+    @classmethod
+    def load(cls, file: str):
+        """Deserialize the resource tracker from a gzipped JSON file.
+
+        Args:
+            file: The path to the file to read the serialized resource tracker from.
+        """
+        with gzip_open(file, "rb") as f:
+            return cls.loads(f.read().decode())
 
     def get_combined_metrics(
         self,

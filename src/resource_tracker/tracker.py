@@ -698,32 +698,3 @@ class ResourceTracker:
             logger.error(f"Error getting combined metrics: {e}")
             return []
 
-    def get_combined_metrics(
-        self,
-        bytes: bool = False,
-        human_names: bool = False,
-        system_prefix: Optional[str] = None,
-        process_prefix: Optional[str] = None,
-    ) -> Union[TinyDataFrame, List]:
-        """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
-
-        This is effectively binding the two dataframes together by timestamp,
-        and adding a prefix to the column names to distinguish between the system and process metrics.
-
-        Args:
-            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
-            human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
-            system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
-            process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
-
-        Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
-        """
-        return self.join_combined_metrics(
-            system_metrics=self.system_metrics,
-            process_metrics=self.process_metrics,
-            bytes=bytes,
-            human_names=human_names,
-            system_prefix=system_prefix,
-            process_prefix=process_prefix,
-        )

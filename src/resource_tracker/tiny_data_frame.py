@@ -8,7 +8,7 @@ a list of lists (column vectors) and do whatever you want with it.
 from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
 from csv import writer as csv_writer
 from io import StringIO
-from typing import Dict, List, Optional, Union
+from typing import Dict, Iterator, List, Optional, Union
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -167,6 +167,15 @@ class TinyDataFrame:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
+    def __iter__(self) -> Iterator[dict]:
+        """Iterate through rows of the dataframe as dictionaries.
+
+        Returns:
+            Iterator of row dictionaries
+        """
+        for i in range(len(self)):
+            yield self[i]
+
     def __setitem__(self, key: str, value: List[float]) -> None:
         """Set a column with the given key to the provided values.
 
@@ -243,6 +252,25 @@ class TinyDataFrame:
             rows.append("..." + " " * (len(rows[0]) - 3))
         return header + "\n".join(rows)
 
+    def rename(self, columns: dict) -> "TinyDataFrame":
+        """Rename one or multiple columns.
+
+        Args:
+            columns: Dictionary mapping old column names to new column names.
+
+        Returns:
+            Self for method chaining.
+
+        Raises:
+            KeyError: If any old column name doesn't exist in the dataframe.
+        """
+        for old_name in columns.keys():
+            if old_name not in self.columns:
+                raise KeyError(f"Column '{old_name}' not found in dataframe")
+
+        self.columns = [columns.get(col, col) for col in self.columns]
+        return self
+
     def to_csv(
         self, csv_file_path: Optional[str] = None, quote_strings: bool = True
     ) -> str:
@@ -270,21 +298,10 @@ class TinyDataFrame:
         finally:
             f.close()
 
-    def rename(self, columns: dict) -> "TinyDataFrame":
-        """Rename one or multiple columns.
-
-        Args:
-            columns: Dictionary mapping old column names to new column names.
+    def to_dict(self) -> List[dict]:
+        """Convert the data-frame to a list of row dictionaries.
 
         Returns:
-            Self for method chaining.
-
-        Raises:
-            KeyError: If any old column name doesn't exist in the dataframe.
+            List of dictionaries where each dictionary represents a row
         """
-        for old_name in columns.keys():
-            if old_name not in self.columns:
-                raise KeyError(f"Column '{old_name}' not found in dataframe")
-
-        self.columns = [columns.get(col, col) for col in self.columns]
-        return self
+        return list(self)

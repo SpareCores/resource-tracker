@@ -40,7 +40,9 @@ from .helpers import (
     cleanup_processes,
     get_tracker_implementation,
     is_psutil_available,
+    round_memory,
 )
+from .keeper import get_recommended_cloud_servers
 from .server_info import get_server_info
 from .tiny_data_frame import StatSpec, TinyDataFrame
 
@@ -609,6 +611,11 @@ class ResourceTracker:
         )
 
     @property
+    def n_samples(self) -> int:
+        """Number of samples collected by the resource tracker."""
+        return min(len(self.process_metrics), len(self.system_metrics))
+
+    @property
     def server_info(self) -> dict:
         """High-level server info.
 
@@ -620,7 +627,7 @@ class ResourceTracker:
         server_info = self._server_info
         if server_info:
             server_info["allocation"] = None
-        if len(self.get_combined_metrics()) > 0:
+        if self.n_samples > 0:
             for check in SERVER_ALLOCATION_CHECKS:
                 system_val = mean(self.system_metrics[check["system_column"]])
                 task_val = mean(self.process_metrics[check["process_column"]])
@@ -863,3 +870,55 @@ class ResourceTracker:
             A dictionary containing the collected statistics.
         """
         return self.get_combined_metrics().stats(specs)
+
+    def recommend_resources(self) -> dict:
+        """Recommend optimal resource allocation based on the measured resource tracker data.
+
+        The recommended resources are based on the following rules:
+        - target average CPU usage of the process(es)
+        - target maximum memory usage of the process(es) with a 20% buffer
+        - target maximum number of GPUs used by the process(es)
+        - target maximum VRAM usage of the process(es) with a 20% buffer
+
+        Returns:
+            A dictionary containing the recommended resources (cpu, memory, gpu, vram).
+        """
+        # wait until we have at least one sample
+        while self.n_samples == 0:
+            sleep(self.interval / 10)
+            # avoid infinite wait
+            if time() - self.start_time > self.interval * 3:
+                logger.warning("Timed out waiting for resource tracker samples")
+                return {}
+
+        stats = self.stats()
+        rec = {}
+        # target average CPU usage
+        rec["cpu"] = max(1, round(stats["process_cpu_usage"]["mean"]))
+        # target maximum memory usage (kB->MB) with a 20% buffer
+        rec["memory"] = round_memory(mb=stats["process_memory"]["max"] * 1.2 / 1024)
+        # target maximum GPU number of GPUs used
+        rec["gpu"] = (
+            max(1, round(stats["process_gpu_usage"]["max"]))
+            if stats["process_gpu_usage"]["mean"] > 0
+            else 0
+        )
+        # target maximum VRAM usage (MiB) with a 20% buffer
+        rec["vram"] = (
+            round_memory(mb=stats["process_gpu_vram"]["max"] * 1.2)
+            if stats["process_gpu_vram"]["max"] > 0
+            else 0
+        )
+        return rec
+
+    def recommend_server(self, **kwargs) -> dict:
+        """Recommend the cheapest cloud server matching the recommended resources.
+
+        Args:
+            **kwargs: Additional filtering arguments (e.g. vendor_id or compliance_framework_id) to pass to the Spare Cores Keeper API.
+
+        Returns:
+            A dictionary containing the recommended cloud server. Response format is described at <https://keeper.sparecores.net/redoc#tag/Query-Resources/operation/search_servers_servers_get>.
+        """
+        rec = self.recommend_resources()
+        return get_recommended_cloud_servers(**rec, **kwargs, n=1)

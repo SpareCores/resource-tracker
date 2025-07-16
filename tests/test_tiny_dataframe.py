@@ -1,6 +1,9 @@
+from statistics import mean
+
 import pytest
 
 from resource_tracker import TinyDataFrame
+from resource_tracker.tiny_data_frame import StatSpec
 
 
 @pytest.fixture
@@ -395,3 +398,20 @@ def test_rename_columns(sample_data):
         "processor"
     ]
     assert result == [52.4, 78.2, 92.7]
+
+
+def test_stats(sample_data):
+    """Test the stats method"""
+    df = TinyDataFrame(sample_data)
+    stats = df.stats([StatSpec(column="cpu", agg=mean, round=2)])
+    assert stats["cpu"]["mean"] == 46.16
+    stats = df.stats(
+        [
+            StatSpec(column="cpu", agg=mean, round=0),
+            StatSpec("memory", max),
+            StatSpec("memory", len, agg_name="count"),
+        ]
+    )
+    assert stats["cpu"]["mean"] == 46
+    assert stats["memory"]["max"] == 4800
+    assert stats["memory"]["count"] == 12

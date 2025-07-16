@@ -250,3 +250,5 @@ def test_resource_tracker_combined_metrics():
         tracker.get_combined_metrics(bytes=True)[0]["process_memory"]
         > tracker.get_combined_metrics(bytes=False)[0]["process_memory"]
     )
+    assert tracker.stats()["process_cpu_usage"]["max"] > 0
+    assert tracker.stats()["process_memory"]["mean"] > 0

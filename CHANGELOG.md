@@ -2,19 +2,21 @@
 
 Refactoring and cleanup release:
 
-- Renamed `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
-- Renamed `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
-- Renamed the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
-- Renamed process-related helpers in the ProcFS implementation from `pid` prefix to `process` prefix.
+- Rename `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
+- Rename `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
+- Rename the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
+- Rename process-related helpers in the ProcFS implementation from `pid` prefix to `process` prefix.
 - Fix `SystemTracker` and `ProcessTracker` to not print dummy stats on start when header is disabled
 - Add optional `start_time` parameter to `SystemTracker` and `ProcessTracker`
 - Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `ProcessTracker`
 - Fix `SystemTracker` and `ProcessTracker` to not drift by a few nanoseconds in every interval
 - Move cloud and server discovery to the `ResourceTracker` class from the Metaflow-specific decorators
+- Extract serialization and deserialization of `ResourceTracker` from the Metaflow extension into the `ResourceTracker` class with `snapshot` and `dump(s)`/`load(s)` methods
 - Round timestamp and user/system time to reasonable (6/4) decimal places
 - Rework internal data structure of `TinyDataFrame` to use a list of lists instead of a dictionary of lists to support more efficient slicing and column renaming
 - Add `get_combined_metrics` method to `ResourceTracker` to combine `process_metrics` and `system_metrics` into a single data frame, optionally with all metrics converted to bytes, and columns renamed to use human-friendly names
-
+- Add `stats` method to `TinyDataFrame` to compute on-demand statistics on columns
+- Add `stats` method to `ResourceTracker` to compute statistics on the combined metrics
 
 ## v0.3.1 (May 30, 2025)
 

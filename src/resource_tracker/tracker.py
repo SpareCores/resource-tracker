@@ -23,6 +23,7 @@ from math import ceil
 from multiprocessing import SimpleQueue, get_context
 from os import getpid
 from signal import SIGINT, SIGTERM, signal
+from statistics import mean
 from sys import platform, stdout
 from tempfile import NamedTemporaryFile
 from threading import Thread
@@ -41,7 +42,7 @@ from .helpers import (
     is_psutil_available,
 )
 from .server_info import get_server_info
-from .tiny_data_frame import TinyDataFrame
+from .tiny_data_frame import StatSpec, TinyDataFrame
 
 logger = getLogger(__name__)
 
@@ -715,6 +716,7 @@ class ResourceTracker:
             s: The JSON string to deserialize the resource tracker from.
         """
         return cls.from_snapshot(json_loads(s))
+
     def dump(self, file: str):
         """Serialize the resource tracker to a gzipped JSON file.
 
@@ -801,3 +803,33 @@ class ResourceTracker:
             logger.error(f"Error getting combined metrics: {e}")
             return []
 
+    def stats(
+        self,
+        specs: List[StatSpec] = [
+            StatSpec(column="process_cpu_usage", agg=mean, round=2),
+            StatSpec(column="process_cpu_usage", agg=max, round=2),
+            StatSpec(column="process_memory", agg=mean, round=2),
+            StatSpec(column="process_memory", agg=max, round=2),
+            StatSpec(column="process_gpu_usage", agg=mean, round=2),
+            StatSpec(column="process_gpu_usage", agg=max, round=2),
+            StatSpec(column="process_gpu_vram", agg=mean, round=2),
+            StatSpec(column="process_gpu_vram", agg=max, round=2),
+            StatSpec(column="process_gpu_utilized", agg=mean, round=2),
+            StatSpec(column="process_gpu_utilized", agg=max, round=2),
+            StatSpec(column="system_disk_space_used_gb", agg=max, round=2),
+            StatSpec(column="system_net_recv_bytes", agg=sum),
+            StatSpec(column="system_net_sent_bytes", agg=sum),
+            StatSpec(
+                column="timestamp", agg=lambda x: max(x) - min(x), agg_name="duration"
+            ),
+        ],
+    ) -> dict:
+        """Collect statistics from the resource tracker.
+
+        Args:
+            specs: A list of [resource_tracker.tiny_data_frame.StatSpec][] objects specifying the statistics to collect.
+
+        Returns:
+            A dictionary containing the collected statistics.
+        """
+        return self.get_combined_metrics().stats(specs)

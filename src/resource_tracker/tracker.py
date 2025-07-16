@@ -15,6 +15,8 @@ thread/process yourself.
 
 from csv import QUOTE_NONNUMERIC
 from csv import writer as csv_writer
+from gzip import open as gzip_open
+from json import dumps as json_dumps
 from logging import getLogger
 from math import ceil
 from multiprocessing import SimpleQueue, get_context
@@ -28,9 +30,15 @@ from typing import List, Optional, Union
 from warnings import warn
 from weakref import finalize
 
+from ._version import __version__
 from .cloud_info import get_cloud_info
 from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING
-from .helpers import cleanup_files, cleanup_processes, get_tracker_implementation
+from .helpers import (
+    cleanup_files,
+    cleanup_processes,
+    get_tracker_implementation,
+    is_psutil_available,
+)
 from .server_info import get_server_info
 from .tiny_data_frame import TinyDataFrame
 
@@ -628,25 +636,94 @@ class ResourceTracker:
         except Exception:
             return []
 
-    @staticmethod
-    def join_combined_metrics(
-        system_metrics: TinyDataFrame,
-        process_metrics: TinyDataFrame,
+    def snapshot(self) -> dict:
+        """Collect the current state of the resource tracker.
+
+        Returns:
+            A dictionary containing the current state of the resource tracker.
+        """
+        return {
+            "metadata": {
+                "version": 1,
+                "resource_tracker": {
+                    "version": __version__,
+                    "implementation": "psutil" if is_psutil_available() else "procfs",
+                },
+                "pid": self.pid,
+                "children": self.children,
+                "interval": self.interval,
+                "method": self.method,
+                "autostart": self.autostart,
+                "track_processes": "process_tracker" in self.trackers,
+                "track_system": "system_tracker" in self.trackers,
+                "discover_server": self.discover_server,
+                "discover_cloud": self.discover_cloud,
+                "start_time": self.start_time,
+                "stop_time": time(),
+                "duration": round(time() - self.start_time, 2),
+            },
+            "server_info": self.server_info,
+            "cloud_info": self.cloud_info,
+            "process_metrics": self.process_metrics.to_dict(),
+            "system_metrics": self.system_metrics.to_dict(),
+        }
+
+    @classmethod
+    def from_snapshot(cls, snapshot: dict):
+        """Create a ResourceTracker from a snapshot.
+
+        Args:
+            snapshot: A dictionary containing the current state of the resource tracker, created by [resource_tracker.ResourceTracker.snapshot][].
+        """
+        tracker = cls(
+            pid=snapshot["metadata"]["pid"],
+            children=snapshot["metadata"]["children"],
+            interval=snapshot["metadata"]["interval"],
+            method=snapshot["metadata"]["method"],
+            autostart=False,
+            track_processes=snapshot["metadata"]["track_processes"],
+            track_system=snapshot["metadata"]["track_system"],
+            discover_server=snapshot["metadata"]["discover_server"],
+            discover_cloud=snapshot["metadata"]["discover_cloud"],
+        )
+        tracker.start_time = snapshot["metadata"]["start_time"]
+        tracker.stop_time = snapshot["metadata"]["stop_time"]
+        tracker.server_info = snapshot["server_info"]
+        tracker.cloud_info = snapshot["cloud_info"]
+        snapshot["process_metrics"].to_csv(tracker.process_tracker_filepath)
+        snapshot["system_metrics"].to_csv(tracker.system_tracker_filepath)
+        return tracker
+
+    def dumps(self) -> str:
+        """Serialize the resource tracker to a JSON string.
+
+        Returns:
+            A JSON string containing the current state of the resource tracker.
+        """
+        return json_dumps(self.snapshot())
+
+    def dump(self, file: str):
+        """Serialize the resource tracker to a gzipped JSON file.
+
+        Args:
+            file: The path to the file to write the serialized resource tracker to.
+        """
+        with gzip_open(file, "wb") as f:
+            f.write(self.dumps().encode())
+
+    def get_combined_metrics(
+        self,
         bytes: bool = False,
         human_names: bool = False,
         system_prefix: Optional[str] = None,
         process_prefix: Optional[str] = None,
     ) -> Union[TinyDataFrame, List]:
-        """Join system and process metrics into a single dataframe.
+        """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
-        Note that [resource_tracker.ProcessTracker][] comes with the
-        `get_combined_metrics` method that makes calling this more convenient,
-        but this static method can be useful to join system and process metrics
-        exported from a tracker, which instance is not running anymore.
+        This is effectively binding the two dataframes together by timestamp,
+        and adding a prefix to the column names to distinguish between the system and process metrics.
 
         Args:
-            system_metrics: System metrics [resource_tracker.TinyDataFrame][], collected by [resource_tracker.SystemTracker][] or [resource_tracker.ResourceTracker][].
-            process_metrics: Process metrics [resource_tracker.TinyDataFrame][], collected by [resource_tracker.ProcessTracker][] or [resource_tracker.ResourceTracker][].
             bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
             human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
             system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
@@ -656,6 +733,9 @@ class ResourceTracker:
             A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
         """
         try:
+            process_metrics = self.process_metrics
+            system_metrics = self.system_metrics
+
             # ensure both have the same length
             if len(process_metrics) > len(system_metrics):
                 process_metrics = process_metrics[: len(system_metrics)]

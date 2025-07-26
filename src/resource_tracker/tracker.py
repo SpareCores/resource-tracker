@@ -886,11 +886,11 @@ class ResourceTracker:
         Example:
             >>> tracker = ResourceTracker()
             >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
-            >>> _ = cpu_single()
+            >>> cpu_single(2)
             >>> tracker.recommend_resources()
             {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
             >>> tracker = ResourceTracker()
-            >>> _ = cpu_multi(ncores=2)
+            >>> cpu_multi(duration=2, ncores=2)
             >>> tracker.recommend_resources()
             {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
         """

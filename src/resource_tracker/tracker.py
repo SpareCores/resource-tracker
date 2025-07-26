@@ -884,13 +884,13 @@ class ResourceTracker:
             A dictionary containing the recommended resources (cpu, memory, gpu, vram).
 
         Example:
-            >>> tracker = ResourceTracker(interval=0.1)
+            >>> tracker = ResourceTracker()
             >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
-            >>> cpu_single()
+            >>> _ = cpu_single()
             >>> tracker.recommend_resources()
             {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
-            >>> tracker = ResourceTracker(interval=0.1)
-            >>> cpu_multi(ncores=2)
+            >>> tracker = ResourceTracker()
+            >>> _ = cpu_multi(ncores=2)
             >>> tracker.recommend_resources()
             {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
         """

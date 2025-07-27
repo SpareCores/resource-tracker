@@ -17,6 +17,7 @@ Refactoring and cleanup release:
 - Add `get_combined_metrics` method to `ResourceTracker` to combine `process_metrics` and `system_metrics` into a single data frame, optionally with all metrics converted to bytes, and columns renamed to use human-friendly names
 - Add `stats` method to `TinyDataFrame` to compute on-demand statistics on columns
 - Add `stats` method to `ResourceTracker` to compute statistics on the combined metrics
+- Add minimal support for Handlebars-like templates in the `render_template` function
 
 ## v0.3.1 (May 30, 2025)
 

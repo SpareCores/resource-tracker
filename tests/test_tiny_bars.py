@@ -74,12 +74,6 @@ def test_tiny_bars_string_list():
     """)
 
 
-class Person:
-    def __init__(self, name, age):
-        self.name = name
-        self.age = age
-
-
 def test_tiny_bars_nested_access():
     """Test Tiny Bars template rendering with nested property access."""
 
@@ -149,6 +143,11 @@ def test_tiny_bars_object_attributes():
     </ul>
     """
 
+    class Person:
+        def __init__(self, name, age):
+            self.name = name
+            self.age = age
+
     context = {"title": "People", "people": [Person("Alice", 30), Person("Bob", 25)]}
 
     output = render_template(template, context)
@@ -165,3 +164,108 @@ def test_tiny_bars_object_attributes():
         </li>
     </ul>
     """)
+
+
+def test_tiny_bars_if_conditions():
+    """Test Tiny Bars if conditions."""
+
+    template = "{{#if value}}True{{/if}}"
+
+    # true value
+    context = {"value": True}
+    assert render_template(template, context) == "True"
+
+    # false value
+    context = {"value": False}
+    assert render_template(template, context) == ""
+
+    # truthy value
+    context = {"value": "something"}
+    assert render_template(template, context) == "True"
+
+    # falsy value
+    context = {"value": ""}
+    assert render_template(template, context) == ""
+
+    # missing value
+    context = {"value": None}
+    assert render_template(template, context) == ""
+    context = {}
+    assert render_template(template, context) == ""
+
+    # numeric values
+    context = {"value": 1}
+    assert render_template(template, context) == "True"
+    context = {"value": 0}
+    assert render_template(template, context) == ""
+
+
+def test_tiny_bars_if_else_conditions():
+    """Test Tiny Bars if/else conditions."""
+
+    template = "{{#if value}}True{{#else}}False{{/if}}"
+
+    # true condition
+    context = {"value": True}
+    assert render_template(template, context) == "True"
+
+    # false condition
+    context = {"value": False}
+    assert render_template(template, context) == "False"
+
+    # truthy value
+    context = {"value": "something"}
+    assert render_template(template, context) == "True"
+
+    # falsy value
+    context = {"value": ""}
+    assert render_template(template, context) == "False"
+
+    # missing value
+    context = {"value": None}
+    assert render_template(template, context) == "False"
+    context = {}
+    assert render_template(template, context) == "False"
+
+    # numeric values
+    context = {"value": 1}
+    assert render_template(template, context) == "True"
+    context = {"value": 0}
+    assert render_template(template, context) == "False"
+
+    # nested content
+    template = """
+    {{#if value}}
+        <div>True: {{message}}</div>
+    {{#else}}
+        <div>False: {{message}}</div>
+    {{/if}}
+    """
+    context = {"value": True, "message": "Hello"}
+    assert (
+        normalize_whitespace(render_template(template, context))
+        == "<div>True: Hello</div>"
+    )
+    context = {"value": False, "message": "Hello"}
+    assert (
+        normalize_whitespace(render_template(template, context))
+        == "<div>False: Hello</div>"
+    )
+
+    # nested if/else
+    template = """
+    {{#if value}}
+        <div>True: {{#if value}}True{{/if}}</div>
+    {{#else}}
+        <div>False{{#if value}}: True{{/if}}</div>
+    {{/if}}
+    """
+    context = {"value": True}
+    assert (
+        normalize_whitespace(render_template(template, context))
+        == "<div>True: True</div>"
+    )
+    context = {"value": False}
+    assert (
+        normalize_whitespace(render_template(template, context)) == "<div>False</div>"
+    )

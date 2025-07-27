@@ -5,7 +5,7 @@ from re import compile
 from typing import Any, Dict, Tuple
 
 TRIPLE_RE = compile(r"{{{\s*([^{}]*?)\s*}}}")
-DOUBLE_RE = compile(r"{{\s*(#each|#if|/each|/if)?\s*([^{}]*?)\s*}}")
+DOUBLE_RE = compile(r"{{\s*(#each|#if|#else|/each|/if)?\s*([^{}]*?)\s*}}")
 EACH_RE = compile(r"([^{}]*?)\s+as\s+([^{}]*?)$")
 
 
@@ -28,6 +28,9 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
         >>> _resolve_var("user.name", {"user": {"name": "John"}})
         'John'
         >>> _resolve_var("user.age", {"user": {"name": "John"}})
+        Traceback (most recent call last):
+        ...
+        KeyError: 'age not found in user.age'
     """
     parts = name.strip().split(".")
     val = ctx
@@ -37,7 +40,7 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
         else:
             val = getattr(val, p, None)
         if val is None:
-            break
+            raise KeyError(f"{p} not found in {name}")
     return val
 
 
@@ -45,7 +48,7 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
     """Render a Handlebars-like template using a dictionary context.
 
     Supported features:
-    - Conditional flow using "{{#if expr}} ... {{/if}}"
+    - Conditional flow using "{{#if expr}} ... {{#else}} ... {{/if}}"
     - Iteration using "{{#each expr as item}} ... {{/each}}"
     - Variable interpolation using "{{expr}}" (HTML-escaped) and "{{{expr}}}" (raw)
     - Nested property access using dot notation (e.g. "user.name") for dictionary
@@ -66,6 +69,12 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
         'Hello, Foo! Hello, Bar! '
         >>> render_template("Odd numbers: {{#each numbers as number}}{{ #if number.odd}}{{number.value}} {{/if}}{{/each}}", {"numbers": [{"value": i, "odd": i % 2 == 1} for i in range(10)]})
         'Odd numbers: 1 3 5 7 9 '
+        >>> render_template("{{#if present}}Yes{{/if}}", {"present": True})
+        'Yes'
+        >>> render_template("{{#if present}}Yes{{/if}}", {"present": False})
+        ''
+        >>> render_template("{{#if present}}Yes{{#else}}No{{/if}}", {"present": False})
+        'No'
     """
 
     def _render_block(tmpl: str, ctx: Dict[str, Any]) -> str:
@@ -99,10 +108,16 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
                 pos = m_double.end()
 
                 if tag == "#if":
-                    inner, new_pos = _find_matching_block(tmpl, pos, "#if", "/if")
+                    if_block, else_block, new_pos = _find_if_else_blocks(tmpl, pos)
                     try:
-                        if _resolve_var(expr, ctx):
-                            output.append(_render_block(inner, ctx))
+                        try:
+                            condition_met = bool(_resolve_var(expr, ctx))
+                        except Exception:
+                            condition_met = False
+                        if condition_met:
+                            output.append(_render_block(if_block, ctx))
+                        elif else_block is not None:
+                            output.append(_render_block(else_block, ctx))
                     except Exception as e:
                         output.append(f"[Error evaluating if: {expr} - {str(e)}]")
                     pos = new_pos
@@ -159,5 +174,43 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
                 depth -= 1
             search_pos = m.end()
         return tmpl[start_pos : m.start()], m.end()
+
+    def _find_if_else_blocks(tmpl: str, start_pos: int) -> Tuple[str, str, int]:
+        """Find the if and else blocks in an if statement.
+
+        Returns:
+            A tuple of (if_block, else_block, end_position) where else_block may
+            be None if there is no else block.
+        """
+        depth = 1
+        search_pos = start_pos
+        else_pos = None
+
+        while depth > 0:
+            m = DOUBLE_RE.search(tmpl, search_pos)
+            if not m:
+                raise ValueError("Unclosed #if tag")
+
+            tag_type, _ = m.groups()
+
+            if tag_type == "#if":
+                depth += 1
+            elif tag_type == "/if":
+                depth -= 1
+            elif tag_type == "#else" and depth == 1:
+                # only consider #else at the same depth as our starting #if
+                else_pos = m.start()
+
+            search_pos = m.end()
+
+        end_pos = m.end()
+
+        if else_pos is not None:
+            if_block = tmpl[start_pos:else_pos]
+            else_start = DOUBLE_RE.search(tmpl, else_pos).end()
+            else_block = tmpl[else_start : m.start()]
+            return if_block, else_block, end_pos
+        else:
+            return tmpl[start_pos : m.start()], None, end_pos
 
     return _render_block(template, context.copy())

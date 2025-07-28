@@ -42,7 +42,7 @@ from .helpers import (
     is_psutil_available,
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
-from .report import _read_report_template_files
+from .report import _read_report_template_files, round_memory
 from .server_info import get_server_info
 from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame

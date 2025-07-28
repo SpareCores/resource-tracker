@@ -4,6 +4,8 @@ from html import escape
 from re import compile
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from .report import round_memory
+
 TRIPLE_RE = compile(r"{{{\s*([^{}]*?)\s*}}}")
 DOUBLE_RE = compile(r"{{\s*(#each|#if|#else|/each|/if)?\s*([^{}]*?)\s*}}")
 EACH_RE = compile(r"([^{}]*?)\s+as\s+([^{}]*?)$")
@@ -183,37 +185,7 @@ def _filter_round(value: Union[int, float], digits: int = 0) -> Union[int, float
 
 
 def _filter_round_memory(mb: Union[int, float]) -> int:
-    """Round a number to the nearest meaningful memory amount.
-
-    Args:
-        mb: The value in MB to round.
-
-    Returns:
-        The rounded value in MB as an integer.
-
-    Example:
-        >>> round_memory(68)
-        128
-        >>> round_memory(896)
-        1024
-        >>> round_memory(3863)
-        4096
-    """
-    if mb <= 128:
-        rounded = 128
-    elif mb <= 256:
-        rounded = 256
-    elif mb <= 512:
-        rounded = 512
-    elif mb <= 1024:
-        rounded = 1024
-    elif mb <= 2048:
-        rounded = 2048
-    else:
-        # round up to the next GB
-        rounded_gb = mb / 1024
-        rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
-    return rounded
+    return round_memory(mb)
 
 
 def render_template(template: str, context: Dict[str, Any]) -> str:

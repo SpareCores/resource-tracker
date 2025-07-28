@@ -941,7 +941,7 @@ class ResourceTracker:
         rec = self.recommend_resources()
         return get_recommended_cloud_servers(**rec, **kwargs, n=1)
 
-    def report(self, **kwargs) -> str:
+    def report(self) -> str:
         ctx = {
             "files": _read_report_template_files(),
             "server_info": self.server_info,
@@ -956,7 +956,7 @@ class ResourceTracker:
             "disk_space_total_gb"
         ][0]
         ctx["stats"]["duration"] = (self.stop_time or time()) - self.start_time
-
+        ctx["stats"]["stopped"] = self.stop_time is not None
 
         # lookup instance price
         if ctx["cloud_info"]["instance_type"] != "unknown":

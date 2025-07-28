@@ -1,21 +1,22 @@
 <html>
 <head>
-    <script type="text/javascript">{{{dygraphs_js}}}</script>
-    <script type="text/javascript">{{{dygraphs_crosshair_js}}}</script>
-    <script type="text/javascript">{{{dygraphs_synchronizer_js}}}</script>
-    <style type="text/css">{{{dygraphs_css}}}</style>
-    <script type="text/javascript">{{{helpers_js}}}</script>
-    <style type="text/css">{{{custom_css}}}</style>
+    <script type="text/javascript">{{{ files.dygraphs_js }}}</script>
+    <script type="text/javascript">{{{ files.dygraphs_crosshair_js }}}</script>
+    <script type="text/javascript">{{{ files.dygraphs_synchronizer_js }}}</script>
+    <style type="text/css">{{{ files.dygraphs_css }}}</style>
+    <script type="text/javascript">{{{ files.helpers_js }}}</script>
+    <style type="text/css">{{{ files.custom_css }}}</style>
 </head>
 <body>
     <div style="display: flex; gap: 1rem;">
         <div id="server" class="section" style="flex: 0.6;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_motherboard}}}
+                    {{{ files.icon_motherboard }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Server</div>
+                    <!-- TODO reword "step" as this can be used outside of Metaflow -->
                     <p class="description">Key hardware specifications of the server executing this step.</p>
                 </div>
             </h1>
@@ -23,49 +24,50 @@
                 <div class="section-content-cards">
                     <div class="section-content-card">
                         <div class="section-content-card-label">OS family</div>
-                        <div class="section-content-card-value">{{{server_info.os}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.os }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Allocation
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     Indicates whether this server appears to be dedicated to this Metaflow step or shared with other tasks. This assessment is based on comparing system-level resource usage with task-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
                                 </div>
                             </span>
                         </div>
-                        <div class="section-content-card-value">{{{server_info.allocation}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.allocation }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">vCPUs</div>
-                        <div class="section-content-card-value">{{{server_info.vcpus}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.vcpus }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Memory</div>
-                        <div class="section-content-card-value">{{{server_info.memory_mb_pretty}}} MiB</div>
+                        <div class="section-content-card-value">{{{ server_info.memory_mb | pretty_number }}} MiB</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Storage</div>
-                        <div class="section-content-card-value">{{{server_info.disk_space_total_gb}}} GiB</div>
+                        <div class="section-content-card-value">{{{ server_info.disk_space_total_gb | pretty_number }}} GiB</div>
                     </div>
-                    {{#server_info.gpu_names}}
+                    <!-- TODO: check if this filter works -->
+                    {{#if server_info.gpu_names}}
                     <div class="section-content-card">
                         <div class="section-content-card-label">GPUs</div>
-                        <div class="section-content-card-value">{{{server_info.gpu_count}}} {{server_info.gpu_name}}</div>
+                        <div class="section-content-card-value">{{{ server_info.gpu_count }}} {{{ server_info.gpu_name }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">VRAM</div>
-                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb_pretty}}} MiB</div>
+                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb | pretty_number }}} MiB</div>
                     </div>
-                    {{/server_info.gpu_names}}
+                    {{/if}}
                 </div>
             </div>
         </div>
         <div id="provider" class="section" style="flex: 0.4;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_clouds}}}
+                    {{{ files.icon_clouds }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Cloud</div>
@@ -76,22 +78,28 @@
                 <div class="section-content-cards">
                     <div class="section-content-card">
                         <div class="section-content-card-label">Cloud Provider</div>
-                        <div class="section-content-card-value">{{{cloud_info.vendor}}}</div>
+                        <div class="section-content-card-value">{{{ cloud_info.vendor }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Region/Datacenter</div>
-                        <div class="section-content-card-value">{{{cloud_info.region}}}</div>
+                        <div class="section-content-card-value">{{{ cloud_info.region }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Instance Type</div>
-                        <div class="section-content-card-value">{{{cloud_info.instance_type_html}}}</div>
+                        <div class="section-content-card-value">
+                        {{#if cloud_info.compute_costs}}
+                            <a href="https://sparecores.com/server/{{{cloud_info.vendor}}}/{{{cloud_info.instance_type}}}" target="_blank" style="color: #34D399;">{{{ cloud_info.instance_type }}} {{{ files.icon_external_link }}}</a>
+                        {{#else}}
+                            {{{ cloud_info.instance_type }}}
+                        {{/if}}
+                        </div>
                     </div>
-                    {{#cloud_info.compute_costs}}
+                    {{#if cloud_info.compute_costs}}
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Compute Costs
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     The cost of running this cloud server for the duration of this step, not including storage, network traffic, IPV4 prices, startup time or any discounts.
                                 </div>
@@ -99,16 +107,17 @@
                         </div>
                         <div class="section-content-card-value">${{{cloud_info.compute_costs}}}</div>
                     </div>
-                    {{/cloud_info.compute_costs}}
+                    {{/if}}
                 </div>
             </div>
         </div>
     </div>
+    <!-- TODO continue from here-->
     <div style="display: flex; gap: 1rem;">
         <div id="stats" class="section" style="flex: 0.6;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_calculator}}}
+                    {{{ files.icon_calculator }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Usage Statistics</div>
@@ -120,39 +129,45 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">CPU</div>
                         <div class="section-content-card-value">
-                            <span class="metric-highlight">{{{stats.cpu_usage.mean}}}</span> avg
+                            <span class="metric-highlight">{{{ stats.process_cpu_usage.mean }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{historical_stats.avg_cpu_mean}}}</span> hist avg
+                            <span class="metric">{{ #if historical_stats.cpu_usage.mean }}{{{ historical_stats.cpu_usage.mean }}}{{ #else }}-{{/if}}</span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.cpu_usage.max}}}</span> peak</div>
+                            <span class="metric">{{ #if historical_stats.cpu_usage.max }}{{{ historical_stats.cpu_usage.max }}}{{ #else }}-{{/if}}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.memory_usage.mean_pretty}}} MiB</span> avg
+                            <span class="metric">{{{stats.process_memory.mean | divide:1024 | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.memory_usage.max_pretty}}} MiB</span> peak
+                            <span class="metric">{{{stats.process_memory.max | divide:1024 | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{{historical_stats.max_memory_max_pretty}}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">{{ #if historical_stats.memory_usage.max }}{{{ historical_stats.memory_usage.max | divide:1024 | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
-                        <div class="section-content-card-value">{{{stats.duration}}} sec</div>
+                        <div class="section-content-card-value">{{{ stats.duration | round:2 }}} sec</div>
                     </div>
-                    {{#step_failed}}
+                    {{ #if stats.stopped }}
+                    <div class="section-content-card-task">
+                    {{ #else }}
                     <div class="section-content-card-failed">
-                        <div class="section-content-card-label">Step Status</div>
+                    {{/if}}
+                        <div class="section-content-card-label">Status</div>
                         <div class="section-content-card-value">
-                            Failed
+                            {{#if stats.stopped}}
+                            Finished
+                            {{#else}}
+                            Pending
                             <span class="info-icon" style="padding-bottom: 3px;">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
-                                    The step did not complete successfully, so resource usage data does not represent a complete run.
+                                    The resource tracker was not stopped properly yet, so the collected resource usage data might be incomplete. Handle with care!
                                 </div>
                             </span>
+                            {{/if}}
                         </div>
                     </div>
-                    {{/step_failed}}
                     {{#server_info.gpu_names}}
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">GPU</div>
@@ -192,7 +207,7 @@
         <div id="recommendations" class="section" style="flex: 0.4;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_robot}}}
+                    {{{ files.icon_robot }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Recommendations</div>
@@ -205,7 +220,7 @@
                         <div class="section-content-card-label">
                             Recommended Resources for Next Run
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     The Metaflow <code>@resources</code> decorator is limited to specifying the number of vCPUs, memory, and number of GPUs, so e.g. no way to specify the minimum amount of VRAM.
                                 </div>
@@ -216,14 +231,14 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Automated Tuning of Resources</div>
                         <div class="section-content-card-value">
-                            Learn more at <a href="https://sparecores.com/feedback/metaflow-resource-tracker" target="_blank" style="color: #34D399;">sparecores.com {{{icon_external_link}}}</a>
+                            Learn more at <a href="https://sparecores.com/feedback/metaflow-resource-tracker" target="_blank" style="color: #34D399;">sparecores.com {{{ files.icon_external_link }}}</a>
                         </div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Cheapest Cloud Server to Run This Step
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     Evaluated 2000+ servers options accross AWS, GCP, Azure, Hetzner and UpCloud by filtering for the required number of vCPUs, memory, GPUs and min VRAM, then ordered descending by ondemand price, and selected the first one. The price per execution is based on the current best ondemand price of the server and the current duration of the step, and does not include any storage, network traffic, IPV4 prices, the startup time or any discounts. If interested in more advanced recommendations, please get in touch!
                                 </div>
@@ -235,7 +250,7 @@
                                 <li>
                                     <a href="https://sparecores.com/server/{{{vendor_id}}}/{{{api_reference}}}" target="_blank">
                                         <img src="https://sparecores.com/assets/images/vendors/{{{vendor_id}}}.svg">
-                                        <span class="linklike">{{{display_name}}} {{{icon_external_link}}}</span>
+                                        <span class="linklike">{{{display_name}}} {{{ files.icon_external_link }}}</span>
                                         <span style="font-weight: normal;">for ${{{price_task}}}/execution</span>
                                     </a>
                                 </li>
@@ -248,7 +263,7 @@
                         <div class="section-content-card-label">
                             Potential Cost Savings
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     This calculation assumes the current cloud server is dedicated to running this step and that the recommended cloud server would provide comparable performance. Savings are based on the best available on-demand pricing in supported regions and don't account for any existing discounts you may have.
                                 </div>
@@ -272,7 +287,7 @@
     <div id="cpu" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_cpu}}}
+                {{{ files.icon_cpu }}}
             </div>
             <div class="header-text">
                 <div class="title">CPU Usage</div>
@@ -287,7 +302,7 @@
     <div id="mem" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_memory}}}
+                {{{ files.icon_memory }}}
             </div>
             <div class="header-text">
                 <div class="title">Memory Usage</div>
@@ -302,7 +317,7 @@
     <div id="disk" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_disk}}}
+                {{{ files.icon_disk }}}
             </div>
             <div class="header-text">
                 <div class="title">Disk I/O Usage</div>
@@ -317,7 +332,7 @@
     <div id="disk_space" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_disk}}}
+                {{{ files.icon_disk }}}
             </div>
             <div class="header-text">
                 <div class="title">Disk Space Usage</div>
@@ -332,7 +347,7 @@
     <div id="net" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_router}}}
+                {{{ files.icon_router }}}
             </div>
             <div class="header-text">
                 <div class="title">Network Usage</div>
@@ -348,7 +363,7 @@
     <div id="gpu_usage" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">GPU Usage</div>
@@ -363,7 +378,7 @@
     <div id="gpu_utilized" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">GPUs in Use</div>
@@ -378,7 +393,7 @@
     <div id="gpu_vram" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">VRAM Usage</div>
@@ -393,7 +408,7 @@
     {{/server_info.gpu_names}}
     <div id="footer">
         <p>
-            Generated by <a href="https://sparecores.github.io/resource-tracker/#metaflow-integration" target="_blank" style="color: #34D399;">resource-tracker v{{{resource_tracker.version}}} {{{icon_external_link}}}</a> using <code>{{{resource_tracker.implementation}}}</code> implementation at {{timestamp}}.
+            Generated by <a href="https://sparecores.github.io/resource-tracker/#metaflow-integration" target="_blank" style="color: #34D399;">resource-tracker v{{{resource_tracker.version}}} {{{ files.icon_external_link }}}</a> using <code>{{{resource_tracker.implementation}}}</code> implementation at {{timestamp}}.
         </p>
     </div>
     <script type="text/javascript">

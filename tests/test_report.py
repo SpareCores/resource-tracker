@@ -1,15 +1,4 @@
-from platform import system
-
-import pytest
-
-if system() == "Windows":
-    pytest.skip("Metaflow is not supported on Windows", allow_module_level=True)
-
-
-from metaflow_extensions.resource_tracker.plugins.cards.tracked_resources.helpers import (
-    pretty_number,
-    round_memory,
-)
+from resource_tracker.report import pretty_number, round_memory
 
 
 def test_round_memory():

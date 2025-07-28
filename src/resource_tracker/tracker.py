@@ -21,7 +21,7 @@ from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import SimpleQueue, get_context
-from os import getpid
+from os import getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
 from sys import platform, stdout
@@ -40,10 +40,11 @@ from .helpers import (
     cleanup_processes,
     get_tracker_implementation,
     is_psutil_available,
-    round_memory,
 )
-from .keeper import get_recommended_cloud_servers
+from .keeper import get_instance_price, get_recommended_cloud_servers
+from .report import _read_report_template_files
 from .server_info import get_server_info
+from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame
 
 logger = getLogger(__name__)
@@ -455,6 +456,22 @@ class ResourceTracker:
             startup. Defaults to True.
         discover_cloud: Whether to discover the cloud environment in the background
             at startup. Defaults to True.
+
+    Example:
+        >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
+        >>> tracker = ResourceTracker()
+        >>> cpu_single()
+        >>> tracker.recommend_resources()
+        {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
+        >>> tracker = ResourceTracker()
+        >>> cpu_multi(duration=1.9, ncores=2)
+        >>> tracker.n_samples
+        1
+        >>> cpu_multi(duration=1.05, ncores=2)
+        >>> tracker.n_samples
+        2
+        >>> tracker.recommend_resources()
+        {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
     """
 
     _server_info: Optional[dict] = None
@@ -520,6 +537,7 @@ class ResourceTracker:
     def start(self):
         """Start the selected resource trackers in the background as subprocess(es)."""
         self.start_time = time()
+        self.stop_time = None
         # round to the nearest interval in the future
         self.start_time = ceil(self.start_time / self.interval) * self.interval
         # leave at least 50 ms for trackers to start
@@ -882,17 +900,6 @@ class ResourceTracker:
 
         Returns:
             A dictionary containing the recommended resources (cpu, memory, gpu, vram).
-
-        Example:
-            >>> tracker = ResourceTracker()
-            >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
-            >>> cpu_single(2)
-            >>> tracker.recommend_resources()
-            {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
-            >>> tracker = ResourceTracker()
-            >>> cpu_multi(duration=2, ncores=2)
-            >>> tracker.recommend_resources()
-            {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
         """
         # wait until we have at least one sample
         while self.n_samples == 0:
@@ -933,3 +940,40 @@ class ResourceTracker:
         """
         rec = self.recommend_resources()
         return get_recommended_cloud_servers(**rec, **kwargs, n=1)
+
+    def report(self, **kwargs) -> str:
+        ctx = {
+            "files": _read_report_template_files(),
+            "server_info": self.server_info,
+            "cloud_info": self.cloud_info,
+            "process_metrics": self.process_metrics,
+            "system_metrics": self.system_metrics,
+            "stats": self.stats(),
+            "historical_stats": {},
+            # TODO add historical stats
+        }
+        ctx["server_info"]["disk_space_total_gb"] = ctx["system_metrics"][
+            "disk_space_total_gb"
+        ][0]
+        ctx["stats"]["duration"] = (self.stop_time or time()) - self.start_time
+
+
+        # lookup instance price
+        if ctx["cloud_info"]["instance_type"] != "unknown":
+            compute_costs = get_instance_price(
+                ctx["cloud_info"]["vendor"],
+                ctx["cloud_info"]["region"],
+                ctx["cloud_info"]["instance_type"],
+            )
+            if compute_costs:
+                ctx["cloud_info"]["compute_costs"] = round(
+                    compute_costs / 60 / 60 * ctx["stats"]["duration"], 6
+                )
+
+        html_template_path = path.join(
+            path.dirname(__file__), "report_template", "report.html"
+        )
+        with open(html_template_path) as f:
+            html_template = f.read()
+        html = render_template(html_template, ctx)
+        return html

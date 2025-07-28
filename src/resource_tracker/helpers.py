@@ -11,7 +11,7 @@ from multiprocessing import Process
 from os import unlink
 from re import search
 from subprocess import PIPE, Popen, TimeoutExpired
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List
 
 
 @cache
@@ -140,37 +140,3 @@ def cleanup_processes(processes: List[Process]):
                 process.join(timeout=1.0)
         with suppress(Exception):
             process.close()
-
-
-def round_memory(mb: Union[float, int]) -> int:
-    """Round a number to the nearest meaningful memory amount.
-
-    Args:
-        mb: The number of MB to round.
-
-    Returns:
-        The rounded number of MB.
-
-    Example:
-        >>> round_memory(68)
-        128
-        >>> round_memory(896)
-        1024
-        >>> round_memory(3863)
-        4096
-    """
-    if mb <= 128:
-        rounded = 128
-    elif mb <= 256:
-        rounded = 256
-    elif mb <= 512:
-        rounded = 512
-    elif mb <= 1024:
-        rounded = 1024
-    elif mb <= 2048:
-        rounded = 2048
-    else:
-        # round up to the next GB
-        rounded_gb = mb / 1024
-        rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
-    return rounded

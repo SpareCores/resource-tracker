@@ -1,22 +1,30 @@
-"""A tiny and partial implementation of the Handlebars template engine."""
+"""A tiny, partial, and opinionated implementation of the Handlebars template engine."""
 
 from html import escape
 from re import compile
-from typing import Any, Dict, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 TRIPLE_RE = compile(r"{{{\s*([^{}]*?)\s*}}}")
 DOUBLE_RE = compile(r"{{\s*(#each|#if|#else|/each|/if)?\s*([^{}]*?)\s*}}")
 EACH_RE = compile(r"([^{}]*?)\s+as\s+([^{}]*?)$")
+FILTER_RE = compile(r"([^|]+)(?:\s*\|\s*([^|]+))?")
+FILTER_PARAM_RE = compile(r"([^:]+)(?::([^|]+))?")
 
 
 def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
     """Resolve a variable name in the given context.
 
     Supports nested lookups with dot notation with both dictionary keys and
-    object attributes.
+    object attributes. Also supports filters with optional parameters and filter chaining.
+
+    Filters:
+        - pretty_number: format a number with optional rounding and thousands separator (e.g. 1234.5678 -> 1,234.6)
+        - divide: divide a number by a divisor (e.g. 1234567 | divide:1000 -> 1234.567)
+        - round: round a number to a specified number of decimal places (e.g. 1234.5678 | round:2 -> 1234.57)
+        - round_memory: round a number to the nearest meaningful memory amount (e.g. 68 | round_memory -> 128)
 
     Args:
-        name: The variable name to resolve.
+        name: The variable name to resolve, possibly with filter(s) separated by pipe(s).
         ctx: The context to resolve the variable in.
 
     Returns:
@@ -31,17 +39,181 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
         Traceback (most recent call last):
         ...
         KeyError: 'age not found in user.age'
+        >>> _resolve_var("user.age | round", {"user": {"age": 1234.5678}})
+        '1235'
+        >>> _resolve_var("user.age | divide:1000 | round:2", {"user": {"age": 1234567}})
+        '1234.57'
     """
-    parts = name.strip().split(".")
+    parts = name.strip().split("|")
+
+    var_name = parts[0].strip()
+    var_parts = var_name.split(".")
     val = ctx
-    for p in parts:
+    for p in var_parts:
         if isinstance(val, dict):
             val = val.get(p)
         else:
             val = getattr(val, p, None)
         if val is None:
-            raise KeyError(f"{p} not found in {name}")
+            raise KeyError(f"{p} not found in {var_name}")
+
+    for i in range(1, len(parts)):
+        filter_expr = parts[i].strip()
+        filter_match = FILTER_PARAM_RE.match(filter_expr)
+
+        if not filter_match:
+            raise ValueError(f"Invalid filter expression: {filter_expr}")
+
+        filter_name = filter_match.group(1).strip()
+        filter_param = filter_match.group(2).strip() if filter_match.group(2) else None
+
+        filter_func = _get_filter(filter_name)
+        if filter_func:
+            if filter_param:
+                # try to convert parameter to appropriate type: int -> float -> string
+                try:
+                    param = int(filter_param)
+                except ValueError:
+                    try:
+                        param = float(filter_param)
+                    except ValueError:
+                        param = filter_param
+                val = filter_func(val, param)
+            else:
+                val = filter_func(val)
+        else:
+            raise ValueError(f"Unknown filter: {filter_name}")
+
     return val
+
+
+def _get_filter(name: str) -> Optional[Callable]:
+    """Get a filter function by name.
+
+    Args:
+        name: The name of the filter.
+
+    Returns:
+        The filter function or None if not found.
+    """
+    filters = {
+        "pretty_number": _filter_pretty_number,
+        "divide": _filter_divide,
+        "round": _filter_round,
+        "round_memory": _filter_round_memory,
+    }
+    return filters.get(name)
+
+
+def _filter_pretty_number(value: Union[int, float], digits: int = 0) -> str:
+    """Format a number for HTML display.
+
+    Non-numeric values are returned as a string.
+    Integers are returned as-is.
+    Numbers with decimal places are rounded to the specified number of digits and trailing zeros are removed.
+    Big marks for thousands are added.
+
+    Args:
+        value: The number to format.
+        digits: The number of decimal places to display.
+
+    Returns:
+        A string representation of the number.
+    """
+    try:
+        num = float(value)
+
+        # integers or numbers that are effectively integers
+        if num.is_integer():
+            return f"{int(num):,}"
+
+        # numbers with decimal places, limit to the specified number of digits
+        formatted = f"{num:.{digits}f}"
+        # drop trailing zeros after decimal point
+        if "." in formatted:
+            formatted = (
+                formatted.rstrip("0").rstrip(".") if "." in formatted else formatted
+            )
+
+        # add big marks for thousands
+        parts = formatted.split(".")
+        parts[0] = f"{int(parts[0]):,}"
+        return ".".join(parts)
+    except (ValueError, TypeError):
+        return str(value)
+
+
+def _filter_divide(value: Union[int, float], divisor: Union[int, float] = 1) -> float:
+    """Divide a number by a divisor.
+
+    Args:
+        value: The number to divide.
+        divisor: The divisor.
+
+    Returns:
+        The result of the division.
+    """
+    if (
+        isinstance(value, (int, float))
+        and isinstance(divisor, (int, float))
+        and divisor != 0
+    ):
+        return value / divisor
+    if not isinstance(value, (int, float)):
+        raise ValueError(f"Invalid value: {value} should be a number")
+    if not isinstance(divisor, (int, float)):
+        raise ValueError(f"Invalid divisor: {divisor} should be a number")
+    raise ValueError(f"Division by zero: {value} / {divisor}")
+
+
+def _filter_round(value: Union[int, float], digits: int = 0) -> Union[int, float]:
+    """Round a number to a specified number of decimal places.
+
+    Args:
+        value: The number to round.
+        digits: The number of decimal places.
+
+    Returns:
+        The rounded number.
+    """
+    try:
+        return round(float(value), digits)
+    except (ValueError, TypeError):
+        return value
+
+
+def _filter_round_memory(mb: Union[int, float]) -> int:
+    """Round a number to the nearest meaningful memory amount.
+
+    Args:
+        mb: The value in MB to round.
+
+    Returns:
+        The rounded value in MB as an integer.
+
+    Example:
+        >>> round_memory(68)
+        128
+        >>> round_memory(896)
+        1024
+        >>> round_memory(3863)
+        4096
+    """
+    if mb <= 128:
+        rounded = 128
+    elif mb <= 256:
+        rounded = 256
+    elif mb <= 512:
+        rounded = 512
+    elif mb <= 1024:
+        rounded = 1024
+    elif mb <= 2048:
+        rounded = 2048
+    else:
+        # round up to the next GB
+        rounded_gb = mb / 1024
+        rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
+    return rounded
 
 
 def render_template(template: str, context: Dict[str, Any]) -> str:
@@ -53,6 +225,7 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
     - Variable interpolation using "{{expr}}" (HTML-escaped) and "{{{expr}}}" (raw)
     - Nested property access using dot notation (e.g. "user.name") for dictionary
       keys and object attributes.
+    - Filters using pipe syntax: "{{expr | filter}}" or "{{expr | filter:param}}"
 
     Args:
         template: The template to render.
@@ -75,6 +248,12 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
         ''
         >>> render_template("{{#if present}}Yes{{#else}}No{{/if}}", {"present": False})
         'No'
+        >>> render_template("{{value | pretty_number}}", {"value": 1234.5678})
+        '1,234.6'
+        >>> render_template("{{value | pretty_number:2}}", {"value": 1234.5678})
+        '1,234.57'
+        >>> render_template("{{value | divide:1000}}", {"value": 1234567})
+        '1234.567'
     """
 
     def _render_block(tmpl: str, ctx: Dict[str, Any]) -> str:

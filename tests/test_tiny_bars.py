@@ -1,10 +1,28 @@
 from re import sub
 
-from resource_tracker.tiny_bars import render_template
+import pytest
+
+from resource_tracker.tiny_bars import _resolve_var, render_template
 
 
 def normalize_whitespace(text: str) -> str:
     return sub(r"\s+", " ", text.strip())
+
+
+def test_tiny_bars_resolve_var():
+    assert _resolve_var("user.name", {"user": {"name": "World"}}) == "World"
+    with pytest.raises(KeyError):
+        _resolve_var("user.name", {"user": {"age": 42}})
+    assert _resolve_var("user.age", {"user": {"age": 1234.5678}}) == 1234.5678
+    assert _resolve_var("user.age | round", {"user": {"age": 1234.5678}}) == 1235
+    assert (
+        _resolve_var(
+            "user.age | divide:1000 | round:2",
+            {"user": {"age": 1234567}},
+        )
+        == 1234.57
+    )
+    assert _resolve_var("user.age | round_memory", {"user": {"age": 42}}) == 128
 
 
 def test_tiny_bars_complex_template():

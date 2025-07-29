@@ -952,9 +952,6 @@ class ResourceTracker:
             "historical_stats": {},
             # TODO add historical stats
         }
-        ctx["server_info"]["disk_space_total_gb"] = ctx["system_metrics"][
-            "disk_space_total_gb"
-        ][0]
         ctx["stats"]["duration"] = (self.stop_time or time()) - self.start_time
         ctx["stats"]["stopped"] = self.stop_time is not None
 

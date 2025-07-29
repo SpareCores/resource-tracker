@@ -48,7 +48,7 @@
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Storage</div>
-                        <div class="section-content-card-value">{{{ server_info.disk_space_total_gb | pretty_number }}} GiB</div>
+                        <div class="section-content-card-value">{{{ system_metrics.disk_space_total_gb | index:0 | pretty_number }}} GiB</div>
                     </div>
                     <!-- TODO: check if this filter works -->
                     {{#if server_info.gpu_names}}

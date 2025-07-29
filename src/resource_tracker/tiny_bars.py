@@ -5,6 +5,7 @@ from re import compile
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from .report import round_memory
+from .tiny_data_frame import TinyDataFrame
 
 TRIPLE_RE = compile(r"{{{\s*([^{}]*?)\s*}}}")
 DOUBLE_RE = compile(r"{{\s*(#each|#if|#else|/each|/if)?\s*([^{}]*?)\s*}}")
@@ -52,7 +53,9 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
     var_parts = var_name.split(".")
     val = ctx
     for p in var_parts:
-        if isinstance(val, dict):
+        if isinstance(val, TinyDataFrame):
+            val = val[p]
+        elif isinstance(val, dict):
             val = val.get(p)
         else:
             val = getattr(val, p, None)
@@ -99,12 +102,29 @@ def _get_filter(name: str) -> Optional[Callable]:
         The filter function or None if not found.
     """
     filters = {
+        "index": _filter_index,
         "pretty_number": _filter_pretty_number,
         "divide": _filter_divide,
         "round": _filter_round,
         "round_memory": _filter_round_memory,
     }
     return filters.get(name)
+
+
+def _filter_index(value: Union[int, float], index: int = 0) -> str:
+    """Get the value at the specified index.
+
+    Args:
+        value: The value to index.
+        index: The index to return.
+
+    Returns:
+        The indexed value.
+    """
+    try:
+        return value[index]
+    except Exception:
+        raise ValueError(f"Invalid index: {index} for {value}")
 
 
 def _filter_pretty_number(value: Union[int, float], digits: int = 0) -> str:

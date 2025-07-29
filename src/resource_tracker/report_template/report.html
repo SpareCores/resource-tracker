@@ -50,8 +50,7 @@
                         <div class="section-content-card-label">Storage</div>
                         <div class="section-content-card-value">{{{ system_metrics.disk_space_total_gb | index:0 | pretty_number }}} GiB</div>
                     </div>
-                    <!-- TODO: check if this filter works -->
-                    {{#if server_info.gpu_names}}
+                    {{ #if server_info.gpu_names }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">GPUs</div>
                         <div class="section-content-card-value">{{{ server_info.gpu_count }}} {{{ server_info.gpu_name }}}</div>
@@ -60,7 +59,7 @@
                         <div class="section-content-card-label">VRAM</div>
                         <div class="section-content-card-value">{{{server_info.gpu_memory_mb | pretty_number }}} MiB</div>
                     </div>
-                    {{/if}}
+                    {{ /if }}
                 </div>
             </div>
         </div>
@@ -87,14 +86,14 @@
                     <div class="section-content-card">
                         <div class="section-content-card-label">Instance Type</div>
                         <div class="section-content-card-value">
-                        {{#if cloud_info.compute_costs}}
+                        {{ #if cloud_info.compute_costs }}
                             <a href="https://sparecores.com/server/{{{cloud_info.vendor}}}/{{{cloud_info.instance_type}}}" target="_blank" style="color: #34D399;">{{{ cloud_info.instance_type }}} {{{ files.icon_external_link }}}</a>
-                        {{#else}}
+                        {{ #else }}
                             {{{ cloud_info.instance_type }}}
-                        {{/if}}
+                        {{ /if }}
                         </div>
                     </div>
-                    {{#if cloud_info.compute_costs}}
+                    {{ #if cloud_info.compute_costs }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Compute Costs
@@ -112,7 +111,6 @@
             </div>
         </div>
     </div>
-    <!-- TODO continue from here-->
     <div style="display: flex; gap: 1rem;">
         <div id="stats" class="section" style="flex: 0.6;">
             <h1>
@@ -146,16 +144,16 @@
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
-                        <div class="section-content-card-value">{{{ stats.duration | round:2 }}} sec</div>
+                        <div class="section-content-card-value">{{{ meta.duration | round:2 }}} sec</div>
                     </div>
-                    {{ #if stats.stopped }}
+                    {{ #if meta.stopped }}
                     <div class="section-content-card-task">
                     {{ #else }}
                     <div class="section-content-card-failed">
                     {{/if}}
                         <div class="section-content-card-label">Status</div>
                         <div class="section-content-card-value">
-                            {{#if stats.stopped}}
+                            {{#if meta.stopped}}
                             Finished
                             {{#else}}
                             Pending
@@ -191,19 +189,19 @@
                                 {{ #if historical_stats.process_gpu_vram.max }}{{{ historical_stats.process_gpu_vram.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
                             </span> hist peak</div>
                     </div>
-                    {{/if}}
+                    {{ /if }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">Disk Space</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.disk_usage.max_pretty}}} GiB</span> peak
+                            <span class="metric">{{{ stats.system_disk_space_used_gb.max | pretty_number }}} GiB</span> peak
                         </div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Traffic</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{stats.traffic.inbound_pretty}} GB</span> in
+                            <span class="metric">{{{ stats.system_net_recv_bytes.sum | divide:1024 | divide:1073741824 | pretty_number:2 }}} GB</span> in
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{stats.traffic.outbound_pretty}} GB</span> out
+                            <span class="metric">{{{ stats.system_net_sent_bytes.sum | divide:1024 | divide:1073741824 | pretty_number:2 }}} GB</span> out
                         </div>
                     </div>
                 </div>
@@ -224,14 +222,23 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">
                             Recommended Resources for Next Run
+                            {{ #if meta.integration_is.metaflow }}
                             <span class="info-icon">
                                 {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     The Metaflow <code>@resources</code> decorator is limited to specifying the number of vCPUs, memory, and number of GPUs, so e.g. no way to specify the minimum amount of VRAM.
                                 </div>
                             </span>
+                            {{ /if }}
                         </div>
-                        <div class="section-content-card-value">{{{recommended_resources}}}</div>
+                        <div class="section-content-card-value">
+                            {{ #if meta.integration_is.standalone }}
+                            {{ recommended_resources.cpu }} vCPUs, {{ recommended_resources.memory }} MiB memory{{ #if recommended_resources.gpu }}, {{ recommended_resources.gpu }} GPUs with {{ recommended_resources.vram }} MiB VRAM{{ /if }}
+                            {{ /if }}
+                            {{ #if meta.integration_is.metaflow }}
+                            @resources(cpu={{ recommended_resources.cpu }}, memory={{recommended_resources.memory}}{{ #if recommended_resources.gpu }}, gpu={{ recommended_resources.gpu }}{{ /if }})
+                            {{ /if }}
+                        </div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Automated Tuning of Resources</div>

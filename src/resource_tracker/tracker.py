@@ -28,7 +28,7 @@ from sys import platform, stdout
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import sleep, time
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 from warnings import warn
 from weakref import finalize
 
@@ -941,7 +941,9 @@ class ResourceTracker:
         rec = self.recommend_resources()
         return get_recommended_cloud_servers(**rec, **kwargs, n=1)
 
-    def report(self) -> str:
+    def report(
+        self, integration: Literal["standalone", "metaflow"] = "standalone"
+    ) -> str:
         ctx = {
             "files": _read_report_template_files(),
             "server_info": self.server_info,
@@ -951,9 +953,19 @@ class ResourceTracker:
             "stats": self.stats(),
             "historical_stats": {},
             # TODO add historical stats
+            "recommended_resources": self.recommend_resources(),
+            "recommended_server": self.recommend_server(),
+            "meta": {
+                "integration": integration,
+                "integration_is": {
+                    "metaflow": integration == "metaflow",
+                    "standalone": integration == "standalone",
+                },
+                "duration": (self.stop_time or time()) - self.start_time,
+                "stopped": self.stop_time is not None,
+                # TODO failed
+            },
         }
-        ctx["stats"]["duration"] = (self.stop_time or time()) - self.start_time
-        ctx["stats"]["stopped"] = self.stop_time is not None
 
         # lookup instance price
         if ctx["cloud_info"]["instance_type"] != "unknown":

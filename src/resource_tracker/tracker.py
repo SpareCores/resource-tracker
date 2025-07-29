@@ -939,7 +939,7 @@ class ResourceTracker:
             A dictionary containing the recommended cloud server. Response format is described at <https://keeper.sparecores.net/redoc#tag/Query-Resources/operation/search_servers_servers_get>.
         """
         rec = self.recommend_resources()
-        return get_recommended_cloud_servers(**rec, **kwargs, n=1)
+        return get_recommended_cloud_servers(**rec, **kwargs, n=1)[0]
 
     def report(
         self, integration: Literal["standalone", "metaflow"] = "standalone"
@@ -963,11 +963,17 @@ class ResourceTracker:
                 },
                 "duration": (self.stop_time or time()) - self.start_time,
                 "stopped": self.stop_time is not None,
-                # TODO failed
+                # TODO add failed status optionally
             },
         }
 
-        # lookup instance price
+        # lookup instance prices
+        ctx["recommended_server"]["best_ondemand_price_duration"] = (
+            ctx["recommended_server"]["min_price_ondemand"]
+            / 60
+            / 60
+            * ctx["meta"]["duration"]
+        )
         if ctx["cloud_info"]["instance_type"] != "unknown":
             compute_costs = get_instance_price(
                 ctx["cloud_info"]["vendor"],
@@ -976,8 +982,24 @@ class ResourceTracker:
             )
             if compute_costs:
                 ctx["cloud_info"]["compute_costs"] = round(
-                    compute_costs / 60 / 60 * ctx["stats"]["duration"], 6
+                    compute_costs / 60 / 60 * ctx["meta"]["duration"], 6
                 )
+                ctx["recommended_server"]["cost_savings"] = {
+                    "percent": round(
+                        (
+                            ctx["cloud_info"]["compute_costs"]
+                            - ctx["recommended_server"]["best_ondemand_price_duration"]
+                        )
+                        / ctx["cloud_info"]["compute_costs"]
+                        * 100,
+                        2,
+                    ),
+                    "amount": round(
+                        ctx["cloud_info"]["compute_costs"]
+                        - ctx["recommended_server"]["best_ondemand_price_duration"],
+                        6,
+                    ),
+                }
 
         html_template_path = path.join(
             path.dirname(__file__), "report_template", "report.html"

@@ -944,6 +944,7 @@ class ResourceTracker:
     def report(
         self, integration: Literal["standalone", "metaflow"] = "standalone"
     ) -> str:
+        duration = (self.stop_time or time()) - self.start_time
         ctx = {
             "files": _read_report_template_files(),
             "server_info": self.server_info,
@@ -961,44 +962,30 @@ class ResourceTracker:
                     "metaflow": integration == "metaflow",
                     "standalone": integration == "standalone",
                 },
-                "duration": (self.stop_time or time()) - self.start_time,
+                "duration": duration,
                 "stopped": self.stop_time is not None,
                 # TODO add failed status optionally
             },
         }
 
         # lookup instance prices
-        ctx["recommended_server"]["best_ondemand_price_duration"] = (
-            ctx["recommended_server"]["min_price_ondemand"]
-            / 60
-            / 60
-            * ctx["meta"]["duration"]
-        )
+        rec_server_cost = ctx["recommended_server"]["min_price_ondemand"]
+        rec_run_cost = rec_server_cost / 60 / 60 * duration
+        ctx["recommended_server"]["best_ondemand_price_duration"] = rec_run_cost
         if ctx["cloud_info"]["instance_type"] != "unknown":
-            compute_costs = get_instance_price(
+            current_server_cost = get_instance_price(
                 ctx["cloud_info"]["vendor"],
                 ctx["cloud_info"]["region"],
                 ctx["cloud_info"]["instance_type"],
             )
-            if compute_costs:
-                ctx["cloud_info"]["compute_costs"] = round(
-                    compute_costs / 60 / 60 * ctx["meta"]["duration"], 6
-                )
+            if current_server_cost:
+                current_run_cost = round(current_server_cost / 60 / 60 * duration, 6)
+                ctx["cloud_info"]["run_costs"] = current_run_cost
                 ctx["recommended_server"]["cost_savings"] = {
                     "percent": round(
-                        (
-                            ctx["cloud_info"]["compute_costs"]
-                            - ctx["recommended_server"]["best_ondemand_price_duration"]
-                        )
-                        / ctx["cloud_info"]["compute_costs"]
-                        * 100,
-                        2,
+                        (current_run_cost - rec_run_cost) / current_run_cost * 100, 2
                     ),
-                    "amount": round(
-                        ctx["cloud_info"]["compute_costs"]
-                        - ctx["recommended_server"]["best_ondemand_price_duration"],
-                        6,
-                    ),
+                    "amount": round(current_run_cost - rec_run_cost, 6),
                 }
 
         html_template_path = path.join(

@@ -894,6 +894,7 @@ class ResourceTracker:
         """
         return self.get_combined_metrics().stats(specs)
 
+    # TODO support historical stats (below fn as well)
     def recommend_resources(self) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.
 
@@ -947,7 +948,9 @@ class ResourceTracker:
         return get_recommended_cloud_servers(**rec, **kwargs, n=1)[0]
 
     def report(
-        self, integration: Literal["standalone", "metaflow"] = "standalone"
+        self,
+        integration: Literal["standalone", "metaflow"] = "standalone",
+        historical_stats: List[dict] = [],
     ) -> Report:
         duration = (self.stop_time or time()) - self.start_time
         ctx = {
@@ -958,7 +961,6 @@ class ResourceTracker:
             "system_metrics": self.system_metrics,
             "stats": self.stats(),
             "historical_stats": {},
-            # TODO add historical stats
             "recommended_resources": self.recommend_resources(),
             "recommended_server": self.recommend_server(),
             "resource_tracker": {
@@ -978,6 +980,46 @@ class ResourceTracker:
             },
             "csv": {},
         }
+
+        # aggregate historical stats
+        if historical_stats:
+            # initialize with current stats
+            for col, values in ctx["stats"].items():
+                ctx["historical_stats"][col] = {}
+                for agg_type, value in values.items():
+                    if agg_type in ["mean", "duration"]:
+                        # store actual values in a temp list for averaging at the end
+                        ctx["historical_stats"][col][f"{agg_type}_values"] = [value]
+                    else:
+                        ctx["historical_stats"][col][agg_type] = value
+            # update with all historical stats
+            for stat_dict in historical_stats:
+                for col, values in stat_dict.items():
+                    # shouldn't happen, as current and historical stats have the same structure, but just in case
+                    if col not in ctx["historical_stats"]:
+                        ctx["historical_stats"][col] = values.copy()
+                        continue
+                    for agg_type, value in values.items():
+                        # keep individual values in a temp list for averaging at the end
+                        if agg_type in ["mean", "duration"]:
+                            if "mean_values" not in ctx["historical_stats"][col]:
+                                ctx["historical_stats"][col]["mean_values"] = []
+                            ctx["historical_stats"][col]["mean_values"].append(value)
+                        # keep the largest
+                        if agg_type in ["max", "sum"]:
+                            if (
+                                agg_type not in ctx["historical_stats"][col]
+                                or value > ctx["historical_stats"][col][agg_type]
+                            ):
+                                ctx["historical_stats"][col][agg_type] = value
+            # compute final averages for means and durations
+            for col, values in ctx["historical_stats"].items():
+                for agg_type in ["mean", "duration"]:
+                    if "mean_values" in values:
+                        values[agg_type] = sum(values["mean_values"]) / len(
+                            values["mean_values"]
+                        )
+                        del values["mean_values"]
 
         # comma-separated values
         joined = self.get_combined_metrics(bytes=True, human_names=True)

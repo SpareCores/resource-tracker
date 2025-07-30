@@ -166,7 +166,7 @@ def aggregate_stats(
         >>> stats1 = {'cpu_usage': {'mean': 1.5, 'max': 2.0}, 'memory': {'mean': 100, 'max': 150}}
         >>> stats2 = {'cpu_usage': {'mean': 2.5, 'max': 3.0}, 'memory': {'mean': 200, 'max': 250}}
         >>> aggregate_stats([stats1, stats2])
-        {'cpu_usage': {'mean': 2.0, 'max': 3.0}, 'memory': {'mean': 150.0, 'max': 250}}
+        {'cpu_usage': {'max': 3.0, 'mean': 2.0}, 'memory': {'max': 250, 'mean': 150.0}}
     """
     if not stats:
         return {}

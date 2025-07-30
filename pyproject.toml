@@ -42,7 +42,7 @@ mkdocs = [
 #all = ["resource-tracker[metaflow]"]
 
 [tool.setuptools.package-data]
-"metaflow_extensions.resource_tracker.plugins.cards.tracked_resources.components" = ["**/*"]
+"resource_tracker" = ["report_template/**/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "resource_tracker._version.__version__"}

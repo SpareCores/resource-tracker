@@ -1,10 +1,6 @@
-from statistics import mean
 from time import time
 
 from metaflow.decorators import StepDecorator
-
-from .resource_tracker._version import __version__
-from .resource_tracker.helpers import is_psutil_available
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -217,49 +213,10 @@ class ResourceTrackerDecorator(StepDecorator):
                     )
                 return
 
-            system_metrics = self.resource_tracker.system_metrics
-            historical_stats = self._get_historical_stats(flow, step_name)
             data = {
                 "step_failed": failed,
-                "resource_tracker": {
-                    "version": __version__,
-                    "implementation": "psutil" if is_psutil_available() else "procfs",
-                },
-                "process_metrics": process_metrics,
-                "system_metrics": system_metrics,
-                "cloud_info": self.resource_tracker.cloud_info,
-                "server_info": self.resource_tracker.server_info,
-                "stats": {
-                    "cpu_usage": {
-                        "mean": round(mean(process_metrics["cpu_usage"]), 2),
-                        "max": round(max(process_metrics["cpu_usage"]), 2),
-                    },
-                    "memory_usage": {
-                        "mean": round(mean(process_metrics["memory"]), 2),
-                        "max": round(max(process_metrics["memory"]), 2),
-                    },
-                    "gpu_usage": {
-                        "mean": round(mean(process_metrics["gpu_usage"]), 2),
-                        "max": round(max(process_metrics["gpu_usage"]), 2),
-                    },
-                    "gpu_vram": {
-                        "mean": round(mean(process_metrics["gpu_vram"]), 2),
-                        "max": round(max(process_metrics["gpu_vram"]), 2),
-                    },
-                    "gpu_utilized": {
-                        "mean": round(mean(process_metrics["gpu_utilized"]), 2),
-                        "max": round(max(process_metrics["gpu_utilized"]), 2),
-                    },
-                    "disk_usage": {
-                        "max": round(max(system_metrics["disk_space_used_gb"]), 2),
-                    },
-                    "traffic": {
-                        "inbound": sum(system_metrics["net_recv_bytes"]),
-                        "outbound": sum(system_metrics["net_sent_bytes"]),
-                    },
-                    "duration": round(time() - self.start_time, 2),
-                },
-                "historical_stats": historical_stats,
+                "tracker": self.resource_tracker.snapshot(),
+                "historical_stats": self._get_historical_stats(flow, step_name),
             }
             setattr(flow, self.attributes["artifact_name"], data)
         except Exception as e:
@@ -281,13 +238,10 @@ class ResourceTrackerDecorator(StepDecorator):
         try:
             from metaflow import Flow
 
-            # Get the flow name from the current flow object
-            flow_name = flow.__class__.__name__
-
-            # get the current + last 5 successful runs
-            runs = list(Flow(flow_name).runs())
+            # get the last 5 successful runs
+            runs = list(Flow(flow.__class__.__name__).runs())
             runs.sort(key=lambda run: run.created_at, reverse=True)
-            previous_runs = [run for run in runs[0:6] if run.successful]
+            previous_runs = [run for run in runs[1:6] if run.successful]
 
             if not previous_runs:
                 return {
@@ -295,13 +249,7 @@ class ResourceTrackerDecorator(StepDecorator):
                     "message": "No previous successful runs found",
                 }
 
-            cpu_means = []
-            memory_maxes = []
-            durations = []
-            gpu_means = []
-            vram_maxes = []
-            gpu_counts = []
-
+            historical_stats = []
             for run in previous_runs:
                 try:
                     step = next((s for s in run.steps() if s.id == step_name), None)
@@ -329,12 +277,14 @@ class ResourceTrackerDecorator(StepDecorator):
                             timestamp=False,
                         )
                         continue
-                    cpu_means.append(resource_data["stats"]["cpu_usage"]["mean"])
-                    memory_maxes.append(resource_data["stats"]["memory_usage"]["max"])
-                    durations.append(resource_data["stats"]["duration"])
-                    gpu_means.append(resource_data["stats"]["gpu_usage"]["mean"])
-                    vram_maxes.append(resource_data["stats"]["gpu_vram"]["max"])
-                    gpu_counts.append(resource_data["stats"]["gpu_utilized"]["max"])
+                    try:
+                        historical_stats.append(resource_data["tracker"])
+                    except KeyError:
+                        self.logger(
+                            f"*NOTE* [@resource_tracker] No tracker data found for run {run.id}",
+                            timestamp=False,
+                        )
+                        continue
                 except Exception as e:
                     import traceback
 
@@ -344,17 +294,8 @@ class ResourceTrackerDecorator(StepDecorator):
                     )
                     continue
 
-            if cpu_means and memory_maxes and durations:
-                return {
-                    "available": True,
-                    "runs_analyzed": len(cpu_means),
-                    "avg_cpu_mean": round(mean(cpu_means), 2),
-                    "max_memory_max": round(max(memory_maxes), 2),
-                    "avg_gpu_mean": round(mean(gpu_means), 2),
-                    "max_vram_max": round(max(vram_maxes), 2),
-                    "max_gpu_count": round(max(gpu_counts), 2),
-                    "avg_duration": round(mean(durations), 2),
-                }
+            if historical_stats:
+                return historical_stats
             else:
                 return {
                     "available": False,

@@ -2,11 +2,26 @@ from re import sub
 
 import pytest
 
-from resource_tracker.tiny_bars import _resolve_var, render_template
+from resource_tracker.tiny_bars import (
+    _filter_pretty_number,
+    _resolve_var,
+    render_template,
+)
 
 
 def normalize_whitespace(text: str) -> str:
     return sub(r"\s+", " ", text.strip())
+
+
+def test_filter_pretty_number():
+    assert _filter_pretty_number(12) == "12"
+    assert _filter_pretty_number(12.00012) == "12"
+    assert _filter_pretty_number(12.00012, digits=2) == "12"
+    assert _filter_pretty_number(12.28912, digits=2) == "12.29"
+    assert _filter_pretty_number(1234) == "1,234"
+    assert _filter_pretty_number(1_234_567) == "1,234,567"
+    assert _filter_pretty_number(1_234_567_890) == "1,234,567,890"
+    assert _filter_pretty_number(1_234_567_890_123) == "1,234,567,890,123"
 
 
 def test_tiny_bars_resolve_var():

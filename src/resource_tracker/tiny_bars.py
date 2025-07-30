@@ -44,9 +44,11 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
         ...
         KeyError: 'age not found in user.age'
         >>> _resolve_var("user.age | round", {"user": {"age": 1234.5678}})
-        '1235'
+        1235.0
+        >>> _resolve_var("user.age | pretty_number", {"user": {"age": 1234.5678}})
+        '1,235'
         >>> _resolve_var("user.age | divide:1000 | round:2", {"user": {"age": 1234567}})
-        '1234.57'
+        1234.57
     """
     parts = name.strip().split("|")
 
@@ -255,7 +257,7 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
         >>> render_template("{{#if present}}Yes{{#else}}No{{/if}}", {"present": False})
         'No'
         >>> render_template("{{value | pretty_number}}", {"value": 1234.5678})
-        '1,234.6'
+        '1,235'
         >>> render_template("{{value | pretty_number:2}}", {"value": 1234.5678})
         '1,234.57'
         >>> render_template("{{value | divide:1000}}", {"value": 1234567})

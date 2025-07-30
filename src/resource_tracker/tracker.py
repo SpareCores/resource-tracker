@@ -172,7 +172,6 @@ class ProcessTracker:
         file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
             while True:
-                current_time = time()
                 current_stats = self.diff_stats()
                 if current_stats["memory"] == 0:
                     # the process has exited
@@ -361,7 +360,6 @@ class SystemTracker:
         file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
             while True:
-                current_time = time()
                 current_stats = self.diff_stats()
                 # don't print values yet, we collect data for the 1st baseline
                 if self.cycle == 1:

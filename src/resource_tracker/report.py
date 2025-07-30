@@ -8,7 +8,6 @@ def _read_report_template_files():
     root = path.join(path.dirname(__file__), "report_template")
     files = {}
     for key, fname in [
-        ("base_html", ["base.html"]),
         ("dygraphs_js", ["dygraphs-2.2.1", "dygraphs.min.js"]),
         ("dygraphs_css", ["dygraphs-2.2.1", "dygraphs.min.css"]),
         ("dygraphs_crosshair_js", ["dygraphs-2.2.1", "crosshair.min.js"]),

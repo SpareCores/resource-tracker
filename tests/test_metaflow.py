@@ -123,6 +123,7 @@ def test_flow_execution_failed(artifacts_dir):
         tracker_data = tracker_data[list(tracker_data)[0]]["resource_tracker_data"]
     os.unlink(temp_path)
 
+    # TODO these are not available in the new design
     process_metrics = tracker_data["process_metrics"]
     assert max(process_metrics["cpu_usage"]) > 0
     assert max(process_metrics["memory"]) > 0

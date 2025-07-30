@@ -47,7 +47,7 @@ from .helpers import (
     is_psutil_available,
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
-from .report import _read_report_template_files, round_memory
+from .report import Report, _read_report_template_files, round_memory
 from .server_info import get_server_info
 from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame
@@ -948,7 +948,7 @@ class ResourceTracker:
 
     def report(
         self, integration: Literal["standalone", "metaflow"] = "standalone"
-    ) -> str:
+    ) -> Report:
         duration = (self.stop_time or time()) - self.start_time
         ctx = {
             "files": _read_report_template_files(),
@@ -1013,4 +1013,4 @@ class ResourceTracker:
         with open(html_template_path) as f:
             html_template = f.read()
         html = render_template(html_template, ctx)
-        return html
+        return Report(html)

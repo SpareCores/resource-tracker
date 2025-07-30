@@ -1,3 +1,5 @@
+import tempfile
+import webbrowser
 from os import listdir, path
 from typing import Union
 
@@ -22,6 +24,38 @@ def _read_report_template_files():
             icon_name = path.splitext(icon)[0]
             files["icon_" + icon_name] = f.read()
     return files
+
+
+class Report(str):
+    """A string subclass representing an HTML report with methods to view and save it."""
+
+    def browse(self):
+        """Open the report in the default web browser.
+
+        Creates a temporary HTML file and opens it in the default web browser.
+
+        Returns:
+            self: Returns the Report object for method chaining
+        """
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
+            f.write(self.encode("utf-8"))
+            temp_path = f.name
+
+        webbrowser.open("file://" + temp_path)
+        return self
+
+    def save(self, filepath):
+        """Save the report to a file.
+
+        Args:
+            filepath: The path where to save the HTML report
+
+        Returns:
+            self: Returns the Report object for method chaining
+        """
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(self)
+        return self
 
 
 def round_memory(mb: Union[int, float]) -> int:

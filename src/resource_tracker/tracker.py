@@ -34,7 +34,12 @@ from weakref import finalize
 
 from ._version import __version__
 from .cloud_info import get_cloud_info
-from .column_maps import BYTE_MAPPING, HUMAN_NAMES_MAPPING, SERVER_ALLOCATION_CHECKS
+from .column_maps import (
+    BYTE_MAPPING,
+    HUMAN_NAMES_MAPPING,
+    REPORT_CSV_MAPPING,
+    SERVER_ALLOCATION_CHECKS,
+)
 from .helpers import (
     cleanup_files,
     cleanup_processes,
@@ -966,7 +971,13 @@ class ResourceTracker:
                 "stopped": self.stop_time is not None,
                 # TODO add failed status optionally
             },
+            "csv": {},
         }
+
+        # comma-separated values
+        joined = self.get_combined_metrics(bytes=True, human_names=True)
+        for name, columns in REPORT_CSV_MAPPING.items():
+            ctx["csv"][name] = joined[columns].to_csv(quote_strings=False)
 
         # lookup instance prices
         rec_server_cost = ctx["recommended_server"]["min_price_ondemand"]

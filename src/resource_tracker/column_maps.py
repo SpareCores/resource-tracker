@@ -72,3 +72,24 @@ SERVER_ALLOCATION_CHECKS = [
         "absolute": 512,  # 512 MiB
     },
 ]
+
+REPORT_CSV_MAPPING = {
+    "cpu": ["Timestamp", "Process CPU usage", "System CPU usage"],
+    "mem": ["Timestamp", "Process memory usage", "System used memory"],
+    "disk": [
+        "Timestamp",
+        "Process disk read",
+        "System disk read",
+        "Process disk write",
+        "System disk write",
+    ],
+    "disk_space": ["Timestamp", "System disk space used"],
+    "net": [
+        "Timestamp",
+        "System inbound network traffic",
+        "System outbound network traffic",
+    ],
+    "gpu_usage": ["Timestamp", "Process GPU usage", "System GPU usage"],
+    "gpu_utilized": ["Timestamp", "Process GPUs in use", "System GPUs in use"],
+    "gpu_vram": ["Timestamp", "Process VRAM used", "System VRAM used"],
+}

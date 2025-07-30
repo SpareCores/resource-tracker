@@ -423,9 +423,9 @@
     </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
-            var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
-                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true }),
-                diskGraph = createGraph("plot_disk", `{{{csv_disk}}}`, 'labels_disk',
+            var cpuGraph = createGraph("plot_cpu", `{{{ csv.cpu }}}`, 'labels_cpu'),
+                memGraph = createGraph("plot_mem", `{{{ csv.mem }}}`, 'labels_mem', { labelsKMG2: true }),
+                diskGraph = createGraph("plot_disk", `{{{ csv.disk }}}`, 'labels_disk',
                     {
                         labelsKMG2: true,
                         series: {
@@ -435,13 +435,13 @@
                             "System disk read": {strokePattern: null, color: '#38BDF8'}
                         },
                     }),
-                diskSpaceGraph = createGraph("plot_disk_space", `{{{csv_disk_space}}}`, 'labels_disk_space',
+                diskSpaceGraph = createGraph("plot_disk_space", `{{{ csv.disk_space }}}`, 'labels_disk_space',
                     {
                         labelsKMG2: true,
                         color: '#38BDF8',
                         valueRange: [null, null],
                     }),
-                netGraph = createGraph("plot_net", `{{{csv_net}}}`, 'labels_net',
+                netGraph = createGraph("plot_net", `{{{ csv.net }}}`, 'labels_net',
                     {
                         labelsKMG2: true,
                         series: {
@@ -449,16 +449,16 @@
                             "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
                         },
                     });
-            {{#server_info.gpu_names}}
-            var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{csv_gpu_usage}}}`, 'labels_gpu_usage'),
-                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpu_utilized}}}`, 'labels_gpu_utilized'),
-                gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram', { labelsKMG2: true });
-            {{/server_info.gpu_names}}
+            {{ #if server_info.gpu_names }}
+            var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{ csv.gpu_usage }}}`, 'labels_gpu_usage'),
+                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{ csv.gpu_utilized }}}`, 'labels_gpu_utilized'),
+                gpuVramGraph = createGraph("plot_gpu_vram", `{{{ csv.gpu_vram }}}`, 'labels_gpu_vram', { labelsKMG2: true });
+            {{ /if }}
             var sync = Dygraph.synchronize([
                 cpuGraph, memGraph, diskGraph, netGraph,
-                {{#server_info.gpu_names}}
+                {{ #if server_info.gpu_names }}
                 gpuUsageGraph, gpuUtilizedGraph, gpuVramGraph,
-                {{/server_info.gpu_names}}
+                {{ /if }}
             ], {zoom: true, selection: true, range: false});
         });
     </script>

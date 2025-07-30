@@ -2,7 +2,7 @@
 
 from html import escape
 from re import compile
-from time import gmtime, strftime
+from time import localtime, strftime
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from .report import round_memory
@@ -108,7 +108,7 @@ def _get_filter(name: str) -> Optional[Callable]:
         "divide": _filter_divide,
         "round": _filter_round,
         "round_memory": _filter_round_memory,
-        "unix_timestamp_to_string": _filter_unix_timestamp_to_string,
+        "unix_timestamp_to_local_tz_string": _filter_unix_timestamp_to_local_tz_string,
     }
     return filters.get(name)
 
@@ -210,8 +210,8 @@ def _filter_round_memory(mb: Union[int, float]) -> int:
     return round_memory(mb)
 
 
-def _filter_unix_timestamp_to_string(value: Union[int, float]) -> str:
-    """Convert a Unix timestamp to a string.
+def _filter_unix_timestamp_to_local_tz_string(value: Union[int, float]) -> str:
+    """Convert a Unix timestamp to a string using local timezone.
 
     Args:
         value: The Unix timestamp to convert.
@@ -219,7 +219,7 @@ def _filter_unix_timestamp_to_string(value: Union[int, float]) -> str:
     Returns:
         The string representation of the timestamp.
     """
-    return strftime("%Y-%m-%d %H:%M:%S %Z", gmtime(value))
+    return strftime("%Y-%m-%d %H:%M:%S %Z", localtime(value))
 
 
 def render_template(template: str, context: Dict[str, Any]) -> str:

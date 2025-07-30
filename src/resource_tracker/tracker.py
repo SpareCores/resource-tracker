@@ -982,7 +982,10 @@ class ResourceTracker:
         # comma-separated values
         joined = self.get_combined_metrics(bytes=True, human_names=True)
         for name, columns in REPORT_CSV_MAPPING.items():
-            ctx["csv"][name] = joined[columns].to_csv(quote_strings=False)
+            csv_data = joined[columns]
+            # convert to JS milliseconds
+            csv_data["Timestamp"] = [t * 1000 for t in csv_data["Timestamp"]]
+            ctx["csv"][name] = csv_data.to_csv(quote_strings=False)
 
         # lookup instance prices
         rec_server_cost = ctx["recommended_server"]["min_price_ondemand"]

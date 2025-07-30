@@ -961,19 +961,19 @@ class ResourceTracker:
             # TODO add historical stats
             "recommended_resources": self.recommend_resources(),
             "recommended_server": self.recommend_server(),
-            "meta": {
-                "resource_tracker": {
-                    "version": __version__,
-                    "implementation": "psutil" if is_psutil_available() else "procfs",
-                },
+            "resource_tracker": {
+                "version": __version__,
+                "implementation": "psutil" if is_psutil_available() else "procfs",
                 "integration": integration,
                 "integration_is": {
                     "metaflow": integration == "metaflow",
                     "standalone": integration == "standalone",
                 },
                 "duration": duration,
+                "start_time": self.start_time,
+                "stop_time": self.stop_time,
                 "stopped": self.stop_time is not None,
-                "timestamp": time(),
+                "report_time": time(),
                 # TODO add failed status optionally
             },
             "csv": {},

@@ -2,6 +2,7 @@
 
 from html import escape
 from re import compile
+from time import gmtime, strftime
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from .report import round_memory
@@ -107,6 +108,7 @@ def _get_filter(name: str) -> Optional[Callable]:
         "divide": _filter_divide,
         "round": _filter_round,
         "round_memory": _filter_round_memory,
+        "unix_timestamp_to_string": _filter_unix_timestamp_to_string,
     }
     return filters.get(name)
 
@@ -206,6 +208,18 @@ def _filter_round(value: Union[int, float], digits: int = 0) -> Union[int, float
 
 def _filter_round_memory(mb: Union[int, float]) -> int:
     return round_memory(mb)
+
+
+def _filter_unix_timestamp_to_string(value: Union[int, float]) -> str:
+    """Convert a Unix timestamp to a string.
+
+    Args:
+        value: The Unix timestamp to convert.
+
+    Returns:
+        The string representation of the timestamp.
+    """
+    return strftime("%Y-%m-%d %H:%M:%S %Z", gmtime(value))
 
 
 def render_template(template: str, context: Dict[str, Any]) -> str:

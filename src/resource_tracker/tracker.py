@@ -41,6 +41,7 @@ from .column_maps import (
     SERVER_ALLOCATION_CHECKS,
 )
 from .helpers import (
+    aggregate_stats,
     cleanup_files,
     cleanup_processes,
     get_tracker_implementation,
@@ -894,8 +895,7 @@ class ResourceTracker:
         """
         return self.get_combined_metrics().stats(specs)
 
-    # TODO support historical stats (below fn as well)
-    def recommend_resources(self) -> dict:
+    def recommend_resources(self, historical_stats: List[dict] = []) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.
 
         The recommended resources are based on the following rules:
@@ -903,6 +903,10 @@ class ResourceTracker:
         - target maximum memory usage of the process(es) with a 20% buffer
         - target maximum number of GPUs used by the process(es)
         - target maximum VRAM usage of the process(es) with a 20% buffer
+
+        Args:
+            historical_stats: Optional list of historical statistics (as returned by [resource_tracker.ResourceTracker.stats][])
+                              to consider when making recommendations. These will be combined with the current stats.
 
         Returns:
             A dictionary containing the recommended resources (cpu, memory, gpu, vram).
@@ -915,7 +919,12 @@ class ResourceTracker:
                 logger.warning("Timed out waiting for resource tracker samples")
                 return {}
 
-        stats = self.stats()
+        current_stats = self.stats()
+        if historical_stats:
+            stats = aggregate_stats([current_stats] + historical_stats)
+        else:
+            stats = current_stats
+
         rec = {}
         # target average CPU usage
         rec["cpu"] = max(1, round(stats["process_cpu_usage"]["mean"]))
@@ -944,7 +953,8 @@ class ResourceTracker:
         Returns:
             A dictionary containing the recommended cloud server. Response format is described at <https://keeper.sparecores.net/redoc#tag/Query-Resources/operation/search_servers_servers_get>.
         """
-        rec = self.recommend_resources()
+        historical_stats = kwargs.pop("historical_stats", [])
+        rec = self.recommend_resources(historical_stats=historical_stats)
         return get_recommended_cloud_servers(**rec, **kwargs, n=1)[0]
 
     def report(
@@ -953,16 +963,28 @@ class ResourceTracker:
         historical_stats: List[dict] = [],
     ) -> Report:
         duration = (self.stop_time or time()) - self.start_time
+
+        current_stats = self.stats()
+        if historical_stats:
+            combined_stats = aggregate_stats([current_stats] + historical_stats)
+        else:
+            combined_stats = current_stats
+
         ctx = {
             "files": _read_report_template_files(),
             "server_info": self.server_info,
             "cloud_info": self.cloud_info,
             "process_metrics": self.process_metrics,
             "system_metrics": self.system_metrics,
-            "stats": self.stats(),
-            "historical_stats": {},
-            "recommended_resources": self.recommend_resources(),
-            "recommended_server": self.recommend_server(),
+            "stats": current_stats,
+            "historical_stats": historical_stats,
+            "combined_stats": combined_stats,
+            "recommended_resources": self.recommend_resources(
+                historical_stats=historical_stats
+            ),
+            "recommended_server": self.recommend_server(
+                historical_stats=historical_stats
+            ),
             "resource_tracker": {
                 "version": __version__,
                 "implementation": "psutil" if is_psutil_available() else "procfs",
@@ -980,46 +1002,6 @@ class ResourceTracker:
             },
             "csv": {},
         }
-
-        # aggregate historical stats
-        if historical_stats:
-            # initialize with current stats
-            for col, values in ctx["stats"].items():
-                ctx["historical_stats"][col] = {}
-                for agg_type, value in values.items():
-                    if agg_type in ["mean", "duration"]:
-                        # store actual values in a temp list for averaging at the end
-                        ctx["historical_stats"][col][f"{agg_type}_values"] = [value]
-                    else:
-                        ctx["historical_stats"][col][agg_type] = value
-            # update with all historical stats
-            for stat_dict in historical_stats:
-                for col, values in stat_dict.items():
-                    # shouldn't happen, as current and historical stats have the same structure, but just in case
-                    if col not in ctx["historical_stats"]:
-                        ctx["historical_stats"][col] = values.copy()
-                        continue
-                    for agg_type, value in values.items():
-                        # keep individual values in a temp list for averaging at the end
-                        if agg_type in ["mean", "duration"]:
-                            if "mean_values" not in ctx["historical_stats"][col]:
-                                ctx["historical_stats"][col]["mean_values"] = []
-                            ctx["historical_stats"][col]["mean_values"].append(value)
-                        # keep the largest
-                        if agg_type in ["max", "sum"]:
-                            if (
-                                agg_type not in ctx["historical_stats"][col]
-                                or value > ctx["historical_stats"][col][agg_type]
-                            ):
-                                ctx["historical_stats"][col][agg_type] = value
-            # compute final averages for means and durations
-            for col, values in ctx["historical_stats"].items():
-                for agg_type in ["mean", "duration"]:
-                    if "mean_values" in values:
-                        values[agg_type] = sum(values["mean_values"]) / len(
-                            values["mean_values"]
-                        )
-                        del values["mean_values"]
 
         # comma-separated values
         joined = self.get_combined_metrics(bytes=True, human_names=True)

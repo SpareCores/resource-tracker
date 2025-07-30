@@ -128,9 +128,9 @@
                         <div class="section-content-card-value">
                             <span class="metric-highlight">{{{ stats.process_cpu_usage.mean }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats.process_cpu_usage.mean }}{{{ historical_stats.process_cpu_usage.mean }}}{{ #else }}-{{/if}}</span> hist avg
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.mean }}}{{ #else }}-{{/if}}</span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats.process_cpu_usage.max }}{{{ historical_stats.process_cpu_usage.max }}}{{ #else }}-{{/if}}</span> peak</div>
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.max }}}{{ #else }}-{{/if}}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>
@@ -139,7 +139,7 @@
                             <span class="metric-separator">|</span>
                             <span class="metric">{{{stats.process_memory.max | divide:1024 | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{ #if historical_stats.process_memory.max }}{{{ historical_stats.process_memory.max | divide:1024 | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.process_memory.max | divide:1024 | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
@@ -172,7 +172,7 @@
                             <span class="metric"></span>{{{ stats.process_gpu_usage.mean }}}</span> avg
                             <span class="metric-separator">|</span>
                             <span class="metric">
-                                {{ #if historical_stats.process_gpu_usage.max }}{{{ historical_stats.process_gpu_usage.max }}}{{ #else }}-{{/if}}
+                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_usage.max }}}{{ #else }}-{{/if}}
                             </span> hist avg
                             <span class="metric-separator">|</span>
                             <span class="metric">{{ stats.process_gpu_usage.max }}</span> peak</div>
@@ -185,7 +185,7 @@
                             <span class="metric">{{{ stats.process_gpu_vram.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
                             <span class="metric-highlight">
-                                {{ #if historical_stats.process_gpu_vram.max }}{{{ historical_stats.process_gpu_vram.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
+                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_vram.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
                             </span> hist peak</div>
                     </div>
                     {{ /if }}

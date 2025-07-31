@@ -959,6 +959,7 @@ class ResourceTracker:
         self,
         integration: Literal["standalone", "metaflow"] = "standalone",
         historical_stats: List[dict] = [],
+        status_failed: bool = False,
     ) -> Report:
         duration = (self.stop_time or time()) - self.start_time
 
@@ -996,8 +997,8 @@ class ResourceTracker:
                 "stop_time": self.stop_time,
                 "stopped": self.stop_time is not None,
                 "report_time": time(),
-                # TODO add failed status optionally
             },
+            "status_failed": status_failed,
             "csv": {},
         }
 

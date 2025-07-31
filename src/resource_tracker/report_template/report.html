@@ -152,17 +152,27 @@
                     {{/if}}
                         <div class="section-content-card-label">Status</div>
                         <div class="section-content-card-value">
-                            {{#if resource_tracker.stopped}}
-                            Finished
-                            {{#else}}
-                            Pending
+                            {{ #if status_failed }}
+                            Failed
                             <span class="info-icon" style="padding-bottom: 3px;">
                                 {{{ files.icon_info }}}
                                 <div class="tooltip-content">
-                                    The resource tracker was not stopped properly yet, so the collected resource usage data might be incomplete. Handle with care!
+                                    The process did not complete successfully, so the collected resource usage data is at least incomplete, but potentially also incorrect. Handle with care!
                                 </div>
                             </span>
-                            {{/if}}
+                            {{ #else }}
+                                {{ #if resource_tracker.stopped }}
+                                Finished
+                                {{ #else }}
+                                Pending
+                                <span class="info-icon" style="padding-bottom: 3px;">
+                                    {{{ files.icon_info }}}
+                                    <div class="tooltip-content">
+                                        The resource tracker was not stopped properly yet, so the collected resource usage data might be incomplete. Handle with care!
+                                    </div>
+                                </span>
+                                {{ /if }}
+                            {{ /if }}
                         </div>
                     </div>
                     {{ #if server_info.gpu_names }}

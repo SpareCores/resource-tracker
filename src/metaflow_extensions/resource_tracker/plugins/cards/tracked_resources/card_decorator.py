@@ -45,4 +45,7 @@ class TrackedResourcesCard(MetaflowCard):
             return error_html
 
         tracker = ResourceTracker.from_snapshot(data["tracker"])
-        return tracker.report(historical_stats=data["historical_stats"])
+        return tracker.report(
+            historical_stats=data["historical_stats"],
+            status_failed=data["step_failed"],
+        )

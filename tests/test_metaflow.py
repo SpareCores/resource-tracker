@@ -192,6 +192,7 @@ def test_flow_execution_failed(artifacts_dir):
         html = f.read()
     assert "Process CPU usage" in html
     assert "System CPU usage" in html
+    assert "Failed" in html
     assert len(html) > 100_000
 
     # store html for inspection

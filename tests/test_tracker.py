@@ -1,9 +1,10 @@
 from importlib import import_module
 from os import getpid
 from platform import system
-from time import sleep
 
 import pytest
+
+from resource_tracker.dummy_workloads import cpu_single
 
 
 @pytest.mark.parametrize(
@@ -189,7 +190,7 @@ def wait_for_tracker(
             checks_passed += 1
         if checks_passed == int(check_process_tracker) + int(check_system_tracker):
             break
-        sleep(0.1)
+        cpu_single(duration=0.1)
     else:
         pytest.fail("No data collected after 5 seconds")
 

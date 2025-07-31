@@ -145,11 +145,15 @@
                         <div class="section-content-card-label">Duration</div>
                         <div class="section-content-card-value">{{{ resource_tracker.duration | round:2 }}} sec</div>
                     </div>
-                    {{ #if resource_tracker.stopped }}
-                    <div class="section-content-card-task">
-                    {{ #else }}
+                    {{ #if status_failed }}
                     <div class="section-content-card-failed">
-                    {{/if}}
+                    {{ #else }}
+                    {{ #if resource_tracker.stopped }}
+                    <div class="section-content-card-failed">
+                    {{ #else }}
+                    <div class="section-content-card-task">
+                    {{ /if }}
+                    {{ /if }}
                         <div class="section-content-card-label">Status</div>
                         <div class="section-content-card-value">
                             {{ #if status_failed }}

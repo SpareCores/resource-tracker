@@ -252,3 +252,24 @@ def test_resource_tracker_combined_metrics():
     )
     assert tracker.stats()["process_cpu_usage"]["max"] > 0
     assert tracker.stats()["process_memory"]["mean"] > 0
+
+
+def test_resource_tracker_report():
+    """Test that the report is working."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    tracker.start()
+    wait_for_tracker(tracker)
+
+    report = tracker.report()
+    assert "Process CPU usage" in report
+    assert "System CPU usage" in report
+    assert "Pending" in report
+
+    tracker.stop()
+    report = tracker.report()
+    assert "Finished" in report
+
+    report = tracker.report(status_failed=True)
+    assert "Failed" in report

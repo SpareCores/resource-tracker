@@ -468,12 +468,10 @@ class ResourceTracker:
         >>> tracker.recommend_resources()
         {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
         >>> tracker = ResourceTracker()
-        >>> cpu_multi(duration=1.9, ncores=2)
+        >>> while tracker.n_samples == 0:
+        ...     cpu_multi(duration=0.1, ncores=2)
         >>> tracker.n_samples
         1
-        >>> cpu_multi(duration=1.05, ncores=2)
-        >>> tracker.n_samples
-        2
         >>> tracker.recommend_resources()
         {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
     """

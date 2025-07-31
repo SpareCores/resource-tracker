@@ -1,6 +1,9 @@
 from time import time
+from typing import List
 
 from metaflow.decorators import StepDecorator
+
+from resource_tracker.tracker import ResourceTracker
 
 
 class ResourceTrackerDecorator(StepDecorator):
@@ -233,7 +236,7 @@ class ResourceTrackerDecorator(StepDecorator):
                 timestamp=False,
             )
 
-    def _get_historical_stats(self, flow, step_name):
+    def _get_historical_stats(self, flow, step_name) -> List[dict]:
         """Fetch historical resource stats from previous runs' artifacts."""
         try:
             from metaflow import Flow
@@ -244,10 +247,7 @@ class ResourceTrackerDecorator(StepDecorator):
             previous_runs = [run for run in runs[1:6] if run.successful]
 
             if not previous_runs:
-                return {
-                    "available": False,
-                    "message": "No previous successful runs found",
-                }
+                return []
 
             historical_stats = []
             for run in previous_runs:
@@ -278,7 +278,11 @@ class ResourceTrackerDecorator(StepDecorator):
                         )
                         continue
                     try:
-                        historical_stats.append(resource_data["tracker"])
+                        historical_stats.append(
+                            ResourceTracker.from_snapshot(
+                                resource_data["tracker"]
+                            ).stats()
+                        )
                     except KeyError:
                         self.logger(
                             f"*NOTE* [@resource_tracker] No tracker data found for run {run.id}",
@@ -294,17 +298,11 @@ class ResourceTrackerDecorator(StepDecorator):
                     )
                     continue
 
-            if historical_stats:
-                return historical_stats
-            else:
-                return {
-                    "available": False,
-                    "message": "No resource data found in previous runs",
-                }
+            return historical_stats
 
         except Exception as e:
             self.logger(
                 f"*WARNING* [@resource_tracker] Failed to retrieve historical stats: {e}",
                 timestamp=False,
             )
-            return {"available": False, "error": str(e)}
+            return []

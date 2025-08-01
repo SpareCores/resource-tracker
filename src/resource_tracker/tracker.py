@@ -723,8 +723,10 @@ class ResourceTracker:
                 "discover_server": self.discover_server,
                 "discover_cloud": self.discover_cloud,
                 "start_time": self.start_time,
-                "stop_time": time(),
-                "duration": round(time() - self.start_time, 2) + self.interval,
+                "stop_time": self.stop_time or time(),
+                "duration": round(
+                    (self.stop_time or time()) - self.start_time + self.interval, 2
+                ),
             },
             "server_info": self.server_info,
             "cloud_info": self.cloud_info,
@@ -894,7 +896,13 @@ class ResourceTracker:
         Returns:
             A dictionary containing the collected statistics.
         """
-        return self.get_combined_metrics().stats(specs)
+        metrics = self.get_combined_metrics()
+        if len(metrics) > 0:
+            stats = metrics.stats(specs)
+            stats["timestamp"]["duration"] += self.interval
+            return stats
+        else:
+            raise RuntimeError("No metrics collected (yet)")
 
     def recommend_resources(self, historical_stats: List[dict] = []) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.
@@ -964,7 +972,7 @@ class ResourceTracker:
         historical_stats: List[dict] = [],
         status_failed: bool = False,
     ) -> Report:
-        duration = (self.stop_time or time()) - self.start_time
+        duration = (self.stop_time or time()) - self.start_time + self.interval
 
         current_stats = self.stats()
         if historical_stats:

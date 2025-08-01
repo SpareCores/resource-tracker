@@ -1,6 +1,9 @@
 ## dev
 
-Refactoring and cleanup release:
+## v0.4.0 (August 1, 2025)
+
+Refactoring and cleanup release with the main focus on extracting the reporting
+features from the Metaflow extension and support it in standalone use as well.
 
 - Rename `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
 - Rename `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
@@ -18,6 +21,8 @@ Refactoring and cleanup release:
 - Add `stats` method to `TinyDataFrame` to compute on-demand statistics on columns
 - Add `stats` method to `ResourceTracker` to compute statistics on the combined metrics
 - Add minimal support for Handlebars-like templates in the `render_template` function
+- Add `report` method to `ResourceTracker` to generate a report in HTML format, and use that from the Metaflow extension
+- Add `recommend_resources` and `recommend_server` methods to `ResourceTracker`
 
 ## v0.3.1 (May 30, 2025)
 

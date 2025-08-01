@@ -904,9 +904,8 @@ class ResourceTracker:
         Returns:
             A dictionary containing the collected statistics.
         """
-        metrics = self.get_combined_metrics()
-        if len(metrics) > 0:
-            stats = metrics.stats(specs)
+        if self.n_samples > 0:
+            stats = self.get_combined_metrics().stats(specs)
             stats["timestamp"]["duration"] += self.interval
             return stats
         else:

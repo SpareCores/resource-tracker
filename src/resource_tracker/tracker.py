@@ -654,12 +654,19 @@ class ResourceTracker:
             server_info["allocation"] = None
         if self.n_samples > 0:
             for check in SERVER_ALLOCATION_CHECKS:
-                system_val = mean(self.system_metrics[check["system_column"]])
-                task_val = mean(self.process_metrics[check["process_column"]])
-                if (system_val > task_val * check["percent"]) or (
-                    system_val > task_val + check["absolute"]
-                ):
-                    server_info["allocation"] = "shared"
+                try:
+                    system_val = mean(self.system_metrics[check["system_column"]])
+                    task_val = mean(self.process_metrics[check["process_column"]])
+                    if (system_val > task_val * check["percent"]) or (
+                        system_val > task_val + check["absolute"]
+                    ):
+                        server_info["allocation"] = "shared"
+                        break
+                except Exception as e:
+                    logger.warning(
+                        f"Error calculating server allocation based on {check['system_column']} and {check['process_column']}: {e}"
+                    )
+                    server_info["allocation"] = "unknown"
                     break
             server_info["allocation"] = server_info.get("allocation", "dedicated")
         return server_info

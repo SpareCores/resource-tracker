@@ -933,7 +933,7 @@ class ResourceTracker:
         while self.n_samples == 0:
             sleep(self.interval / 10)
             # avoid infinite wait
-            if time() - self.start_time > self.interval * 3:
+            if time() - self.start_time > self.interval * 5:
                 logger.warning("Timed out waiting for resource tracker samples")
                 return {}
 

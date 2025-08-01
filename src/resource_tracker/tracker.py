@@ -724,7 +724,7 @@ class ResourceTracker:
                 "discover_cloud": self.discover_cloud,
                 "start_time": self.start_time,
                 "stop_time": time(),
-                "duration": round(time() - self.start_time, 2),
+                "duration": round(time() - self.start_time, 2) + self.interval,
             },
             "server_info": self.server_info,
             "cloud_info": self.cloud_info,

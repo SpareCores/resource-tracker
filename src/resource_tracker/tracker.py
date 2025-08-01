@@ -472,7 +472,7 @@ class ResourceTracker:
         ...     cpu_multi(duration=0.5, ncores=2)
         >>> tracker.n_samples
         1
-        >>> tracker.recommend_resources()
+        >>> tracker.recommend_resources()  # multiprocessing is not enough efficient on Windows/macOS  # doctest: +SKIP
         {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
     """
 

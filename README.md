@@ -109,8 +109,8 @@ hood, depending on which is available, with a preference for `psutil` when both
 are present.
 
 For the most basic (and often well enough) usage, import the `ResourceTracker`
-class, and automatically start both system-wide and per-process trackers in the
-background as spawned or forked processes as part of the instantiation:
+class, which automatically starts both system-wide and per-process trackers in
+the background as spawned or forked processes as part of the instantiation:
 
 ```python
 from resource_tracker import ResourceTracker
@@ -122,13 +122,26 @@ tracker.stop()
 # your analytics code utilizing the collected data
 tracker.process_metrics
 tracker.system_metrics
+tracker.get_combined_metrics()
+
+# or more conveniently get combined statistics
+tracker.stats()
+
+# get recommendations for resource allocation and cloud server type
+tracker.recommend_resources()
+tracker.recommend_server()
+
+# generate a HTML report on resource usage and recommendations
+report = tracker.report()
+report.save("report.html")
+report.browse()
 ```
 
 The `ResourceTracker` instance gives you access to the collected data in
 real-time, or after stopping the trackers via the `process_metrics` and
-`system_metrics` properties. Both are `TinyDataFrame` objects, which are
-essentially dictionaries of lists, with additional methods for e.g. printing and
-saving to a CSV file. See the
+`system_metrics` properties, or the `get_combined_metrics` method. Each of them
+is a `TinyDataFrame` object, which is essentially a dictionary of lists, with
+additional methods for e.g. printing and saving to a CSV file. See the
 [standalone.py](https://github.com/SpareCores/resource-tracker/tree/main/examples/standalone.py)
 for a more detailed actual usage example.
 

@@ -29,8 +29,21 @@ tracker.stop()
 # review collected data again
 tracker.process_metrics
 tracker.system_metrics
+tracker.get_combined_metrics()
 
 # average CPU usage
 sum(tracker.process_metrics["utime"]) / len(tracker.process_metrics["utime"])
 # peak memory usage in MiB
 max(tracker.process_metrics["memory"]) / 1024
+# or more conveniently
+tracker.stats()
+
+# recommend resources
+tracker.recommend_resources()
+tracker.recommend_server()
+
+# generate HTML report
+report = tracker.report()
+# save to file or open in browser
+report.save("report.html")
+report.browse()

@@ -3,7 +3,7 @@ from typing import List
 
 from metaflow.decorators import StepDecorator
 
-from resource_tracker.tracker import ResourceTracker
+from .resource_tracker.tracker import ResourceTracker
 
 
 class ResourceTrackerDecorator(StepDecorator):

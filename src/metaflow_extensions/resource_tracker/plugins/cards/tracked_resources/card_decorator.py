@@ -1,6 +1,6 @@
 from metaflow.cards import MetaflowCard
 
-from resource_tracker.tracker import ResourceTracker
+from .resource_tracker.tracker import ResourceTracker
 
 
 class TrackedResourcesCard(MetaflowCard):

@@ -2,8 +2,7 @@ from statistics import mean
 
 import pytest
 
-from resource_tracker import TinyDataFrame
-from resource_tracker.tiny_data_frame import StatSpec
+from resource_tracker.tiny_data_frame import StatSpec, TinyDataFrame
 
 
 @pytest.fixture

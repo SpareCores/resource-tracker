@@ -684,7 +684,7 @@ class ResourceTracker:
         """Collected data from [resource_tracker.ProcessTracker][].
 
         Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.ProcessTracker][] is not running.
+            A [resource_tracker.tiny_data_frame.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.ProcessTracker][] is not running.
         """
         try:
             return TinyDataFrame(
@@ -698,7 +698,7 @@ class ResourceTracker:
         """Collected data from [resource_tracker.SystemTracker][].
 
         Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.SystemTracker][] is not running.
+            A [resource_tracker.tiny_data_frame.TinyDataFrame][] object containing the collected data or an empty list if the [resource_tracker.SystemTracker][] is not running.
         """
         try:
             return TinyDataFrame(
@@ -826,7 +826,7 @@ class ResourceTracker:
             process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
 
         Returns:
-            A [resource_tracker.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
+            A [resource_tracker.tiny_data_frame.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
         """
         try:
             process_metrics = self.process_metrics

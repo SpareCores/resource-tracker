@@ -24,6 +24,10 @@ features from the Metaflow extension and support it in standalone use as well.
 - Add `report` method to `ResourceTracker` to generate a report in HTML format, and use that from the Metaflow extension
 - Add `recommend_resources` and `recommend_server` methods to `ResourceTracker`
 
+Related breaking changes:
+- Historical data collected before v0.4.0 is not compatible with the new `ResourceTracker` class, and will be discarded
+- `TinyDataFrame` is no longer made available from `resource_tracker` directly, but from the `resource_tracker.tiny_data_frame` submodule
+
 ## v0.3.1 (May 30, 2025)
 
 - Generate card for failed step

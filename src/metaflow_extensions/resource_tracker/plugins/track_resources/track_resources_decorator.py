@@ -189,8 +189,7 @@ class ResourceTrackerDecorator(StepDecorator):
 
         try:
             # nothing to report on
-            process_metrics = self.resource_tracker.process_metrics
-            if len(process_metrics) == 0:
+            if self.resource_tracker.n_samples == 0:
                 if self.attributes["interval"] * 2 > (time() - self.start_time):
                     setattr(
                         flow,

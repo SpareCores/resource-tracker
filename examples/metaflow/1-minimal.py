@@ -1,4 +1,4 @@
-from time import sleep
+from time import sleep, time
 
 from metaflow import FlowSpec, step, track_resources
 
@@ -15,9 +15,9 @@ class MinimalFlow(FlowSpec):
         # reserve 500 MB memory
         big_array = bytearray(500 * 1024 * 1024)
         # do some calcs
-        total = 0
-        for i in range(int(1e7)):
-            total += i**3
+        start = time()
+        while time() - start < 2:
+            pass
         # do nothing for bit after releasing memory
         del big_array
         sleep(1)

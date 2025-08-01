@@ -504,6 +504,11 @@ class ResourceTracker:
         self.discover_server = discover_server
         self.discover_cloud = discover_cloud
 
+        if platform != "linux" and not is_psutil_available():
+            raise ImportError(
+                "psutil is required for resource tracking on non-Linux platforms"
+            )
+
         if method is None:
             # try to fork when possible due to leaked semaphores on older Python versions
             # see e.g. https://github.com/python/cpython/issues/90549

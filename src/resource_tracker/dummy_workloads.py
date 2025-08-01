@@ -10,7 +10,7 @@ def cpu_single(duration: float = 1) -> None:
         duration: The duration in seconds to run the workload.
     """
     start = time()
-    while time() - start < duration:
+    while time() < start + duration:
         random() * random()
 
 

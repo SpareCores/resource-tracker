@@ -110,7 +110,7 @@ class ProcessTracker:
         self.children = children
         self.start_time = start_time
 
-        # dummy data collection so that diffing on the first time does not fail
+        # initial data collection so that we can use that as a baseline when diffing after the first interval
         self.stats = self.get_process_stats(pid, children)
 
         if autostart:
@@ -462,6 +462,7 @@ class ResourceTracker:
             at startup. Defaults to True.
 
     Example:
+
         >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
         >>> tracker = ResourceTracker()
         >>> cpu_single()
@@ -915,6 +916,7 @@ class ResourceTracker:
         """Recommend optimal resource allocation based on the measured resource tracker data.
 
         The recommended resources are based on the following rules:
+
         - target average CPU usage of the process(es)
         - target maximum memory usage of the process(es) with a 20% buffer
         - target maximum number of GPUs used by the process(es)

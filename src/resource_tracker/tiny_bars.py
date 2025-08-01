@@ -35,6 +35,7 @@ def _resolve_var(name: str, ctx: Dict[str, Any]) -> Any:
         The resolved value, or None if not found.
 
     Example:
+
         >>> _resolve_var("user", {"user": {"name": "John"}})
         {'name': 'John'}
         >>> _resolve_var("user.name", {"user": {"name": "John"}})
@@ -228,12 +229,12 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
     """Render a Handlebars-like template using a dictionary context.
 
     Supported features:
-    - Conditional flow using "{{#if expr}} ... {{#else}} ... {{/if}}"
-    - Iteration using "{{#each expr as item}} ... {{/each}}"
-    - Variable interpolation using "{{expr}}" (HTML-escaped) and "{{{expr}}}" (raw)
-    - Nested property access using dot notation (e.g. "user.name") for dictionary
-      keys and object attributes.
-    - Filters using pipe syntax: "{{expr | filter}}" or "{{expr | filter:param}}"
+
+    - Conditional flow using `{{#if expr}} ... {{#else}} ... {{/if}}`
+    - Iteration using `{{#each expr as item}} ... {{/each}}`
+    - Variable interpolation using `{{expr}}` (HTML-escaped) and `{{{expr}}}` (raw)
+    - Nested property access using dot notation (e.g. `user.name`) for dictionary keys and object attributes.
+    - Filters using pipe syntax: `{{expr | filter}}` or `{{expr | filter:param}}`
 
     Args:
         template: The template to render.
@@ -243,6 +244,7 @@ def render_template(template: str, context: Dict[str, Any]) -> str:
         The rendered text.
 
     Example:
+
         >>> from resource_tracker.tiny_bars import render_template
         >>> render_template("Hello, {{name}}!", {"name": "World"})
         'Hello, World!'

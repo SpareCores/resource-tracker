@@ -28,7 +28,7 @@ from sys import platform, stdout
 from tempfile import NamedTemporaryFile
 from threading import Thread
 from time import sleep, time
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
 from warnings import warn
 from weakref import finalize
 
@@ -681,7 +681,7 @@ class ResourceTracker:
         return self._cloud_info
 
     @property
-    def process_metrics(self) -> Union[TinyDataFrame, List]:
+    def process_metrics(self) -> TinyDataFrame:
         """Collected data from [resource_tracker.ProcessTracker][].
 
         Returns:
@@ -692,10 +692,10 @@ class ResourceTracker:
                 csv_file_path=self.process_tracker_filepath,
             )
         except Exception:
-            return []
+            return TinyDataFrame(data=[])
 
     @property
-    def system_metrics(self) -> Union[TinyDataFrame, List]:
+    def system_metrics(self) -> TinyDataFrame:
         """Collected data from [resource_tracker.SystemTracker][].
 
         Returns:
@@ -706,7 +706,7 @@ class ResourceTracker:
                 csv_file_path=self.system_tracker_filepath,
             )
         except Exception:
-            return []
+            return TinyDataFrame(data=[])
 
     def snapshot(self) -> dict:
         """Collect the current state of the resource tracker.
@@ -814,7 +814,7 @@ class ResourceTracker:
         human_names: bool = False,
         system_prefix: Optional[str] = None,
         process_prefix: Optional[str] = None,
-    ) -> Union[TinyDataFrame, List]:
+    ) -> TinyDataFrame:
         """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
         This is effectively binding the two dataframes together by timestamp,
@@ -873,7 +873,7 @@ class ResourceTracker:
             return combined
         except Exception as e:
             logger.error(f"Error getting combined metrics: {e}")
-            return []
+            return TinyDataFrame(data=[])
 
     def stats(
         self,

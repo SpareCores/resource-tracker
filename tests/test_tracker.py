@@ -183,16 +183,16 @@ def wait_for_tracker(
         timeout: The timeout in seconds.
     """
     for i in range(timeout * 10):
-        checks_passed = 0
-        if check_process_tracker and len(tracker.process_metrics) >= 1:
-            checks_passed += 1
-        if check_system_tracker and len(tracker.system_metrics) >= 1:
-            checks_passed += 1
-        if checks_passed == int(check_process_tracker) + int(check_system_tracker):
+        if check_process_tracker and check_system_tracker:
+            if tracker.n_samples > 0:
+                break
+        elif check_process_tracker and len(tracker.process_metrics) > 0:
+            break
+        elif check_system_tracker and len(tracker.system_metrics) > 0:
             break
         cpu_single(duration=0.1)
     else:
-        pytest.fail("No data collected after 5 seconds")
+        pytest.fail(f"No data collected after {timeout} seconds")
 
 
 def test_resource_tracker_subprocesses():

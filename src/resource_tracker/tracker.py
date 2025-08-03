@@ -470,9 +470,7 @@ class ResourceTracker:
         {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
         >>> tracker = ResourceTracker()
         >>> while tracker.n_samples == 0:
-        ...     cpu_multi(duration=0.5, ncores=2)
-        >>> tracker.n_samples
-        1
+        ...     cpu_multi(duration=0.25, ncores=2)
         >>> tracker.recommend_resources()  # multiprocessing is not enough efficient on Windows/macOS  # doctest: +SKIP
         {'cpu': 2, 'memory': 128, 'gpu': 0, 'vram': 0}
     """

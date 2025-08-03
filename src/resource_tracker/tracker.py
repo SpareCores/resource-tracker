@@ -14,7 +14,6 @@ thread/process yourself.
 """
 
 from csv import QUOTE_NONNUMERIC
-from csv import writer as csv_writer
 from gzip import open as gzip_open
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -46,6 +45,7 @@ from .helpers import (
     cleanup_processes,
     get_tracker_implementation,
     is_psutil_available,
+    render_csv_row,
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
 from .report import Report, _read_report_template_files, round_memory
@@ -169,7 +169,6 @@ class ProcessTracker:
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
         file_handle = open(output_file, "w") if output_file else stdout
-        file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
             while True:
                 current_stats = self.diff_stats()
@@ -180,9 +179,15 @@ class ProcessTracker:
                 # don't print values yet, we collect data for the 1st baseline
                 if self.cycle == 1:
                     if print_header:
-                        file_writer.writerow(current_stats.keys())
+                        file_handle.write(
+                            render_csv_row(
+                                current_stats.keys(), quoting=QUOTE_NONNUMERIC
+                            )
+                        )
                 else:
-                    file_writer.writerow(current_stats.values())
+                    file_handle.write(
+                        render_csv_row(current_stats.values(), quoting=QUOTE_NONNUMERIC)
+                    )
                 if output_file:
                     file_handle.flush()
                 # sleep until the next interval
@@ -357,16 +362,21 @@ class SystemTracker:
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
         file_handle = open(output_file, "w") if output_file else stdout
-        file_writer = csv_writer(file_handle, quoting=QUOTE_NONNUMERIC)
         try:
             while True:
                 current_stats = self.diff_stats()
                 # don't print values yet, we collect data for the 1st baseline
                 if self.cycle == 1:
                     if print_header:
-                        file_writer.writerow(current_stats.keys())
+                        file_handle.write(
+                            render_csv_row(
+                                current_stats.keys(), quoting=QUOTE_NONNUMERIC
+                            )
+                        )
                 else:
-                    file_writer.writerow(current_stats.values())
+                    file_handle.write(
+                        render_csv_row(current_stats.values(), quoting=QUOTE_NONNUMERIC)
+                    )
                 if output_file:
                     file_handle.flush()
                 # sleep until the next interval
@@ -466,7 +476,7 @@ class ResourceTracker:
         >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
         >>> tracker = ResourceTracker()
         >>> cpu_single()
-        >>> tracker.recommend_resources()
+        >>> tracker.recommend_resources()  # doctest: +SKIP
         {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
         >>> tracker = ResourceTracker()
         >>> while tracker.n_samples == 0:

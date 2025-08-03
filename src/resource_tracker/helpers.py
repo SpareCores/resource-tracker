@@ -4,14 +4,17 @@ General helpers.
 
 import os
 from contextlib import suppress
+from csv import QUOTE_NONNUMERIC
+from csv import writer as csv_writer
 from functools import cache
 from glob import glob
 from importlib.util import find_spec
+from io import StringIO
 from multiprocessing import Process
 from os import unlink
 from re import search
 from subprocess import PIPE, Popen, TimeoutExpired
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 
 @cache
@@ -199,3 +202,22 @@ def aggregate_stats(
                 del values[temp_key]
 
     return result
+
+
+def render_csv_row(
+    row: Iterable[Union[str, float, int, None]], quoting: int = QUOTE_NONNUMERIC
+) -> str:
+    """
+    Format a single CSV row as a string in memory.
+
+    Args:
+        row: A list or iterable of values to write (strings, numbers, or None) with [csv.writer][].
+        quoting: Quoting strategy for the CSV writer. Defaults to QUOTE_NONNUMERIC.
+
+    Returns:
+        A string representing the full CSV-formatted row (including newline).
+    """
+    buffer = StringIO()
+    writer = csv_writer(buffer, quoting=quoting)
+    writer.writerow(row)
+    return buffer.getvalue()

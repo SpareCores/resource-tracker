@@ -949,10 +949,11 @@ class ResourceTracker:
                         f"Timed out waiting for resource tracker to collect {n} samples"
                     )
         else:
-            raise RuntimeError(
-                f"Resource tracker has been already stopped with {self.n_samples} sample(s), "
-                f"cannot wait to collect the requested {n} sample(s)."
-            )
+            if self.n_samples < n:
+                raise RuntimeError(
+                    f"Resource tracker has been already stopped with {self.n_samples} sample(s), "
+                    f"cannot wait to collect the requested {n} sample(s)."
+                )
 
     def recommend_resources(self, historical_stats: List[dict] = []) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.

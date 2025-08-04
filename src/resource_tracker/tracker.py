@@ -13,6 +13,7 @@ standard output or a file, and handle putting those into a background
 thread/process yourself.
 """
 
+from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
 from gzip import open as gzip_open
 from json import dumps as json_dumps
@@ -886,8 +887,16 @@ class ResourceTracker:
 
             return combined
         except Exception as e:
-            logger.error(f"Error getting combined metrics: {e}")
-            return TinyDataFrame(data=[])
+            with suppress(Exception):
+                logger.warning(
+                    f"Kept {len(process_metrics)} records of process metrics out of {len(self.process_metrics)} collected records, "
+                    f"and {len(system_metrics)} records of system metrics out of {len(self.system_metrics)} collected records, "
+                    f"but creating the combined metrics dataframe failed with error: {e}"
+                )
+                logger.warning(
+                    f"Number of combined metrics: {len(combined)}. Column names: {combined.columns}"
+                )
+            raise RuntimeError(f"Error getting combined metrics: {e}")
 
     def stats(
         self,

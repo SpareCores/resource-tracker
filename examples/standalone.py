@@ -9,7 +9,8 @@ tracker = ResourceTracker()
 tracker.process_metrics
 
 # retry after a bit and see not much usage yet
-sleep(1)
+while tracker.n_samples == 0:
+    sleep(0.1)
 tracker.process_metrics
 
 # reserve some memory and run a compute-heavy task

@@ -632,6 +632,8 @@ class ResourceTracker:
                 f"Error message: {error_data['message']}\n"
                 f"Original traceback:\n{error_data['traceback']}"
             )
+            logger.warning(f"Process metrics: {str(self.process_metrics)}")
+            logger.warning(f"System metrics: {str(self.system_metrics)}")
         # terminate tracker processes
         for tracker_name in self.trackers:
             process_attr = f"{tracker_name}_process"

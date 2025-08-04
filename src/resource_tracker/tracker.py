@@ -925,6 +925,15 @@ class ResourceTracker:
         else:
             raise RuntimeError("No metrics collected (yet)")
 
+    @property
+    def running(self) -> bool:
+        """Check if the resource tracker is running.
+
+        Returns:
+            True if the resource tracker is running, False if already stopped.
+        """
+        return self.stop_time is None
+
     def wait_for_samples(self, n: int = 1, timeout: float = 5):
         """Wait for at least one sample to be collected.
 
@@ -932,10 +941,18 @@ class ResourceTracker:
             n: The minimum number of samples to collect. Defaults to 1.
             timeout: The maximum time to wait for a sample. Defaults to 5 seconds.
         """
-        while self.n_samples < n:
-            sleep(self.interval / 10)
-            if time() - self.start_time > timeout:
-                raise RuntimeError("Timed out waiting for resource tracker samples")
+        if self.running:
+            while self.n_samples < n:
+                sleep(self.interval / 10)
+                if time() - self.start_time > timeout:
+                    raise RuntimeError(
+                        f"Timed out waiting for resource tracker to collect {n} samples"
+                    )
+        else:
+            raise RuntimeError(
+                f"Resource tracker has been already stopped with {self.n_samples} sample(s), "
+                f"cannot wait to collect the requested {n} sample(s)."
+            )
 
     def recommend_resources(self, historical_stats: List[dict] = []) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.

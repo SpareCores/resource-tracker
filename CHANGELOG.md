@@ -5,6 +5,12 @@
 Refactoring and cleanup release with the main focus on extracting the reporting
 features from the Metaflow extension and support it in standalone use as well.
 
+Main changes:
+
+- Much better support for standalone use of `ResourceTracker` via the `stats`, `recommend_resources`,  `recommend_server` and `report` methods
+
+More details:
+
 - Rename `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
 - Rename `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
 - Rename the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
@@ -25,6 +31,7 @@ features from the Metaflow extension and support it in standalone use as well.
 - Add `recommend_resources` and `recommend_server` methods to `ResourceTracker`
 
 Related breaking changes:
+
 - Historical data collected before v0.4.0 is not compatible with the new `ResourceTracker` class, and will be discarded
 - `TinyDataFrame` is no longer made available from `resource_tracker` directly, but from the `resource_tracker.tiny_data_frame` submodule
 

@@ -889,14 +889,11 @@ class ResourceTracker:
         except Exception as e:
             with suppress(Exception):
                 logger.warning(
-                    f"Kept {len(process_metrics)} records of process metrics out of {len(self.process_metrics)} collected records, "
-                    f"and {len(system_metrics)} records of system metrics out of {len(self.system_metrics)} collected records, "
+                    f"Kept {len(process_metrics) if 'process_metrics' in locals() else 'unknown'} records of process metrics out of {len(self.process_metrics)} collected records ({self.process_metrics.columns}), "
+                    f"and {len(system_metrics) if 'system_metrics' in locals() else 'unknown'} records of system metrics out of {len(self.system_metrics)} collected records ({self.system_metrics.columns}), "
                     f"but creating the combined metrics dataframe failed with error: {e}"
                 )
-                logger.warning(
-                    f"Number of combined metrics: {len(combined)}. Column names: {combined.columns}"
-                )
-            raise RuntimeError(f"Error getting combined metrics: {e}")
+            raise
 
     def stats(
         self,

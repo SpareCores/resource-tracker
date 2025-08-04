@@ -698,8 +698,11 @@ class ResourceTracker:
         try:
             return TinyDataFrame(
                 csv_file_path=self.process_tracker_filepath,
+                retries=2,
+                retry_delay=min(0.05, self.interval / 10),
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to read process metrics: {e}")
             return TinyDataFrame(data=[])
 
     @property
@@ -712,8 +715,11 @@ class ResourceTracker:
         try:
             return TinyDataFrame(
                 csv_file_path=self.system_tracker_filepath,
+                retries=2,
+                retry_delay=min(0.05, self.interval / 10),
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to read system metrics: {e}")
             return TinyDataFrame(data=[])
 
     def snapshot(self) -> dict:

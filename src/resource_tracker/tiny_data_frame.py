@@ -10,6 +10,7 @@ from csv import QUOTE_MINIMAL, QUOTE_NONNUMERIC, DictReader
 from csv import writer as csv_writer
 from io import StringIO
 from logging import getLogger
+from time import sleep
 from typing import Callable, Dict, Iterator, List, NamedTuple, Optional, Union
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -85,6 +86,8 @@ class TinyDataFrame:
         self,
         data: Optional[Union[Dict[str, List[float]], List[Dict[str, float]]]] = None,
         csv_file_path: Optional[str] = None,
+        retries: int = 0,
+        retry_delay: float = 0.1,
     ):
         """
         Initialize with either:
@@ -92,6 +95,12 @@ class TinyDataFrame:
         - Dictionary of lists/arrays
         - List of dictionaries
         - CSV file path
+
+        Args:
+            data: Dictionary of lists/arrays or list of dictionaries.
+            csv_file_path: Path to a properly quoted CSV file.
+            retries: Number of retry attempts if reading CSV fails. Defaults to 0.
+            retry_delay: Initial delay between retries in seconds. Doubles after each retry. Defaults to 0.1.
         """
         assert data is not None or csv_file_path is not None, (
             "either data or csv_file_path must be provided"
@@ -107,7 +116,9 @@ class TinyDataFrame:
         )
 
         if csv_file_path:
-            data = self._read_csv(csv_file_path)
+            data = self._read_csv(
+                csv_file_path, retries=retries, retry_delay=retry_delay
+            )
 
         if isinstance(data, dict):
             self._data = list(data.values())
@@ -123,30 +134,55 @@ class TinyDataFrame:
                         seen_columns.add(col)
             self._data = [[row.get(col) for row in data] for col in self.columns]
 
-    def _read_csv(self, csv_file_path: str) -> list[dict]:
+    def _read_csv(
+        self, csv_file_path: str, retries: int = 0, retry_delay: float = 0.1
+    ) -> list[dict]:
         """Read a CSV file and return a list of dictionaries.
+
+        This function is used to read a CSV file and return a list of dictionaries.
+        It will retry up to `retries` times if the file is not found or cannot be read,
+        e.g. because the file is being locked for writing by another process.
+        The retry delay will be doubled after each attempt.
 
         Args:
             csv_file_path: CSV file path or URL.
+            retries: Number of retry attempts if reading fails. Defaults to 0.
+            retry_delay: Initial delay between retries in seconds. Doubles after each retry. Defaults to 0.1.
+
+        Raises:
+            Exception: If reading the CSV file fails after all retry attempts.
         """
-        results = []
+        last_error = None
+        for attempt in range(retries + 1):
+            csv_source = None
+            try:
+                parsed = urlparse(csv_file_path)
+                if parsed.scheme in ("http", "https"):
+                    with urlopen(csv_file_path) as response:
+                        content = response.read().decode("utf-8").splitlines()
+                        csv_source = content
+                else:
+                    csv_source = open(csv_file_path, "r")
+                reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
+                return list(reader)
+            except Exception as e:
+                last_error = e
+                if attempt < retries:
+                    logger.debug(
+                        f"Failed to read CSV file: {csv_file_path}. "
+                        f"Retry attempt {attempt + 1}/{retries}..."
+                    )
+                    sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+            finally:
+                if hasattr(csv_source, "close"):
+                    csv_source.close()
 
-        parsed = urlparse(csv_file_path)
-        if parsed.scheme in ("http", "https"):
-            with urlopen(csv_file_path) as response:
-                content = response.read().decode("utf-8").splitlines()
-                csv_source = content
-        else:
-            csv_source = open(csv_file_path, "r")
-
-        try:
-            reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
-            results = list(reader)
-        finally:
-            if hasattr(csv_source, "close"):
-                csv_source.close()
-
-        return results
+        # all retries failed
+        raise RuntimeError(
+            f"Failed to read CSV file after {retries + 1} attempts: {csv_file_path}"
+        ) from last_error
 
     def __len__(self):
         """Return the number of rows in the data-frame"""

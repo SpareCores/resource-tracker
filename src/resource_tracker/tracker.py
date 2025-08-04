@@ -1047,7 +1047,7 @@ class ResourceTracker:
         rec_server_cost = ctx["recommended_server"]["min_price_ondemand"]
         rec_run_cost = rec_server_cost / 60 / 60 * duration
         ctx["recommended_server"]["best_ondemand_price_duration"] = rec_run_cost
-        if ctx["cloud_info"]["instance_type"] != "unknown":
+        if ctx["cloud_info"] and ctx["cloud_info"]["instance_type"] != "unknown":
             current_server_cost = get_instance_price(
                 ctx["cloud_info"]["vendor"],
                 ctx["cloud_info"]["region"],

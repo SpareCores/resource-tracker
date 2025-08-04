@@ -169,7 +169,7 @@ class ProcessTracker:
             output_file: File to write the output to. Defaults to None, printing to stdout.
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
-        file_handle = open(output_file, "w") if output_file else stdout
+        file_handle = open(output_file, "w", newline="") if output_file else stdout
         try:
             while True:
                 current_stats = self.diff_stats()
@@ -362,7 +362,7 @@ class SystemTracker:
             output_file: File to write the output to. Defaults to None, printing to stdout.
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
-        file_handle = open(output_file, "w") if output_file else stdout
+        file_handle = open(output_file, "w", newline="") if output_file else stdout
         try:
             while True:
                 current_stats = self.diff_stats()

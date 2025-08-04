@@ -162,7 +162,7 @@ class TinyDataFrame:
                         content = response.read().decode("utf-8").splitlines()
                         csv_source = content
                 else:
-                    csv_source = open(csv_file_path, "r")
+                    csv_source = open(csv_file_path, "r", newline="")
                 reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
                 return list(reader)
             except Exception as e:

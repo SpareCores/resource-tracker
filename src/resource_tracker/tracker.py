@@ -632,8 +632,6 @@ class ResourceTracker:
                 f"Error message: {error_data['message']}\n"
                 f"Original traceback:\n{error_data['traceback']}"
             )
-            logger.warning(f"Process metrics: {str(self.process_metrics)}")
-            logger.warning(f"System metrics: {str(self.system_metrics)}")
         # terminate tracker processes
         for tracker_name in self.trackers:
             process_attr = f"{tracker_name}_process"
@@ -895,6 +893,8 @@ class ResourceTracker:
                     f"and {len(system_metrics) if 'system_metrics' in locals() else 'unknown'} records of system metrics out of {len(self.system_metrics)} collected records ({self.system_metrics.columns}), "
                     f"but creating the combined metrics dataframe failed with error: {e}"
                 )
+                logger.warning(f"Process metrics: {self.process_metrics.to_dict()}")
+                logger.warning(f"System metrics: {self.system_metrics.to_dict()}")
             raise
 
     def stats(

@@ -174,7 +174,7 @@ def test_systemstats_procfs_vs_psutil(
 def wait_for_tracker(
     tracker, check_process_tracker=True, check_system_tracker=True, timeout=5
 ):
-    """Wait for the resource tracker to collect data.
+    """Burn CPU until the resource tracker has collected data.
 
     Args:
         tracker: The resource tracker to wait for.

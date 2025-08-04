@@ -855,7 +855,7 @@ class ResourceTracker:
 
             # nothing to report on
             if len(process_metrics) == 0:
-                return []
+                return TinyDataFrame(data=[])
 
             if bytes:
                 for col, factor in BYTE_MAPPING.items():
@@ -925,6 +925,18 @@ class ResourceTracker:
         else:
             raise RuntimeError("No metrics collected (yet)")
 
+    def wait_for_samples(self, n: int = 1, timeout: float = 5):
+        """Wait for at least one sample to be collected.
+
+        Args:
+            n: The minimum number of samples to collect. Defaults to 1.
+            timeout: The maximum time to wait for a sample. Defaults to 5 seconds.
+        """
+        while self.n_samples < n:
+            sleep(self.interval / 10)
+            if time() - self.start_time > timeout:
+                raise RuntimeError("Timed out waiting for resource tracker samples")
+
     def recommend_resources(self, historical_stats: List[dict] = []) -> dict:
         """Recommend optimal resource allocation based on the measured resource tracker data.
 
@@ -942,13 +954,7 @@ class ResourceTracker:
         Returns:
             A dictionary containing the recommended resources (cpu, memory, gpu, vram).
         """
-        # wait until we have at least one sample
-        while self.n_samples == 0:
-            sleep(self.interval / 10)
-            # avoid infinite wait
-            if time() - self.start_time > self.interval * 5:
-                logger.warning("Timed out waiting for resource tracker samples")
-                return {}
+        self.wait_for_samples(n=1, timeout=self.interval * 5)
 
         current_stats = self.stats()
         if historical_stats:
@@ -994,6 +1000,7 @@ class ResourceTracker:
         historical_stats: List[dict] = [],
         status_failed: bool = False,
     ) -> Report:
+        self.wait_for_samples(n=1, timeout=self.interval * 5)
         duration = (self.stop_time or time()) - self.start_time + self.interval
 
         current_stats = self.stats()

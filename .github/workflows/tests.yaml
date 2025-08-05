@@ -30,7 +30,12 @@ jobs:
         run: |
           pip install ".[dev]"
       - name: Tests
-        run: tox -e py$(echo "${{ matrix.python-version }}" | tr -d .)
+        run: |
+          TOX_OS=${{ matrix.os }}
+          TOX_OS=${TOX_OS/-latest/}
+          TOX_OS=${TOX_OS/ubuntu/linux}
+          TOX_PYTHON=$(echo "${{ matrix.python-version }}" | tr -d .)
+          tox -e py$TOX_PYTHON-$TOX_OS
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         if: always()

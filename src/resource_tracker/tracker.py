@@ -21,7 +21,7 @@ from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import SimpleQueue, get_context
-from os import fsync, getpid, path
+from os import getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
 from sys import platform, stdout
@@ -169,7 +169,7 @@ class ProcessTracker:
             output_file: File to write the output to. Defaults to None, printing to stdout.
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
-        file_handle = open(output_file, "w", newline="") if output_file else stdout
+        file_handle = open(output_file, "wb") if output_file else stdout.buffer
         try:
             while True:
                 current_stats = self.diff_stats()
@@ -191,7 +191,6 @@ class ProcessTracker:
                     )
                 if output_file:
                     file_handle.flush()
-                    fsync(file_handle.fileno())
                 # sleep until the next interval
                 sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
@@ -363,7 +362,7 @@ class SystemTracker:
             output_file: File to write the output to. Defaults to None, printing to stdout.
             print_header: Whether to print the header of the CSV. Defaults to True.
         """
-        file_handle = open(output_file, "w", newline="") if output_file else stdout
+        file_handle = open(output_file, "wb") if output_file else stdout.buffer
         try:
             while True:
                 current_stats = self.diff_stats()
@@ -381,7 +380,6 @@ class SystemTracker:
                     )
                 if output_file:
                     file_handle.flush()
-                    fsync(file_handle.fileno())
                 # sleep until the next interval
                 sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:

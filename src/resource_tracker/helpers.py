@@ -206,7 +206,7 @@ def aggregate_stats(
 
 def render_csv_row(
     row: Iterable[Union[str, float, int, None]], quoting: int = QUOTE_NONNUMERIC
-) -> str:
+) -> bytes:
     """
     Format a single CSV row as a string in memory.
 
@@ -215,9 +215,9 @@ def render_csv_row(
         quoting: Quoting strategy for the CSV writer. Defaults to QUOTE_NONNUMERIC.
 
     Returns:
-        A string representing the full CSV-formatted row (including newline).
+        A bytes object representing the full CSV-formatted row (including newline).
     """
     buffer = StringIO(newline="")
     writer = csv_writer(buffer, quoting=quoting, lineterminator="\n")
     writer.writerow(row)
-    return buffer.getvalue()
+    return buffer.getvalue().encode("utf-8")

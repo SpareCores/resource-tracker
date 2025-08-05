@@ -29,6 +29,7 @@ More details:
 - Add minimal support for Handlebars-like templates in the `render_template` function
 - Add `report` method to `ResourceTracker` to generate a report in HTML format, and use that from the Metaflow extension
 - Add `recommend_resources` and `recommend_server` methods to `ResourceTracker`
+- Windows-specific reliability improvements
 
 Related breaking changes:
 

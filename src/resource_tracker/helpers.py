@@ -217,7 +217,7 @@ def render_csv_row(
     Returns:
         A string representing the full CSV-formatted row (including newline).
     """
-    buffer = StringIO()
-    writer = csv_writer(buffer, quoting=quoting)
+    buffer = StringIO(newline="")
+    writer = csv_writer(buffer, quoting=quoting, lineterminator="\n")
     writer.writerow(row)
     return buffer.getvalue()

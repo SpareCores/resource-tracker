@@ -30,7 +30,7 @@ jobs:
         run: |
           pip install ".[dev]"
       - name: Tests
-        run: tox
+        run: tox -e py$(echo "${{ matrix.python-version }}" | tr -d .)
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         if: always()

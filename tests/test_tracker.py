@@ -200,7 +200,6 @@ def test_resource_tracker_subprocesses():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
-    tracker.start()
     wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.process_metrics) > 0
@@ -217,7 +216,6 @@ def test_resource_tracker_subprocess():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker(track_processes=False)
-    tracker.start()
     wait_for_tracker(tracker, check_process_tracker=False)
     tracker.stop()
     assert len(tracker.process_metrics) == 0
@@ -232,7 +230,6 @@ def test_resource_tracker_combined_metrics():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
-    tracker.start()
     wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.get_combined_metrics()) > 0
@@ -260,7 +257,6 @@ def test_resource_tracker_report():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
-    tracker.start()
     wait_for_tracker(tracker)
 
     report = tracker.report()
@@ -274,3 +270,13 @@ def test_resource_tracker_report():
 
     report = tracker.report(status_failed=True)
     assert "Failed" in report
+
+
+def test_resource_tracker_restart():
+    """Test that the resource tracker cannot be restarted."""
+    from resource_tracker import ResourceTracker
+
+    tracker = ResourceTracker()
+    pytest.raises(RuntimeError, tracker.start)
+    tracker.stop()
+    pytest.raises(RuntimeError, tracker.start)

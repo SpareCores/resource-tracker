@@ -553,6 +553,13 @@ class ResourceTracker:
 
     def start(self):
         """Start the selected resource trackers in the background as subprocess(es)."""
+        if self.running:
+            raise RuntimeError("Resource tracker already running, cannot start again.")
+        if hasattr(self, "stop_time"):
+            raise RuntimeError(
+                "Resource tracker already stopped. Create a new instance instead of trying to restart it."
+            )
+
         self.start_time = time()
         self.stop_time = None
         # round to the nearest interval in the future
@@ -940,7 +947,7 @@ class ResourceTracker:
         Returns:
             True if the resource tracker is running, False if already stopped.
         """
-        return self.stop_time is None
+        return hasattr(self, "stop_time") and self.stop_time is None
 
     def wait_for_samples(self, n: int = 1, timeout: float = 5):
         """Wait for at least one sample to be collected.

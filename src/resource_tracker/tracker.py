@@ -21,7 +21,7 @@ from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import SimpleQueue, get_context
-from os import getpid, path
+from os import fsync, getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
 from sys import platform, stdout
@@ -191,6 +191,7 @@ class ProcessTracker:
                     )
                 if output_file:
                     file_handle.flush()
+                    fsync(file_handle.fileno())
                 # sleep until the next interval
                 sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:
@@ -380,6 +381,7 @@ class SystemTracker:
                     )
                 if output_file:
                     file_handle.flush()
+                    fsync(file_handle.fileno())
                 # sleep until the next interval
                 sleep(max(0, self.start_time + self.interval * self.cycle - time()))
         finally:

@@ -30,6 +30,7 @@ jobs:
         run: |
           pip install ".[dev]"
       - name: Tests
+        shell: bash
         run: |
           TOX_OS=${{ matrix.os }}
           TOX_OS=${TOX_OS/-latest/}

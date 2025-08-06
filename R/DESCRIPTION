@@ -1,0 +1,18 @@
+Type: Package
+Package: resource.tracker
+Authors@R: c(
+    person("Gergely", "Daróczi", , "daroczig@rapporter.net", role = c("aut", "cre"), comment = c(ORCID = "0000-0003-3149-8537")),
+    person("Spare Cores", role = c("fnd"))
+    )
+Title: Resource Tracker
+Description: Track resource usage of R scripts and applications.
+SystemRequirements: Python and resource_tracker (https://pypi.org/project/resource-tracker/)
+Version: 0.4.0
+Date: 2025-08-05
+URL: https://github.com/SpareCores/resource-tracker/tree/main/R
+BugReports: https://github.com/sparecores/resource-tracker/issues
+RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)
+License: MPL-2.0
+Encoding: UTF-8
+Imports: reticulate

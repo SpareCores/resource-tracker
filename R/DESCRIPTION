@@ -16,3 +16,4 @@ Roxygen: list(markdown = TRUE)
 License: MPL-2.0
 Encoding: UTF-8
 Imports: reticulate, R6
+Suggests: lintr, testthat

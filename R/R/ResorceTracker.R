@@ -5,6 +5,7 @@
 #' `ResourceTracker` class.
 #' @export
 #' @importFrom R6 R6Class
+#' @importFrom reticulate py_to_r
 ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
   private = list(
     py_obj = NULL
@@ -12,7 +13,7 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
   active = list(
     #' @field pid The process ID of the tracked process.
     pid = function() {
-      private$py_obj$pid
+      py_to_r(private$py_obj$pid)
     },
     #' @field system_metrics The system metrics of the tracked process.
     system_metrics = function() {

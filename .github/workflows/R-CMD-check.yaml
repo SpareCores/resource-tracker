@@ -41,11 +41,6 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::testthat, local::.
           working-directory: R
-      - name: Install Python psutil for reticulate
-        if: runner.os == 'macOS' || runner.os == 'Windows'
-        run: |
-          Rscript -e "if (!reticulate::py_module_available('psutil')) reticulate::py_install('psutil')"
-        working-directory: R
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true

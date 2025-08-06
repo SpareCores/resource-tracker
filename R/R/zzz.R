@@ -6,5 +6,8 @@ resource_tracker <- NULL
 
 .onLoad <- function(libname, pkgname) {
   reticulate::py_require("resource_tracker")
+  if (tolower(Sys.info()[["sysname"]] != "linux")) {
+    reticulate::py_require("psutil")
+  }
   resource_tracker <<- reticulate::import("resource_tracker", delay_load = TRUE, convert = FALSE)
 }

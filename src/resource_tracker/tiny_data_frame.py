@@ -139,10 +139,12 @@ class TinyDataFrame:
     ) -> list[dict]:
         """Read a CSV file and return a list of dictionaries.
 
-        This function is used to read a CSV file and return a list of dictionaries.
-        It will retry up to `retries` times if the file is not found or cannot be read,
-        e.g. because the file is being locked for writing by another process.
-        The retry delay will be doubled after each attempt.
+        This function is used to read a properly formatted CSV file (quoted
+        strings, header, same columns used on all lines) and return a list of
+        dictionaries. It will retry up to `retries` times if the file is not
+        found or cannot be read, e.g. because the file is being locked for
+        writing by another process. The retry delay will be doubled after each
+        attempt.
 
         Args:
             csv_file_path: CSV file path or URL.
@@ -163,8 +165,11 @@ class TinyDataFrame:
                         csv_source = content
                 else:
                     csv_source = open(csv_file_path, "r", newline="")
-                reader = DictReader(csv_source, quoting=QUOTE_NONNUMERIC)
-                return list(reader)
+                records = list(DictReader(csv_source, quoting=QUOTE_NONNUMERIC))
+                for record in records:
+                    if None in record.keys():
+                        raise ValueError("Corrupt CSV file with unknown column names.")
+                return records
             except Exception as e:
                 last_error = e
                 if attempt < retries:

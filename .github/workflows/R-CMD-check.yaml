@@ -32,10 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-pandoc@v2
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.13"
-      - run: pip install ".[psutil]"
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
@@ -45,6 +41,11 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::testthat, local::.
           working-directory: R
+      - name: Install Python psutil for reticulate
+        if: runner.os == 'macOS' || runner.os == 'Windows'
+        run: |
+          Rscript -e "if (!reticulate::py_module_available('psutil')) reticulate::py_install('psutil')"
+        working-directory: R
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true

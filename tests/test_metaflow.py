@@ -4,6 +4,8 @@ from platform import system
 
 import pytest
 
+from resource_tracker.tracker import ResourceTracker
+
 
 @pytest.mark.skipif(
     system() == "Windows", reason="Metaflow is not supported on Windows"
@@ -33,15 +35,16 @@ def test_flow_execution(artifacts_dir):
     assert hasattr(run.data, "resource_tracker_data")
     tracker_data = run.data.resource_tracker_data
 
-    pid = tracker_data["pid_tracker"]
-    assert max(pid["cpu_usage"]) > 0
-    assert max(pid["memory"]) > 0
+    tracker = ResourceTracker.from_snapshot(tracker_data["tracker"])
+    process_metrics = tracker.process_metrics
+    assert max(process_metrics["cpu_usage"]) > 0
+    assert max(process_metrics["memory"]) > 0
 
-    system = tracker_data["system_tracker"]
-    assert max(system["cpu_usage"]) > 0
-    assert max(system["memory_used"]) > 0
+    system_metrics = tracker.system_metrics
+    assert max(system_metrics["cpu_usage"]) > 0
+    assert max(system_metrics["memory_used"]) > 0
 
-    assert tracker_data["stats"]["duration"] > 0
+    assert tracker.snapshot()["metadata"]["duration"] > 0
 
     # check card
     step = list(run)[1]
@@ -50,7 +53,7 @@ def test_flow_execution(artifacts_dir):
     card = cards[0]
     assert card.type == "tracked_resources"
     html = card.get()
-    assert "Task CPU usage" in html
+    assert "Process CPU usage" in html
     assert "System CPU usage" in html
     assert len(html) > 100_000
 
@@ -123,15 +126,16 @@ def test_flow_execution_failed(artifacts_dir):
         tracker_data = tracker_data[list(tracker_data)[0]]["resource_tracker_data"]
     os.unlink(temp_path)
 
-    pid = tracker_data["pid_tracker"]
-    assert max(pid["cpu_usage"]) > 0
-    assert max(pid["memory"]) > 0
+    tracker = ResourceTracker.from_snapshot(tracker_data["tracker"])
+    process_metrics = tracker.process_metrics
+    assert max(process_metrics["cpu_usage"]) > 0
+    assert max(process_metrics["memory"]) > 0
 
-    system = tracker_data["system_tracker"]
-    assert max(system["cpu_usage"]) > 0
-    assert max(system["memory_used"]) > 0
+    system_metrics = tracker.system_metrics
+    assert max(system_metrics["cpu_usage"]) > 0
+    assert max(system_metrics["memory_used"]) > 0
 
-    assert tracker_data["stats"]["duration"] > 0
+    assert tracker.snapshot()["metadata"]["duration"] > 0
 
     # cannot get card via the Metaflow client, so use the CLI and locate on disk
     card_list_result = subprocess.run(
@@ -186,8 +190,9 @@ def test_flow_execution_failed(artifacts_dir):
 
     with open(card_path, "r", encoding="utf-8") as f:
         html = f.read()
-    assert "Task CPU usage" in html
+    assert "Process CPU usage" in html
     assert "System CPU usage" in html
+    assert "Failed" in html
     assert len(html) > 100_000
 
     # store html for inspection

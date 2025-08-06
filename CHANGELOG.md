@@ -1,3 +1,41 @@
+## dev
+
+## v0.4.0 (August 1, 2025)
+
+Refactoring and cleanup release with the main focus on extracting the reporting
+features from the Metaflow extension and support it in standalone use as well.
+
+Main changes:
+
+- Much better support for standalone use of `ResourceTracker` via the `stats`, `recommend_resources`,  `recommend_server` and `report` methods
+
+More details:
+
+- Rename `PidTracker` to `ProcessTracker` to better reflect its purpose. `PidTracker` is still available as an alias that is to be deprecated in the future.
+- Rename `get_pid_stats` to `get_process_stats` and related references in `ResourceTracker` and `ProcessTracker`.
+- Rename the `pid_tracker` and `system_tracker` properties of `ResourceTracker` to `process_metrics` and `system_metrics` respectively. All related references were also updated, e.g. in the Metaflow extension and docs.
+- Rename process-related helpers in the ProcFS implementation from `pid` prefix to `process` prefix.
+- Fix `SystemTracker` and `ProcessTracker` to not print dummy stats on start when header is disabled
+- Add optional `start_time` parameter to `SystemTracker` and `ProcessTracker`
+- Update `ResourceTracker` to start tracking at the nearest interval in the future, syncing `SystemTracker` and `ProcessTracker`
+- Fix `SystemTracker` and `ProcessTracker` to not drift by a few nanoseconds in every interval
+- Move cloud and server discovery along with the server allocation check to the `ResourceTracker` class from the Metaflow-specific decorators
+- Extract serialization and deserialization of `ResourceTracker` from the Metaflow extension into the `ResourceTracker` class with `snapshot` and `dump(s)`/`load(s)` methods
+- Round timestamp and user/system time to reasonable (6/4) decimal places
+- Rework internal data structure of `TinyDataFrame` to use a list of lists instead of a dictionary of lists to support more efficient slicing and column renaming
+- Add `get_combined_metrics` method to `ResourceTracker` to combine `process_metrics` and `system_metrics` into a single data frame, optionally with all metrics converted to bytes, and columns renamed to use human-friendly names
+- Add `stats` method to `TinyDataFrame` to compute on-demand statistics on columns
+- Add `stats` method to `ResourceTracker` to compute statistics on the combined metrics
+- Add minimal support for Handlebars-like templates in the `render_template` function
+- Add `report` method to `ResourceTracker` to generate a report in HTML format, and use that from the Metaflow extension
+- Add `recommend_resources` and `recommend_server` methods to `ResourceTracker`
+- Windows-specific reliability improvements
+
+Related breaking changes:
+
+- Historical data collected before v0.4.0 is not compatible with the new `ResourceTracker` class, and will be discarded
+- `TinyDataFrame` is no longer made available from `resource_tracker` directly, but from the `resource_tracker.tiny_data_frame` submodule
+
 ## v0.3.1 (May 30, 2025)
 
 - Generate card for failed step

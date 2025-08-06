@@ -103,14 +103,14 @@ decorator without explicit `@pypi` config).
 
 The package comes with helper functions and classes for tracking resource usage,
 such as the `ResourceTracker` class that runs trackers in the background, or the
-underlying `PidTracker` and `SystemTracker` classes logging resource usage to
+underlying `ProcessTracker` and `SystemTracker` classes logging resource usage to
 the standard output or a file, both using either `procfs` or `psutil` under the
 hood, depending on which is available, with a preference for `psutil` when both
 are present.
 
 For the most basic (and often well enough) usage, import the `ResourceTracker`
-class, and automatically start both system-wide and per-process trackers in the
-background as spawned or forked processes as part of the instantiation:
+class, which automatically starts both system-wide and per-process trackers in
+the background as spawned or forked processes as part of the instantiation:
 
 ```python
 from resource_tracker import ResourceTracker
@@ -120,15 +120,28 @@ tracker = ResourceTracker()
 tracker.stop()
 
 # your analytics code utilizing the collected data
-tracker.pid_tracker
-tracker.system_tracker
+tracker.process_metrics
+tracker.system_metrics
+tracker.get_combined_metrics()
+
+# or more conveniently get combined statistics
+tracker.stats()
+
+# get recommendations for resource allocation and cloud server type
+tracker.recommend_resources()
+tracker.recommend_server()
+
+# generate a HTML report on resource usage and recommendations
+report = tracker.report()
+report.save("report.html")
+report.browse()
 ```
 
 The `ResourceTracker` instance gives you access to the collected data in
-real-time, or after stopping the trackers via the `pid_tracker` and
-`system_tracker` properties. Both are `TinyDataFrame` objects, which are
-essentially dictionaries of lists, with additional methods for e.g. printing and
-saving to a CSV file. See the
+real-time, or after stopping the trackers via the `process_metrics` and
+`system_metrics` properties, or the `get_combined_metrics` method. Each of them
+is a `TinyDataFrame` object, which is essentially a dictionary of lists, with
+additional methods for e.g. printing and saving to a CSV file. See the
 [standalone.py](https://github.com/SpareCores/resource-tracker/tree/main/examples/standalone.py)
 for a more detailed actual usage example.
 
@@ -136,7 +149,7 @@ It's possible to track only the system-wide or process resource usage by the
 related init parameters, just like controlling the sampling interval, or how to
 start (e.g. spawn or fork) the subprocesses of the trackers.
 
-For even more control, you can use the underlying `PidTracker` and
+For even more control, you can use the underlying `ProcessTracker` and
 `SystemTracker` classes directly, which are not starting and handling new
 processes, but simply log resource usage to the standard output or a file. For
 example, to track only the system-wide resource usage, you can use
@@ -162,12 +175,12 @@ The default stream can be redirected to a file by passing a path to the `csv_fil
 argument, and can use different intervals for sampling via the `interval`
 argument.
 
-The `PidTracker` class tracks resource usage of a running process (defaults to
+The `ProcessTracker` class tracks resource usage of a running process (defaults to
 the current process) and optionally all its children (recursively), in a similar
 manner, although somewhat limited in functionality, as e.g. `nvidia-smi pmon`
 can only track up-to 4 GPUs, and network traffic monitoring is not available.
 
-Helper functions are also provided, e.g. `get_pid_stats` and `get_system_stats`
+Helper functions are also provided, e.g. `get_process_stats` and `get_system_stats`
 from both the `tracker_procfs` and `tracker_psutil` modules, which are used
 internally by the above classes after diffing values between subsequent calls.
 
@@ -241,10 +254,10 @@ from rich import print as pp
 artifact = Flow("ResourceTrackingFlow").latest_run.data.resource_tracker_data
 pp(artifact)
 # {
-#     'pid_tracker': TinyDataFrame with 9 rows and 12 columns. First row as a dict: {'timestamp': 1741732803.3076203, 'pid': 
+#     'process_metrics': TinyDataFrame with 9 rows and 12 columns. First row as a dict: {'timestamp': 1741732803.3076203, 'pid': 
 # 777691.0, 'children': 3.0, 'utime': 95.0, 'stime': 13.0, 'cpu_usage': 1.0796, 'memory': 563273.0, 'read_bytes': 52260.0, 
 # 'write_bytes': 0.0, 'gpu_usage': 0.0, 'gpu_vram': 0.0, 'gpu_utilized': 0.0},
-#     'system_tracker': TinyDataFrame with 9 rows and 21 columns. First row as a dict: {'timestamp': 1741732803.2471318, 
+#     'system_metrics': TinyDataFrame with 9 rows and 21 columns. First row as a dict: {'timestamp': 1741732803.2471318, 
 # 'processes': 777773.0, 'utime': 225.0, 'stime': 53.0, 'cpu_usage': 2.7797, 'memory_free': 38480700.0, 'memory_used': 
 # 24338580.0, 'memory_buffers': 4792.0, 'memory_cached': 2727720.0, 'memory_active': 15931396.0, 'memory_inactive': 
 # 0.0, 'disk_read_bytes': 380928.0, 'disk_write_bytes': 10088448.0, 'disk_space_total_gb': 5635.25, 'disk_space_used_gb': 

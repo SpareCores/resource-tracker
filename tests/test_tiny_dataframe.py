@@ -1,6 +1,8 @@
+from statistics import mean
+
 import pytest
 
-from resource_tracker import TinyDataFrame
+from resource_tracker.tiny_data_frame import StatSpec, TinyDataFrame
 
 
 @pytest.fixture
@@ -53,6 +55,24 @@ def sample_data():
             2800,
         ],
     }
+
+
+def test_initialization_with_dict_of_lists(sample_data):
+    """Test TinyDataFrame initialization with a dict of lists"""
+    df = TinyDataFrame(sample_data)
+    assert df.columns == ["timestamp", "cpu", "memory"]
+    assert len(df) == 12
+
+
+def test_initialization_with_list_of_dicts(sample_data):
+    """Test TinyDataFrame initialization with a list of dicts"""
+    sample_data_list = [
+        {k: sample_data[k][i] for k in sample_data.keys()}
+        for i in range(len(next(iter(sample_data.values()))))
+    ]
+    df = TinyDataFrame(sample_data_list)
+    assert df.columns == ["timestamp", "cpu", "memory"]
+    assert len(df) == 12
 
 
 def test_initialization(sample_data):
@@ -167,6 +187,8 @@ def test_invalid_access():
     # Test invalid column name
     with pytest.raises(KeyError):
         _ = df["non_existent"]
+    with pytest.raises(KeyError):
+        _ = df[["non_existent1", "non_existent2"]]
 
     # Test invalid key type
     with pytest.raises(TypeError):
@@ -375,3 +397,20 @@ def test_rename_columns(sample_data):
         "processor"
     ]
     assert result == [52.4, 78.2, 92.7]
+
+
+def test_stats(sample_data):
+    """Test the stats method"""
+    df = TinyDataFrame(sample_data)
+    stats = df.stats([StatSpec(column="cpu", agg=mean, round=2)])
+    assert stats["cpu"]["mean"] == 46.16
+    stats = df.stats(
+        [
+            StatSpec(column="cpu", agg=mean, round=0),
+            StatSpec("memory", max),
+            StatSpec("memory", len, agg_name="count"),
+        ]
+    )
+    assert stats["cpu"]["mean"] == 46
+    assert stats["memory"]["max"] == 4800
+    assert stats["memory"]["count"] == 12

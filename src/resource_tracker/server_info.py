@@ -2,6 +2,7 @@
 Detect server hardware (CPU count, memory amount, disk space, GPU count and VRAM amount) via `procfs` or `psutil`, and `nvidia-smi`.
 """
 
+from collections import Counter
 from contextlib import suppress
 from os import cpu_count
 from platform import system
@@ -73,6 +74,8 @@ def get_server_info() -> dict:
             - `vcpus`: Number of virtual CPUs
             - `memory_mb`: Total memory in MB
             - `gpu_count`: Number of GPUs (`0` if not available)
+            - `gpu_names`: List of GPU names (`[]` if not available)
+            - `gpu_name`: Most common GPU name (`""` if not available)
             - `gpu_memory_mb`: Total VRAM in MB (`0` if not available)
     """
     gpu_info = get_gpu_info()
@@ -82,6 +85,11 @@ def get_server_info() -> dict:
         "memory_mb": get_total_memory_mb(),
         "gpu_count": gpu_info["count"],
         "gpu_names": gpu_info["gpu_names"],
+        "gpu_name": (
+            Counter(gpu_info["gpu_names"]).most_common(1)[0][0]
+            if gpu_info["gpu_names"]
+            else ""
+        ),
         "gpu_memory_mb": gpu_info["memory_mb"],
     }
     return info

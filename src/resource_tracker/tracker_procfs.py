@@ -47,7 +47,7 @@ def get_sector_sizes() -> Dict[str, int]:
     return sector_sizes
 
 
-def get_pid_children(pid: int) -> Set[int]:
+def get_process_children(pid: int) -> Set[int]:
     """Get all descendant processes recursively.
 
     Args:
@@ -61,13 +61,13 @@ def get_pid_children(pid: int) -> Set[int]:
             children = {int(child) for child in f.read().strip().split()}
             descendants = set()
             for child in children:
-                descendants.update(get_pid_children(child))
+                descendants.update(get_process_children(child))
             return children | descendants
     except (ProcessLookupError, FileNotFoundError):
         return set()
 
 
-def get_pid_rss(pid: int) -> int:
+def get_process_rss(pid: int) -> int:
     """Get the current resident set size of a process.
 
     Args:
@@ -85,7 +85,7 @@ def get_pid_rss(pid: int) -> int:
         return 0
 
 
-def get_pid_pss_rollup(pid: int) -> int:
+def get_process_pss_rollup(pid: int) -> int:
     """Reads the total PSS from `/proc/{pid}/smaps_rollup`.
 
     Args:
@@ -102,7 +102,7 @@ def get_pid_pss_rollup(pid: int) -> int:
     return 0
 
 
-def get_pid_proc_times(pid: int, children: bool = True) -> Dict[str, int]:
+def get_process_proc_times(pid: int, children: bool = True) -> Dict[str, int]:
     """Get the current user and system times of a process from `/proc/{pid}/stat`.
 
     Note that cannot use `cutime`/`cstime` for real-time monitoring,
@@ -129,7 +129,7 @@ def get_pid_proc_times(pid: int, children: bool = True) -> Dict[str, int]:
         return {"utime": 0, "stime": 0}
 
 
-def get_pid_proc_io(pid: int) -> Dict[str, int]:
+def get_process_proc_io(pid: int) -> Dict[str, int]:
     """Get the total bytes read and written by a process from `/proc/{pid}/io`.
 
     Note that it is not tracking reading from memory-mapped objects,
@@ -151,7 +151,7 @@ def get_pid_proc_io(pid: int) -> Dict[str, int]:
         return {"read_bytes": 0, "write_bytes": 0}
 
 
-def get_pid_stats(
+def get_process_stats(
     pid: int, children: bool = True
 ) -> Dict[str, Union[int, float, None, Set[int]]]:
     """Collect current/cumulative stats of a process from procfs.
@@ -179,20 +179,20 @@ def get_pid_stats(
 
     nvidia_process = start_nvidia_smi_pmon()
 
-    current_children = get_pid_children(pid)
-    current_pss = get_pid_pss_rollup(pid)
+    current_children = get_process_children(pid)
+    current_pss = get_process_pss_rollup(pid)
     if children:
         for child in current_children:
-            current_pss += get_pid_pss_rollup(child)
-    current_proc_times = get_pid_proc_times(pid, children)
+            current_pss += get_process_pss_rollup(child)
+    current_proc_times = get_process_proc_times(pid, children)
     if children:
         for child in current_children:
-            current_proc_times["utime"] += get_pid_proc_times(child, True)["utime"]
-            current_proc_times["stime"] += get_pid_proc_times(child, True)["stime"]
-    current_io = get_pid_proc_io(pid)
+            current_proc_times["utime"] += get_process_proc_times(child, True)["utime"]
+            current_proc_times["stime"] += get_process_proc_times(child, True)["stime"]
+    current_io = get_process_proc_io(pid)
     if children:
         for child in current_children:
-            child_io = get_pid_proc_io(child)
+            child_io = get_process_proc_io(child)
             for key in set(current_io) & set(child_io):
                 current_io[key] += child_io[key]
 

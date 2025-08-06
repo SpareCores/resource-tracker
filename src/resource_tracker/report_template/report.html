@@ -1,71 +1,71 @@
 <html>
 <head>
-    <script type="text/javascript">{{{dygraphs_js}}}</script>
-    <script type="text/javascript">{{{dygraphs_crosshair_js}}}</script>
-    <script type="text/javascript">{{{dygraphs_synchronizer_js}}}</script>
-    <style type="text/css">{{{dygraphs_css}}}</style>
-    <script type="text/javascript">{{{helpers_js}}}</script>
-    <style type="text/css">{{{custom_css}}}</style>
+    <script type="text/javascript">{{{ files.dygraphs_js }}}</script>
+    <script type="text/javascript">{{{ files.dygraphs_crosshair_js }}}</script>
+    <script type="text/javascript">{{{ files.dygraphs_synchronizer_js }}}</script>
+    <style type="text/css">{{{ files.dygraphs_css }}}</style>
+    <script type="text/javascript">{{{ files.helpers_js }}}</script>
+    <style type="text/css">{{{ files.custom_css }}}</style>
 </head>
 <body>
     <div style="display: flex; gap: 1rem;">
         <div id="server" class="section" style="flex: 0.6;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_motherboard}}}
+                    {{{ files.icon_motherboard }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Server</div>
-                    <p class="description">Key hardware specifications of the server executing this step.</p>
+                    <p class="description">Key hardware specifications of the hosting server.</p>
                 </div>
             </h1>
             <div class="section-content">
                 <div class="section-content-cards">
                     <div class="section-content-card">
                         <div class="section-content-card-label">OS family</div>
-                        <div class="section-content-card-value">{{{server_info.os}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.os }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Allocation
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
-                                    Indicates whether this server appears to be dedicated to this Metaflow step or shared with other tasks. This assessment is based on comparing system-level resource usage with task-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
+                                    Indicates whether this server appears to be dedicated to this process or shared with other processes. This assessment is based on comparing system-level resource usage with process-specific resource usage, analyzing patterns in CPU, memory, GPU, and VRAM utilization against both percentage thresholds and absolute values.
                                 </div>
                             </span>
                         </div>
-                        <div class="section-content-card-value">{{{server_info.allocation}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.allocation }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">vCPUs</div>
-                        <div class="section-content-card-value">{{{server_info.vcpus}}}</div>
+                        <div class="section-content-card-value">{{{ server_info.vcpus }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Memory</div>
-                        <div class="section-content-card-value">{{{server_info.memory_mb_pretty}}} MiB</div>
+                        <div class="section-content-card-value">{{{ server_info.memory_mb | pretty_number }}} MiB</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Storage</div>
-                        <div class="section-content-card-value">{{{server_info.disk_space_total_gb}}} GiB</div>
+                        <div class="section-content-card-value">{{{ system_metrics.disk_space_total_gb | index:0 | pretty_number }}} GiB</div>
                     </div>
-                    {{#server_info.gpu_names}}
+                    {{ #if server_info.gpu_names }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">GPUs</div>
-                        <div class="section-content-card-value">{{{server_info.gpu_count}}} {{server_info.gpu_name}}</div>
+                        <div class="section-content-card-value">{{{ server_info.gpu_count }}} {{{ server_info.gpu_name }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">VRAM</div>
-                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb_pretty}}} MiB</div>
+                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb | pretty_number }}} MiB</div>
                     </div>
-                    {{/server_info.gpu_names}}
+                    {{ /if }}
                 </div>
             </div>
         </div>
         <div id="provider" class="section" style="flex: 0.4;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_clouds}}}
+                    {{{ files.icon_clouds }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Cloud</div>
@@ -76,22 +76,28 @@
                 <div class="section-content-cards">
                     <div class="section-content-card">
                         <div class="section-content-card-label">Cloud Provider</div>
-                        <div class="section-content-card-value">{{{cloud_info.vendor}}}</div>
+                        <div class="section-content-card-value">{{{ cloud_info.vendor }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Region/Datacenter</div>
-                        <div class="section-content-card-value">{{{cloud_info.region}}}</div>
+                        <div class="section-content-card-value">{{{ cloud_info.region }}}</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Instance Type</div>
-                        <div class="section-content-card-value">{{{cloud_info.instance_type_html}}}</div>
+                        <div class="section-content-card-value">
+                        {{ #if cloud_info.compute_costs }}
+                            <a href="https://sparecores.com/server/{{{cloud_info.vendor}}}/{{{cloud_info.instance_type}}}" target="_blank" style="color: #34D399;">{{{ cloud_info.instance_type }}} {{{ files.icon_external_link }}}</a>
+                        {{ #else }}
+                            {{{ cloud_info.instance_type }}}
+                        {{ /if }}
+                        </div>
                     </div>
-                    {{#cloud_info.compute_costs}}
+                    {{ #if cloud_info.compute_costs }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Compute Costs
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     The cost of running this cloud server for the duration of this step, not including storage, network traffic, IPV4 prices, startup time or any discounts.
                                 </div>
@@ -99,7 +105,7 @@
                         </div>
                         <div class="section-content-card-value">${{{cloud_info.compute_costs}}}</div>
                     </div>
-                    {{/cloud_info.compute_costs}}
+                    {{/if}}
                 </div>
             </div>
         </div>
@@ -108,7 +114,7 @@
         <div id="stats" class="section" style="flex: 0.6;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_calculator}}}
+                    {{{ files.icon_calculator }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Usage Statistics</div>
@@ -120,70 +126,95 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">CPU</div>
                         <div class="section-content-card-value">
-                            <span class="metric-highlight">{{{stats.cpu_usage.mean}}}</span> avg
+                            <span class="metric-highlight">{{{ stats.process_cpu_usage.mean }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{historical_stats.avg_cpu_mean}}}</span> hist avg
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.mean }}}{{ #else }}-{{/if}}</span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.cpu_usage.max}}}</span> peak</div>
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.max }}}{{ #else }}-{{/if}}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.memory_usage.mean_pretty}}} MiB</span> avg
+                            <span class="metric">{{{stats.process_memory.mean | divide:1024 | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.memory_usage.max_pretty}}} MiB</span> peak
+                            <span class="metric">{{{stats.process_memory.max | divide:1024 | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{{historical_stats.max_memory_max_pretty}}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.process_memory.max | divide:1024 | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
-                        <div class="section-content-card-value">{{{stats.duration}}} sec</div>
+                        <div class="section-content-card-value">{{{ resource_tracker.duration | round:2 }}} sec</div>
                     </div>
-                    {{#step_failed}}
+                    {{ #if status_failed }}
                     <div class="section-content-card-failed">
-                        <div class="section-content-card-label">Step Status</div>
+                    {{ #else }}
+                    {{ #if resource_tracker.stopped }}
+                    <div class="section-content-card-task">
+                    {{ #else }}
+                    <div class="section-content-card-failed">
+                    {{ /if }}
+                    {{ /if }}
+                        <div class="section-content-card-label">Status</div>
                         <div class="section-content-card-value">
+                            {{ #if status_failed }}
                             Failed
                             <span class="info-icon" style="padding-bottom: 3px;">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
-                                    The step did not complete successfully, so resource usage data does not represent a complete run.
+                                    The process did not complete successfully, so the collected resource usage data is at least incomplete, but potentially also incorrect. Handle with care!
                                 </div>
                             </span>
+                            {{ #else }}
+                                {{ #if resource_tracker.stopped }}
+                                Finished
+                                {{ #else }}
+                                Pending
+                                <span class="info-icon" style="padding-bottom: 3px;">
+                                    {{{ files.icon_info }}}
+                                    <div class="tooltip-content">
+                                        The resource tracker was not stopped properly yet, so the collected resource usage data might be incomplete. Handle with care!
+                                    </div>
+                                </span>
+                                {{ /if }}
+                            {{ /if }}
                         </div>
                     </div>
-                    {{/step_failed}}
-                    {{#server_info.gpu_names}}
+                    {{ #if server_info.gpu_names }}
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">GPU</div>
-                        <div class="section-content-card-value">{{{stats.gpu_usage.mean}}} avg
+                        <div class="section-content-card-value">
+                            <span class="metric"></span>{{{ stats.process_gpu_usage.mean }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{historical_stats.avg_gpu_mean}}}</span> hist avg
+                            <span class="metric">
+                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_usage.max }}}{{ #else }}-{{/if}}
+                            </span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.gpu_usage.max}}}</span> peak</div>
+                            <span class="metric">{{ stats.process_gpu_usage.max }}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">VRAM</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.gpu_vram.mean_pretty}}} MiB</span> avg
+                            <span class="metric">{{{ stats.process_gpu_vram.mean | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.gpu_vram.max_pretty}}} MiB</span> peak
+                            <span class="metric">{{{ stats.process_gpu_vram.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{{historical_stats.max_vram_max_pretty}}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">
+                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_vram.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
+                            </span> hist peak</div>
                     </div>
-                    {{/server_info.gpu_names}}
+                    {{ /if }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">Disk Space</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.disk_usage.max_pretty}}} GiB</span> peak
+                            <span class="metric">{{{ stats.system_disk_space_used_gb.max | pretty_number }}} GiB</span> peak
                         </div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Traffic</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{stats.traffic.inbound_pretty}} GB</span> in
+                            <span class="metric">{{{ stats.system_net_recv_bytes.sum | divide:1073741824 | pretty_number:2 }}} GB</span> in
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{stats.traffic.outbound_pretty}} GB</span> out
+                            <span class="metric">{{{ stats.system_net_sent_bytes.sum | divide:1073741824 | pretty_number:2 }}} GB</span> out
                         </div>
                     </div>
                 </div>
@@ -192,7 +223,7 @@
         <div id="recommendations" class="section" style="flex: 0.4;">
             <h1>
                 <div class="header-icon">
-                    {{{icon_robot}}}
+                    {{{ files.icon_robot }}}
                 </div>
                 <div class="header-text">
                     <div class="title">Recommendations</div>
@@ -204,26 +235,35 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">
                             Recommended Resources for Next Run
+                            {{ #if resource_tracker.integration_is.metaflow }}
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     The Metaflow <code>@resources</code> decorator is limited to specifying the number of vCPUs, memory, and number of GPUs, so e.g. no way to specify the minimum amount of VRAM.
                                 </div>
                             </span>
+                            {{ /if }}
                         </div>
-                        <div class="section-content-card-value">{{{recommended_resources}}}</div>
+                        <div class="section-content-card-value">
+                            {{ #if resource_tracker.integration_is.standalone }}
+                            {{ recommended_resources.cpu }} vCPUs, {{ recommended_resources.memory }} MiB memory{{ #if recommended_resources.gpu }}, {{ recommended_resources.gpu }} GPUs with {{ recommended_resources.vram }} MiB VRAM{{ /if }}
+                            {{ /if }}
+                            {{ #if resource_tracker.integration_is.metaflow }}
+                            @resources(cpu={{ recommended_resources.cpu }}, memory={{recommended_resources.memory}}{{ #if recommended_resources.gpu }}, gpu={{ recommended_resources.gpu }}{{ /if }})
+                            {{ /if }}
+                        </div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Automated Tuning of Resources</div>
                         <div class="section-content-card-value">
-                            Learn more at <a href="https://sparecores.com/feedback/metaflow-resource-tracker" target="_blank" style="color: #34D399;">sparecores.com {{{icon_external_link}}}</a>
+                            Learn more at <a href="https://sparecores.com/feedback/metaflow-resource-tracker" target="_blank" style="color: #34D399;">sparecores.com {{{ files.icon_external_link }}}</a>
                         </div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Cheapest Cloud Server to Run This Step
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     Evaluated 2000+ servers options accross AWS, GCP, Azure, Hetzner and UpCloud by filtering for the required number of vCPUs, memory, GPUs and min VRAM, then ordered descending by ondemand price, and selected the first one. The price per execution is based on the current best ondemand price of the server and the current duration of the step, and does not include any storage, network traffic, IPV4 prices, the startup time or any discounts. If interested in more advanced recommendations, please get in touch!
                                 </div>
@@ -231,24 +271,22 @@
                         </div>
                         <div class="section-content-card-value">
                             <ol class="recommended-cloud-servers">
-                                {{#recommended_cloud_servers}}
                                 <li>
-                                    <a href="https://sparecores.com/server/{{{vendor_id}}}/{{{api_reference}}}" target="_blank">
-                                        <img src="https://sparecores.com/assets/images/vendors/{{{vendor_id}}}.svg">
-                                        <span class="linklike">{{{display_name}}} {{{icon_external_link}}}</span>
-                                        <span style="font-weight: normal;">for ${{{price_task}}}/execution</span>
+                                    <a href="https://sparecores.com/server/{{{ recommended_server.vendor_id }}}/{{{ recommended_server.api_reference }}}" target="_blank">
+                                        <img src="https://sparecores.com/assets/images/vendors/{{{ recommended_server.vendor_id }}}.svg">
+                                        <span class="linklike">{{{ recommended_server.display_name }}} {{{ files.icon_external_link }}}</span>
+                                        <span style="font-weight: normal;">for ${{{ recommended_server.best_ondemand_price_duration | pretty_number:6 }}}/execution</span>
                                     </a>
                                 </li>
-                                {{/recommended_cloud_servers}}
                             </ol>
                         </div>
                     </div>
-                    {{#cost_savings}}
+                    {{ #if recommended_server.cost_savings.percent }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">
                             Potential Cost Savings
                             <span class="info-icon">
-                                {{{icon_info}}}
+                                {{{ files.icon_info }}}
                                 <div class="tooltip-content">
                                     This calculation assumes the current cloud server is dedicated to running this step and that the recommended cloud server would provide comparable performance. Savings are based on the best available on-demand pricing in supported regions and don't account for any existing discounts you may have.
                                 </div>
@@ -256,15 +294,15 @@
                         </div>
                         <div class="section-content-card-value">
                             <span class="metric-highlight">
-                                {{{cost_savings.percent}}}%
+                                {{{ recommended_server.cost_savings.percent }}}%
                             </span>
                             <span class="metric-separator">|</span>
                             <span class="metric">
-                                ${{{cost_savings.amount}}}/execution
+                                ${{{ recommended_server.cost_savings.amount }}}/execution
                             </span>
                         </div>
                     </div>
-                    {{/cost_savings}}
+                    {{ /if }}
                 </div>
             </div>
         </div>
@@ -272,11 +310,11 @@
     <div id="cpu" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_cpu}}}
+                {{{ files.icon_cpu }}}
             </div>
             <div class="header-text">
                 <div class="title">CPU Usage</div>
-                <p class="description">CPU usage for both the system and specific tasks is calculated by summing user+nice and system CPU times (in clock ticks), normalized by dividing by the total elapsed time and ticks per second. Task CPU usage encompasses all child processes.</p>
+                <p class="description">CPU usage for both the system and specific processes are calculated by summing user+nice and system CPU times (in clock ticks), normalized by dividing by the total elapsed time and ticks per second. Process CPU usage encompasses all child processes.</p>
             </div>
             <div id="labels_cpu" class="labels"></div>
         </h1>
@@ -287,11 +325,11 @@
     <div id="mem" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_memory}}}
+                {{{ files.icon_memory }}}
             </div>
             <div class="header-text">
                 <div class="title">Memory Usage</div>
-                <p class="description">On Linux, the used server memory is calculated by <code>total - free - buffers - cached</code>, while it depends on <code>psutil</code> for other systems. Task memory usage is measured by summing PSS (on Linux), USS (on MacOS and Windows), or RSS rollups of all subprocesses.</p>
+                <p class="description">On Linux, the used server memory is calculated by <code>total - free - buffers - cached</code>, while it depends on <code>psutil</code> for other systems. The process memory usage is measured by summing PSS (on Linux), USS (on MacOS and Windows), or RSS rollups of all subprocesses.</p>
             </div>
             <div id="labels_mem" class="labels"></div>
         </h1>
@@ -302,11 +340,11 @@
     <div id="disk" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_disk}}}
+                {{{ files.icon_disk }}}
             </div>
             <div class="header-text">
                 <div class="title">Disk I/O Usage</div>
-                <p class="description">Task-specific disk usage tracking is unreliable; therefore, it is recommended to monitor disk usage at the system level, encompassing all mounted disks.</p>
+                <p class="description">Process-specific disk usage tracking is unreliable; therefore, it is recommended to monitor disk usage at the system level, encompassing all mounted disks.</p>
             </div>
             <div id="labels_disk" class="labels"></div>
         </h1>
@@ -317,7 +355,7 @@
     <div id="disk_space" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_disk}}}
+                {{{ files.icon_disk }}}
             </div>
             <div class="header-text">
                 <div class="title">Disk Space Usage</div>
@@ -332,7 +370,7 @@
     <div id="net" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_router}}}
+                {{{ files.icon_router }}}
             </div>
             <div class="header-text">
                 <div class="title">Network Usage</div>
@@ -344,15 +382,15 @@
             <div id="plot_net" class="plot"></div>
         </div>
     </div>
-    {{#server_info.gpu_names}}
+    {{ #if server_info.gpu_names }}
     <div id="gpu_usage" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">GPU Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported ratios standardized between 0 and GPU count, proxying how many GPUs have been 100% utilized. Note that process-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_usage" class="labels"></div>
         </h1>
@@ -363,11 +401,11 @@
     <div id="gpu_utilized" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">GPUs in Use</div>
-                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported number of GPUs with a utilization greater than 0. Note that process-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_utilized" class="labels"></div>
         </h1>
@@ -378,11 +416,11 @@
     <div id="gpu_vram" class="section">
         <h1 class="section-header">
             <div class="header-icon">
-                {{{icon_gpu}}}
+                {{{ files.icon_gpu }}}
             </div>
             <div class="header-text">
                 <div class="title">VRAM Usage</div>
-                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs. Note that task-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
+                <p class="description"><code>nvidia-smi</code> reported, summed up VRAM usage for all GPUs. Note that process-specific GPU usage is not as reliable as system-level GPU usage and limited up to 4 GPUs.</p>
             </div>
             <div id="labels_gpu_vram" class="labels"></div>
         </h1>
@@ -390,33 +428,33 @@
             <div id="plot_gpu_vram" class="plot"></div>
         </div>
     </div>
-    {{/server_info.gpu_names}}
+    {{ /if }}
     <div id="footer">
         <p>
-            Generated by <a href="https://sparecores.github.io/resource-tracker/#metaflow-integration" target="_blank" style="color: #34D399;">resource-tracker v{{{resource_tracker.version}}} {{{icon_external_link}}}</a> using <code>{{{resource_tracker.implementation}}}</code> implementation at {{timestamp}}.
+            Generated by <a href="https://sparecores.github.io/resource-tracker/#metaflow-integration" target="_blank" style="color: #34D399;">resource-tracker v{{ resource_tracker.version }} {{{ files.icon_external_link }}}</a> using <code>{{ resource_tracker.implementation }}</code> implementation at {{ resource_tracker.report_time | unix_timestamp_to_local_tz_string }}.
         </p>
     </div>
     <script type="text/javascript">
         Dygraph.onDOMready(function onDOMready() {
-            var cpuGraph = createGraph("plot_cpu", `{{{csv_cpu}}}`, 'labels_cpu'),
-                memGraph = createGraph("plot_mem", `{{{csv_mem}}}`, 'labels_mem', { labelsKMG2: true }),
-                diskGraph = createGraph("plot_disk", `{{{csv_disk}}}`, 'labels_disk',
+            var cpuGraph = createGraph("plot_cpu", `{{{ csv.cpu }}}`, 'labels_cpu'),
+                memGraph = createGraph("plot_mem", `{{{ csv.mem }}}`, 'labels_mem', { labelsKMG2: true }),
+                diskGraph = createGraph("plot_disk", `{{{ csv.disk }}}`, 'labels_disk',
                     {
                         labelsKMG2: true,
                         series: {
-                            "Task disk write": {strokePattern: [7, 3], color: '#34D399'},
+                            "Process disk write": {strokePattern: [7, 3], color: '#34D399'},
                             "System disk write": {strokePattern: [7, 3], color: '#38BDF8'},
-                            "Task disk read": {strokePattern: null, color: '#34D399'},
+                            "Process disk read": {strokePattern: null, color: '#34D399'},
                             "System disk read": {strokePattern: null, color: '#38BDF8'}
                         },
                     }),
-                diskSpaceGraph = createGraph("plot_disk_space", `{{{csv_disk_space}}}`, 'labels_disk_space',
+                diskSpaceGraph = createGraph("plot_disk_space", `{{{ csv.disk_space }}}`, 'labels_disk_space',
                     {
                         labelsKMG2: true,
                         color: '#38BDF8',
                         valueRange: [null, null],
                     }),
-                netGraph = createGraph("plot_net", `{{{csv_net}}}`, 'labels_net',
+                netGraph = createGraph("plot_net", `{{{ csv.net }}}`, 'labels_net',
                     {
                         labelsKMG2: true,
                         series: {
@@ -424,16 +462,16 @@
                             "Outbound network traffic": {strokePattern: [7, 3], color: '#38BDF8'},
                         },
                     });
-            {{#server_info.gpu_names}}
-            var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{csv_gpu_usage}}}`, 'labels_gpu_usage'),
-                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{csv_gpu_utilized}}}`, 'labels_gpu_utilized'),
-                gpuVramGraph = createGraph("plot_gpu_vram", `{{{csv_vram}}}`, 'labels_gpu_vram', { labelsKMG2: true });
-            {{/server_info.gpu_names}}
+            {{ #if server_info.gpu_names }}
+            var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{ csv.gpu_usage }}}`, 'labels_gpu_usage'),
+                gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{ csv.gpu_utilized }}}`, 'labels_gpu_utilized'),
+                gpuVramGraph = createGraph("plot_gpu_vram", `{{{ csv.gpu_vram }}}`, 'labels_gpu_vram', { labelsKMG2: true });
+            {{ /if }}
             var sync = Dygraph.synchronize([
                 cpuGraph, memGraph, diskGraph, netGraph,
-                {{#server_info.gpu_names}}
+                {{ #if server_info.gpu_names }}
                 gpuUsageGraph, gpuUtilizedGraph, gpuVramGraph,
-                {{/server_info.gpu_names}}
+                {{ /if }}
             ], {zoom: true, selection: true, range: false});
         });
     </script>

@@ -6,11 +6,12 @@ from resource_tracker import ResourceTracker
 tracker = ResourceTracker()
 
 # there is no collected data so far
-tracker.pid_tracker
+tracker.process_metrics
 
 # retry after a bit and see not much usage yet
-sleep(1)
-tracker.pid_tracker
+while tracker.n_samples == 0:
+    sleep(0.1)
+tracker.process_metrics
 
 # reserve some memory and run a compute-heavy task
 big_array = bytearray(500 * 1024 * 1024)  # 500 MB
@@ -18,19 +19,32 @@ total = 0
 for i in range(int(1e7)):
     total += i**3
 # memory and CPU usage should be increased at the process level
-tracker.pid_tracker.tail(1)
+tracker.process_metrics.tail(1)
 # check on the system-wide usage as well
-tracker.system_tracker
+tracker.system_metrics
 
 # clean up
 del big_array
 tracker.stop()
 
 # review collected data again
-tracker.pid_tracker
-tracker.system_tracker
+tracker.process_metrics
+tracker.system_metrics
+tracker.get_combined_metrics()
 
 # average CPU usage
-sum(tracker.pid_tracker["utime"]) / len(tracker.pid_tracker["utime"])
+sum(tracker.process_metrics["utime"]) / len(tracker.process_metrics["utime"])
 # peak memory usage in MiB
-max(tracker.pid_tracker["memory"]) / 1024
+max(tracker.process_metrics["memory"]) / 1024
+# or more conveniently
+tracker.stats()
+
+# recommend resources
+tracker.recommend_resources()
+tracker.recommend_server()
+
+# generate HTML report
+report = tracker.report()
+# save to file or open in browser
+report.save("report.html")
+report.browse()

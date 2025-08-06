@@ -28,8 +28,9 @@ jobs:
           use-public-rspm: true
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, local::./R, metaflow=?ignore
+          extra-packages: any::rcmdcheck, local::.
           needs: lint
+          working-directory: R
       - run: lintr::lint_package("R")
         shell: Rscript {0}
         env:

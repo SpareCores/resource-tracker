@@ -15,4 +15,4 @@ RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)
 License: MPL-2.0
 Encoding: UTF-8
-Imports: reticulate
+Imports: reticulate, R6

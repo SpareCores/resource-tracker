@@ -24,19 +24,19 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     py_obj = NULL
   ),
   active = list(
-    #' @field pid The process ID of the tracked process.
+    #' @field pid (integer) The process ID of the tracked process.
     pid = function() {
       py_to_r(private$py_obj$pid)
     },
-    #' @field n_samples The number of samples taken.
+    #' @field n_samples (integer) The number of samples taken.
     n_samples = function() {
       py_to_r(private$py_obj$n_samples)
     },
-    #' @field system_metrics The system metrics of the tracked process.
+    #' @field system_metrics (data.frame) The system metrics of the tracked process.
     system_metrics = function() {
       ls2df(py_to_r(private$py_obj$system_metrics$to_dict()))
     },
-    #' @field process_metrics The process metrics of the tracked process.
+    #' @field process_metrics (data.frame) The process metrics of the tracked process.
     process_metrics = function() {
       ls2df(py_to_r(private$py_obj$process_metrics$to_dict()))
     }

@@ -10,13 +10,13 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
-\item{\code{pid}}{The process ID of the tracked process.}
+\item{\code{pid}}{(integer) The process ID of the tracked process.}
 
-\item{\code{n_samples}}{The number of samples taken.}
+\item{\code{n_samples}}{(integer) The number of samples taken.}
 
-\item{\code{system_metrics}}{The system metrics of the tracked process.}
+\item{\code{system_metrics}}{(data.frame) The system metrics of the tracked process.}
 
-\item{\code{process_metrics}}{The process metrics of the tracked process.}
+\item{\code{process_metrics}}{(data.frame) The process metrics of the tracked process.}
 }
 \if{html}{\out{</div>}}
 }
@@ -24,6 +24,9 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-ResourceTracker-new}{\code{ResourceTracker$new()}}
+\item \href{#method-ResourceTracker-start}{\code{ResourceTracker$start()}}
+\item \href{#method-ResourceTracker-stop}{\code{ResourceTracker$stop()}}
+\item \href{#method-ResourceTracker-wait_for_samples}{\code{ResourceTracker$wait_for_samples()}}
 \item \href{#method-ResourceTracker-clone}{\code{ResourceTracker$clone()}}
 }
 }
@@ -66,6 +69,46 @@ Initialize the ResourceTracker object in the background.
 \item{\code{discover_server}}{Whether to discover the server specs in the background at startup. Defaults to True.}
 
 \item{\code{discover_cloud}}{Whether to discover the cloud environment in the background at startup. Defaults to True.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The ResourceTracker object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-start"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-start}{}}}
+\subsection{Method \code{start()}}{
+Start tracking resource usage.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$start()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-stop"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-stop}{}}}
+\subsection{Method \code{stop()}}{
+Stop tracking resource usage.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$stop()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-wait_for_samples"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-wait_for_samples}{}}}
+\subsection{Method \code{wait_for_samples()}}{
+Wait for a certain number of samples to be collected.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$wait_for_samples(n = 1)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{n}}{The number of samples to wait for. Defaults to 1.}
 }
 \if{html}{\out{</div>}}
 }

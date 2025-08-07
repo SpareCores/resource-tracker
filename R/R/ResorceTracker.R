@@ -1,3 +1,16 @@
+#' Convert a list of lists to a data.frame
+#' @param l A list of lists.
+#' @return A data.frame.
+#' @noRd
+ls2df <- function(l) {
+  # NOTE data.table::rbindlist would be much faster
+  df <- do.call(rbind, lapply(l, list2DF))
+  if ("timestamp" %in% names(df)) {
+    df$timestamp <- as.POSIXct(df$timestamp, origin = "1970-01-01")
+  }
+  df
+}
+
 #' Resource Tracker Object
 #'
 #' @description
@@ -15,17 +28,17 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     pid = function() {
       py_to_r(private$py_obj$pid)
     },
+    #' @field n_samples The number of samples taken.
+    n_samples = function() {
+      py_to_r(private$py_obj$n_samples)
+    },
     #' @field system_metrics The system metrics of the tracked process.
     system_metrics = function() {
-      metrics <- py_to_r(private$py_obj$system_metrics$to_dict())
-      # NOTE data.table::rbindlist would be much faster
-      metrics <- do.call(rbind, lapply(metrics, list2DF))
-      metrics$timestamp <- as.POSIXct(metrics$timestamp, origin = "1970-01-01")
-      metrics
+      ls2df(py_to_r(private$py_obj$system_metrics$to_dict()))
     },
-    #' @field process_metrics The process metrics of the tracked process.
+    #' @field process_metrics_df The process metrics of the tracked process.
     process_metrics = function() {
-      private$py_obj$process_metrics
+      ls2df(py_to_r(private$py_obj$process_metrics$to_dict()))
     }
   ),
   public = list(

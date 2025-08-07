@@ -1,3 +1,9 @@
+#' Python builtins
+#' @importFrom reticulate import_builtins
+#' @keywords internal
+#' @noRd
+builtins <- import_builtins()
+
 #' Convert a list of lists to a data.frame
 #' @param l A list of lists.
 #' @return A data.frame.
@@ -75,7 +81,8 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
       track_processes = TRUE,
       track_system = TRUE,
       discover_server = TRUE,
-      discover_cloud = TRUE) {
+      discover_cloud = TRUE
+    ) {
       private$py_obj <- resource_tracker$ResourceTracker(
         pid, children, interval, method, autostart,
         track_processes, track_system, discover_server, discover_cloud
@@ -96,6 +103,29 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @param n The number of samples to wait for. Defaults to 1.
     wait_for_samples = function(n = 1) {
       private$py_obj$wait_for_samples(n)
+    },
+    #' @description
+    #' Get the combined metrics of the tracked process.
+    #' @param bytes Whether to return the metrics in bytes. Defaults to False.
+    #' @param human_names Whether to return the metrics in human readable names. Defaults to False.
+    #' @param system_prefix The prefix to add to the system metrics. Defaults to NULL.
+    #' @param process_prefix The prefix to add to the process metrics. Defaults to NULL.
+    #' @return A data.frame of the combined metrics.
+    get_combined_metrics = function(
+      bytes = FALSE,
+      human_names = FALSE,
+      system_prefix = NULL,
+      process_prefix = NULL
+    ) {
+      ls2df(py_to_r(private$py_obj$get_combined_metrics(bytes, human_names, system_prefix, process_prefix))$to_dict())
+    },
+    #' @description
+    #' Get the stats of the tracked process.
+    #' @param specs The specs to get the stats for. Defaults to NULL.
+    #' @return A data.frame of the stats.
+    stats = function() {
+      # TODO pass spec definitions
+      py_to_r(builtins$dict(private$py_obj$stats()))
     }
   )
 )

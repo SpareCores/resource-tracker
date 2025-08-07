@@ -33,6 +33,8 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \item \href{#method-ResourceTracker-start}{\code{ResourceTracker$start()}}
 \item \href{#method-ResourceTracker-stop}{\code{ResourceTracker$stop()}}
 \item \href{#method-ResourceTracker-wait_for_samples}{\code{ResourceTracker$wait_for_samples()}}
+\item \href{#method-ResourceTracker-get_combined_metrics}{\code{ResourceTracker$get_combined_metrics()}}
+\item \href{#method-ResourceTracker-stats}{\code{ResourceTracker$stats()}}
 \item \href{#method-ResourceTracker-clone}{\code{ResourceTracker$clone()}}
 }
 }
@@ -117,6 +119,57 @@ Wait for a certain number of samples to be collected.
 \item{\code{n}}{The number of samples to wait for. Defaults to 1.}
 }
 \if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-get_combined_metrics"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-get_combined_metrics}{}}}
+\subsection{Method \code{get_combined_metrics()}}{
+Get the combined metrics of the tracked process.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$get_combined_metrics(
+  bytes = FALSE,
+  human_names = FALSE,
+  system_prefix = NULL,
+  process_prefix = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{bytes}}{Whether to return the metrics in bytes. Defaults to False.}
+
+\item{\code{human_names}}{Whether to return the metrics in human readable names. Defaults to False.}
+
+\item{\code{system_prefix}}{The prefix to add to the system metrics. Defaults to NULL.}
+
+\item{\code{process_prefix}}{The prefix to add to the process metrics. Defaults to NULL.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A data.frame of the combined metrics.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-stats"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-stats}{}}}
+\subsection{Method \code{stats()}}{
+Get the stats of the tracked process.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$stats()}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{specs}}{The specs to get the stats for. Defaults to NULL.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A data.frame of the stats.
 }
 }
 \if{html}{\out{<hr>}}

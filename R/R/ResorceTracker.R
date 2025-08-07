@@ -54,7 +54,10 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     cloud_info = function() {
       py_to_r(private$py_obj$cloud_info)
     },
-    #' @field server_info (list) The server specs discovered, including the operating system, number of vCPUs, memory amount, GPUs and VRAM, and a guess if the server is dedicated to the tracked process(es) or shared with other processes.
+    #' @field server_info (list) The server specs discovered, including the
+    #'   operating system, number of vCPUs, memory amount, GPUs and VRAM, and a
+    #'   guess if the server is dedicated to the tracked process(es) or shared
+    #'   with other processes.
     server_info = function() {
       py_to_r(private$py_obj$server_info)
     }
@@ -126,6 +129,24 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     stats = function() {
       # TODO pass spec definitions
       py_to_r(builtins$dict(private$py_obj$stats()))
+    },
+    #' @description
+    #' Recommend hardware resources for the tracked process.
+    #' @return A list of the recommended resources.
+    recommend_resources = function() {
+      py_to_r(private$py_obj$recommend_resources())
+    },
+    #' @description
+    #' Recommend a cloud server for the tracked process.
+    #' @return A list including the recommended server specs, vendor, and the estimated cost.
+    recommend_server = function() {
+      py_to_r(private$py_obj$recommend_server())
+    },
+    #' @description
+    #' Generate an interactive HTML report of the resource usage and recommendations.
+    #' @return A Report object with the `save` (to file) and `browse` (to open in browser) methods. Convert to string with `as.character` if needed.
+    report = function() {
+      private$py_obj$report()
     }
   )
 )

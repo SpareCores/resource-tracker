@@ -22,7 +22,10 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 
 \item{\code{cloud_info}}{(list) The cloud environment discovered, including the cloud provider, instance type, and the datacenter region.}
 
-\item{\code{server_info}}{(list) The server specs discovered, including the operating system, number of vCPUs, memory amount, GPUs and VRAM, and a guess if the server is dedicated to the tracked process(es) or shared with other processes.}
+\item{\code{server_info}}{(list) The server specs discovered, including the
+operating system, number of vCPUs, memory amount, GPUs and VRAM, and a
+guess if the server is dedicated to the tracked process(es) or shared
+with other processes.}
 }
 \if{html}{\out{</div>}}
 }
@@ -35,6 +38,9 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \item \href{#method-ResourceTracker-wait_for_samples}{\code{ResourceTracker$wait_for_samples()}}
 \item \href{#method-ResourceTracker-get_combined_metrics}{\code{ResourceTracker$get_combined_metrics()}}
 \item \href{#method-ResourceTracker-stats}{\code{ResourceTracker$stats()}}
+\item \href{#method-ResourceTracker-recommend_resources}{\code{ResourceTracker$recommend_resources()}}
+\item \href{#method-ResourceTracker-recommend_server}{\code{ResourceTracker$recommend_server()}}
+\item \href{#method-ResourceTracker-report}{\code{ResourceTracker$report()}}
 \item \href{#method-ResourceTracker-clone}{\code{ResourceTracker$clone()}}
 }
 }
@@ -170,6 +176,45 @@ Get the stats of the tracked process.
 }
 \subsection{Returns}{
 A data.frame of the stats.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-recommend_resources"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-recommend_resources}{}}}
+\subsection{Method \code{recommend_resources()}}{
+Recommend hardware resources for the tracked process.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$recommend_resources()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A list of the recommended resources.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-recommend_server"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-recommend_server}{}}}
+\subsection{Method \code{recommend_server()}}{
+Recommend a cloud server for the tracked process.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$recommend_server()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A list including the recommended server specs, vendor, and the estimated cost.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ResourceTracker-report"></a>}}
+\if{latex}{\out{\hypertarget{method-ResourceTracker-report}{}}}
+\subsection{Method \code{report()}}{
+Generate an interactive HTML report of the resource usage and recommendations.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$report()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A Report object with the \code{save} (to file) and \code{browse} (to open in browser) methods. Convert to string with \code{as.character} if needed.
 }
 }
 \if{html}{\out{<hr>}}

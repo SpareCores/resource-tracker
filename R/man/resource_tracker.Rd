@@ -5,7 +5,7 @@
 \alias{resource_tracker}
 \title{Raw access to the resource_tracker Python module.}
 \format{
-An object of class \code{python.builtin.module} (inherits from \code{python.builtin.object}) of length 1.
+An object of class \code{python.builtin.module} (inherits from \code{python.builtin.object}) of length 0.
 }
 \usage{
 resource_tracker

@@ -12,6 +12,8 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \describe{
 \item{\code{pid}}{The process ID of the tracked process.}
 
+\item{\code{n_samples}}{The number of samples taken.}
+
 \item{\code{system_metrics}}{The system metrics of the tracked process.}
 
 \item{\code{process_metrics}}{The process metrics of the tracked process.}
@@ -29,15 +31,41 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \if{html}{\out{<a id="method-ResourceTracker-new"></a>}}
 \if{latex}{\out{\hypertarget{method-ResourceTracker-new}{}}}
 \subsection{Method \code{new()}}{
-Initialize the ResourceTracker object.
+Initialize the ResourceTracker object in the background.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$new(pid = Sys.getpid())}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$new(
+  pid = Sys.getpid(),
+  children = TRUE,
+  interval = 1,
+  method = NULL,
+  autostart = TRUE,
+  track_processes = TRUE,
+  track_system = TRUE,
+  discover_server = TRUE,
+  discover_cloud = TRUE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{pid}}{The process ID to track. Defaults to current process ID.}
+
+\item{\code{children}}{Whether to track child processes. Defaults to True.}
+
+\item{\code{interval}}{Sampling interval in seconds. Defaults to 1.}
+
+\item{\code{method}}{Multiprocessing method. Defaults to None, which tries to fork on Linux and macOS, and spawn on Windows.}
+
+\item{\code{autostart}}{Whether to start tracking immediately. Defaults to True.}
+
+\item{\code{track_processes}}{Whether to track resource usage at the process level. Defaults to True.}
+
+\item{\code{track_system}}{Whether to track system-wide resource usage. Defaults to True.}
+
+\item{\code{discover_server}}{Whether to discover the server specs in the background at startup. Defaults to True.}
+
+\item{\code{discover_cloud}}{Whether to discover the cloud environment in the background at startup. Defaults to True.}
 }
 \if{html}{\out{</div>}}
 }

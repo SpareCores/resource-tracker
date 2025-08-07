@@ -36,17 +36,37 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     system_metrics = function() {
       ls2df(py_to_r(private$py_obj$system_metrics$to_dict()))
     },
-    #' @field process_metrics_df The process metrics of the tracked process.
+    #' @field process_metrics The process metrics of the tracked process.
     process_metrics = function() {
       ls2df(py_to_r(private$py_obj$process_metrics$to_dict()))
     }
   ),
   public = list(
     #' @description
-    #' Initialize the ResourceTracker object.
+    #' Initialize the ResourceTracker object in the background.
     #' @param pid The process ID to track. Defaults to current process ID.
-    initialize = function(pid = Sys.getpid()) {
-      private$py_obj <- resource_tracker$ResourceTracker(pid)
+    #' @param children Whether to track child processes. Defaults to True.
+    #' @param interval Sampling interval in seconds. Defaults to 1.
+    #' @param method Multiprocessing method. Defaults to None, which tries to fork on Linux and macOS, and spawn on Windows.
+    #' @param autostart Whether to start tracking immediately. Defaults to True.
+    #' @param track_processes Whether to track resource usage at the process level. Defaults to True.
+    #' @param track_system Whether to track system-wide resource usage. Defaults to True.
+    #' @param discover_server Whether to discover the server specs in the background at startup. Defaults to True.
+    #' @param discover_cloud Whether to discover the cloud environment in the background at startup. Defaults to True.
+    initialize = function(
+      pid = Sys.getpid(),
+      children = TRUE,
+      interval = 1,
+      method = NULL,
+      autostart = TRUE,
+      track_processes = TRUE,
+      track_system = TRUE,
+      discover_server = TRUE,
+      discover_cloud = TRUE) {
+      private$py_obj <- resource_tracker$ResourceTracker(
+        pid, children, interval, method, autostart,
+        track_processes, track_system, discover_server, discover_cloud
+      )
     }
   )
 )

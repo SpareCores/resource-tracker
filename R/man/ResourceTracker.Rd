@@ -7,6 +7,17 @@
 And R-friendly wrapper around the Python \code{resource-tracker} package's
 \code{ResourceTracker} class.
 }
+\examples{
+tracker <- ResourceTracker$new()
+tracker$wait_for_samples(1)
+tracker$stats()
+tracker$recommend_resources()
+tracker$recommend_server()
+
+\dontrun{
+tracker$report()
+}
+}
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{

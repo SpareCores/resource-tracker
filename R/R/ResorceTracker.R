@@ -24,6 +24,10 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     py_obj = NULL
   ),
   active = list(
+    #' @field running (logical) Whether the resource tracker is running.
+    running = function() {
+      py_to_r(private$py_obj$running)
+    },
     #' @field pid (integer) The process ID of the tracked process.
     pid = function() {
       py_to_r(private$py_obj$pid)
@@ -39,6 +43,14 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @field process_metrics (data.frame) The process metrics of the tracked process.
     process_metrics = function() {
       ls2df(py_to_r(private$py_obj$process_metrics$to_dict()))
+    },
+    #' @field cloud_info (list) The cloud environment discovered, including the cloud provider, instance type, and the datacenter region.
+    cloud_info = function() {
+      py_to_r(private$py_obj$cloud_info)
+    },
+    #' @field server_info (list) The server specs discovered, including the operating system, number of vCPUs, memory amount, GPUs and VRAM, and a guess if the server is dedicated to the tracked process(es) or shared with other processes.
+    server_info = function() {
+      py_to_r(private$py_obj$server_info)
     }
   ),
   public = list(

@@ -10,6 +10,8 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
+\item{\code{running}}{(logical) Whether the resource tracker is running.}
+
 \item{\code{pid}}{(integer) The process ID of the tracked process.}
 
 \item{\code{n_samples}}{(integer) The number of samples taken.}
@@ -17,6 +19,10 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \item{\code{system_metrics}}{(data.frame) The system metrics of the tracked process.}
 
 \item{\code{process_metrics}}{(data.frame) The process metrics of the tracked process.}
+
+\item{\code{cloud_info}}{(list) The cloud environment discovered, including the cloud provider, instance type, and the datacenter region.}
+
+\item{\code{server_info}}{(list) The server specs discovered, including the operating system, number of vCPUs, memory amount, GPUs and VRAM, and a guess if the server is dedicated to the tracked process(es) or shared with other processes.}
 }
 \if{html}{\out{</div>}}
 }

@@ -18,7 +18,9 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @field system_metrics The system metrics of the tracked process.
     system_metrics = function() {
       metrics <- py_to_r(private$py_obj$system_metrics$to_dict())
-      metrics <- as.data.frame(do.call(rbind, metrics))
+      # NOTE data.table::rbindlist would be much faster
+      metrics <- do.call(rbind, lapply(metrics, list2DF))
+      metrics$timestamp <- as.POSIXct(metrics$timestamp, origin = "1970-01-01")
       metrics
     },
     #' @field process_metrics The process metrics of the tracked process.

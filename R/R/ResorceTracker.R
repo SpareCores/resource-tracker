@@ -53,6 +53,7 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @param track_system Whether to track system-wide resource usage. Defaults to True.
     #' @param discover_server Whether to discover the server specs in the background at startup. Defaults to True.
     #' @param discover_cloud Whether to discover the cloud environment in the background at startup. Defaults to True.
+    #' @return The ResourceTracker object.
     initialize = function(
       pid = Sys.getpid(),
       children = TRUE,
@@ -67,6 +68,22 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
         pid, children, interval, method, autostart,
         track_processes, track_system, discover_server, discover_cloud
       )
+    },
+    #' @description
+    #' Start tracking resource usage.
+    start = function() {
+      private$py_obj$start()
+    },
+    #' @description
+    #' Stop tracking resource usage.
+    stop = function() {
+      private$py_obj$stop()
+    },
+    #' @description
+    #' Wait for a certain number of samples to be collected.
+    #' @param n The number of samples to wait for. Defaults to 1.
+    wait_for_samples = function(n = 1) {
+      private$py_obj$wait_for_samples(n)
     }
   )
 )

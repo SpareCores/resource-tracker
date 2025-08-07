@@ -48,4 +48,5 @@ class TrackedResourcesCard(MetaflowCard):
         return tracker.report(
             historical_stats=data["historical_stats"],
             status_failed=data["step_failed"],
+            integration="Metaflow",
         )

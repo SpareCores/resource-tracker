@@ -1029,9 +1029,10 @@ class ResourceTracker:
 
     def report(
         self,
-        integration: Literal["standalone", "metaflow"] = "standalone",
+        integration: Literal["standalone", "Metaflow", "R"] = "standalone",
         historical_stats: List[dict] = [],
         status_failed: bool = False,
+        integration_version: Optional[str] = None,
     ) -> Report:
         self.wait_for_samples(n=1, timeout=self.interval * 5)
         duration = (self.stop_time or time()) - self.start_time + self.interval
@@ -1062,8 +1063,10 @@ class ResourceTracker:
                 "implementation": "psutil" if is_psutil_available() else "procfs",
                 "integration": integration,
                 "integration_is": {
-                    "metaflow": integration == "metaflow",
                     "standalone": integration == "standalone",
+                    "not_standalone": integration != "standalone",
+                    "metaflow": integration == "Metaflow",
+                    "r": integration == "R",
                 },
                 "duration": duration,
                 "start_time": self.start_time,

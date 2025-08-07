@@ -156,7 +156,7 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' Generate an interactive HTML report of the resource usage and recommendations.
     #' @return A Report object with the `save` (to file) and `browse` (to open in browser) methods. Convert to string with `as.character` if needed.
     report = function() {
-      private$py_obj$report()
+      private$py_obj$report(integration = "R")
     }
   )
 )

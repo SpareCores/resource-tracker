@@ -11,9 +11,9 @@ authors = [
     {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}
 ]
 keywords = ["resource-monitor", "metaflow"]
+license = "MPL-2.0"
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
   "Operating System :: POSIX :: Linux",
   "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
@@ -23,6 +23,7 @@ classifiers = [
 repository = "https://github.com/SpareCores/resource-tracker"
 issues = "https://github.com/SpareCores/resource-tracker/issues"
 documentation = "https://sparecores.github.io/resource-tracker/"
+changelog = "https://github.com/SpareCores/resource-tracker/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest", "metaflow", "psutil"]

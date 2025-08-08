@@ -1,6 +1,28 @@
-## dev
+## v0.4.2 (August 8, 2025)
 
-## v0.4.0 (August 1, 2025)
+- Add `cleanup` method to `ResourceTracker` to cleanup temp files and background processes.
+
+## v0.4.1 (August 8, 2025)
+
+Introduce native R support. Example usage:
+
+```r
+library(resource_tracker)
+
+tracker <- ResourceTracker$new()
+tracker$wait_for_samples(1)
+tracker$stats()
+tracker$recommend_resources()
+tracker$recommend_server()
+tracker$report()$browse()
+```
+
+Find more details in the [R integration docs](https://sparecores.github.io/resource-tracker/integrations/r/).
+
+Additional changes:
+- Split documentation and extend into multiple pages with more details on the integrations.
+
+## v0.4.0 (August 6, 2025)
 
 Refactoring and cleanup release with the main focus on extracting the reporting
 features from the Metaflow extension and support it in standalone use as well.

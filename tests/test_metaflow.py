@@ -55,6 +55,7 @@ def test_flow_execution(artifacts_dir):
     html = card.get()
     assert "Process CPU usage" in html
     assert "System CPU usage" in html
+    assert "from <code>Metaflow</code>" in html
     assert len(html) > 100_000
 
     # store html for inspection

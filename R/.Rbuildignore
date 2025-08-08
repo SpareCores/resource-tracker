@@ -1,0 +1,5 @@
+_pkgdown.yml
+.editorconfig
+.gitignore
+.lintr
+^\.github$

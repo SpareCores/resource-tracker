@@ -20,7 +20,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
 from math import ceil
-from multiprocessing import SimpleQueue, get_context
+from multiprocessing import get_context
 from os import getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
@@ -530,7 +530,7 @@ class ResourceTracker:
             self.mpc = get_context(method)
 
         # error details from subprocesses
-        self.error_queue = SimpleQueue()
+        self.error_queue = self.mpc.SimpleQueue()
 
         # create temporary CSV file(s) for the tracker(s), and record only the file path(s)
         # to be passed later to subprocess(es) avoiding pickling the file object(s)
@@ -626,6 +626,31 @@ class ResourceTracker:
                 for tracker_name in self.trackers
             ],
         )
+
+    def cleanup(self):
+        """Cleanup temp files and background processes.
+
+        Note that there is no need to call this method manually, as it is
+        automatically handled by the garbage collector, but in some cases it
+        might be useful to call it manually to avoid waiting for the garbage
+        collector to run.
+        """
+        with suppress(Exception):
+            self.stop()
+        with suppress(Exception):
+            cleanup_files(
+                [
+                    getattr(self, f"{tracker_name}_filepath")
+                    for tracker_name in self.trackers
+                ]
+            )
+        with suppress(Exception):
+            cleanup_processes(
+                [
+                    getattr(self, f"{tracker_name}_process")
+                    for tracker_name in self.trackers
+                ]
+            )
 
     def stop(self):
         """Stop the previously started resource trackers' background processes."""
@@ -1029,9 +1054,10 @@ class ResourceTracker:
 
     def report(
         self,
-        integration: Literal["standalone", "metaflow"] = "standalone",
+        integration: Literal["standalone", "Metaflow", "R"] = "standalone",
         historical_stats: List[dict] = [],
         status_failed: bool = False,
+        integration_version: Optional[str] = None,
     ) -> Report:
         self.wait_for_samples(n=1, timeout=self.interval * 5)
         duration = (self.stop_time or time()) - self.start_time + self.interval
@@ -1062,8 +1088,10 @@ class ResourceTracker:
                 "implementation": "psutil" if is_psutil_available() else "procfs",
                 "integration": integration,
                 "integration_is": {
-                    "metaflow": integration == "metaflow",
                     "standalone": integration == "standalone",
+                    "not_standalone": integration != "standalone",
+                    "metaflow": integration == "Metaflow",
+                    "r": integration == "R",
                 },
                 "duration": duration,
                 "start_time": self.start_time,

@@ -52,7 +52,6 @@ with other processes.}
 \item \href{#method-ResourceTracker-recommend_resources}{\code{ResourceTracker$recommend_resources()}}
 \item \href{#method-ResourceTracker-recommend_server}{\code{ResourceTracker$recommend_server()}}
 \item \href{#method-ResourceTracker-report}{\code{ResourceTracker$report()}}
-\item \href{#method-ResourceTracker-clone}{\code{ResourceTracker$clone()}}
 }
 }
 \if{html}{\out{<hr>}}
@@ -226,23 +225,6 @@ Generate an interactive HTML report of the resource usage and recommendations.
 
 \subsection{Returns}{
 A Report object with the \code{save} (to file) and \code{browse} (to open in browser) methods. Convert to string with \code{as.character} if needed.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ResourceTracker-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-ResourceTracker-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ResourceTracker$clone(deep = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
 }
 }
 }

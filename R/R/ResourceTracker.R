@@ -29,7 +29,9 @@ ls2df <- function(l) {
 #' \dontrun{
 #' tracker$report()
 #' }
-ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
+ResourceTracker <- R6Class( # nolint: object_name_linter
+  "ResourceTracker",
+  cloneable = FALSE,
   private = list(
     py_obj = NULL
   ),

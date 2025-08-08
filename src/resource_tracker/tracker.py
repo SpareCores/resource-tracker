@@ -20,7 +20,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
 from math import ceil
-from multiprocessing import SimpleQueue, get_context
+from multiprocessing import get_context
 from os import getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
@@ -530,7 +530,7 @@ class ResourceTracker:
             self.mpc = get_context(method)
 
         # error details from subprocesses
-        self.error_queue = SimpleQueue()
+        self.error_queue = self.mpc.SimpleQueue()
 
         # create temporary CSV file(s) for the tracker(s), and record only the file path(s)
         # to be passed later to subprocess(es) avoiding pickling the file object(s)

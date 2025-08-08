@@ -74,7 +74,6 @@ ResourceTracker <- R6Class( # nolint: object_name_linter
     #' @param pid The process ID to track. Defaults to current process ID.
     #' @param children Whether to track child processes. Defaults to True.
     #' @param interval Sampling interval in seconds. Defaults to 1.
-    #' @param method Multiprocessing method. Defaults to None, which tries to fork on Linux and macOS, and spawn on Windows.
     #' @param autostart Whether to start tracking immediately. Defaults to True.
     #' @param track_processes Whether to track resource usage at the process level. Defaults to True.
     #' @param track_system Whether to track system-wide resource usage. Defaults to True.
@@ -85,7 +84,6 @@ ResourceTracker <- R6Class( # nolint: object_name_linter
       pid = Sys.getpid(),
       children = TRUE,
       interval = 1,
-      method = NULL,
       autostart = TRUE,
       track_processes = TRUE,
       track_system = TRUE,
@@ -93,8 +91,15 @@ ResourceTracker <- R6Class( # nolint: object_name_linter
       discover_cloud = TRUE
     ) {
       private$py_obj <- resource_tracker$ResourceTracker(
-        pid, children, interval, method, autostart,
-        track_processes, track_system, discover_server, discover_cloud
+        pid = pid,
+        children = children,
+        interval = interval,
+        method = "spawn",
+        autostart = autostart,
+        track_processes = track_processes,
+        track_system = track_system,
+        discover_server = discover_server,
+        discover_cloud = discover_cloud
       )
     },
     #' @description

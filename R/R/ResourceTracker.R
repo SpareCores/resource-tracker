@@ -1,9 +1,3 @@
-#' Python builtins
-#' @importFrom reticulate import_builtins
-#' @keywords internal
-#' @noRd
-builtins <- import_builtins(convert = FALSE)
-
 #' Convert a list of lists to a data.frame
 #' @param l A list of lists.
 #' @return A data.frame.
@@ -138,7 +132,7 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @return A data.frame of the stats.
     stats = function() {
       # TODO pass spec definitions
-      py_to_r(builtins$dict(private$py_obj$stats()))
+      import_builtins()$dict(private$py_obj$stats())
     },
     #' @description
     #' Recommend hardware resources for the tracked process.

@@ -19,14 +19,12 @@ ls2df <- function(l) {
 #' @export
 #' @importFrom R6 R6Class
 #' @importFrom reticulate py_to_r import_builtins
-#' @examples
+#' @examples \dontrun{
 #' tracker <- ResourceTracker$new()
 #' tracker$wait_for_samples(1)
 #' tracker$stats()
 #' tracker$recommend_resources()
 #' tracker$recommend_server()
-#'
-#' \dontrun{
 #' tracker$report()
 #' }
 ResourceTracker <- R6Class( # nolint: object_name_linter

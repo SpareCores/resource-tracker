@@ -8,13 +8,12 @@ And R-friendly wrapper around the Python \code{resource-tracker} package's
 \code{ResourceTracker} class.
 }
 \examples{
+\dontrun{
 tracker <- ResourceTracker$new()
 tracker$wait_for_samples(1)
 tracker$stats()
 tracker$recommend_resources()
 tracker$recommend_server()
-
-\dontrun{
 tracker$report()
 }
 }

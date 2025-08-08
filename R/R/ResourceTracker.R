@@ -33,7 +33,10 @@ ResourceTracker <- R6Class( # nolint: object_name_linter
   "ResourceTracker",
   cloneable = FALSE,
   private = list(
-    py_obj = NULL
+    py_obj = NULL,
+    finalize = function() {
+      try(private$py_obj$cleanup(), silent = TRUE)
+    }
   ),
   active = list(
     #' @field running (logical) Whether the resource tracker is running.

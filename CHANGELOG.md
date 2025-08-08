@@ -1,3 +1,7 @@
+## v0.4.2 (August 8, 2025)
+
+- Add `cleanup` method to `ResourceTracker` to cleanup temp files and background processes.
+
 ## v0.4.1 (August 8, 2025)
 
 Introduce native R support. Example usage:

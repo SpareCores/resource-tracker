@@ -627,6 +627,31 @@ class ResourceTracker:
             ],
         )
 
+    def cleanup(self):
+        """Cleanup temp files and background processes.
+
+        Note that there is no need to call this method manually, as it is
+        automatically handled by the garbage collector, but in some cases it
+        might be useful to call it manually to avoid waiting for the garbage
+        collector to run.
+        """
+        with suppress(Exception):
+            self.stop()
+        with suppress(Exception):
+            cleanup_files(
+                [
+                    getattr(self, f"{tracker_name}_filepath")
+                    for tracker_name in self.trackers
+                ]
+            )
+        with suppress(Exception):
+            cleanup_processes(
+                [
+                    getattr(self, f"{tracker_name}_process")
+                    for tracker_name in self.trackers
+                ]
+            )
+
     def stop(self):
         """Stop the previously started resource trackers' background processes."""
         self.stop_time = time()

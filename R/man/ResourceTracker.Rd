@@ -64,7 +64,6 @@ Initialize the ResourceTracker object in the background.
   pid = Sys.getpid(),
   children = TRUE,
   interval = 1,
-  method = NULL,
   autostart = TRUE,
   track_processes = TRUE,
   track_system = TRUE,
@@ -81,8 +80,6 @@ Initialize the ResourceTracker object in the background.
 \item{\code{children}}{Whether to track child processes. Defaults to True.}
 
 \item{\code{interval}}{Sampling interval in seconds. Defaults to 1.}
-
-\item{\code{method}}{Multiprocessing method. Defaults to None, which tries to fork on Linux and macOS, and spawn on Windows.}
 
 \item{\code{autostart}}{Whether to start tracking immediately. Defaults to True.}
 

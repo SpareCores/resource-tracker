@@ -2,7 +2,7 @@
 #' @importFrom reticulate import_builtins
 #' @keywords internal
 #' @noRd
-builtins <- import_builtins()
+builtins <- import_builtins(convert = FALSE)
 
 #' Convert a list of lists to a data.frame
 #' @param l A list of lists.
@@ -104,18 +104,18 @@ ResourceTracker <- R6Class("ResourceTracker", # nolint: object_name_linter
     #' @description
     #' Start tracking resource usage.
     start = function() {
-      private$py_obj$start()
+      invisible(private$py_obj$start())
     },
     #' @description
     #' Stop tracking resource usage.
     stop = function() {
-      private$py_obj$stop()
+      invisible(private$py_obj$stop())
     },
     #' @description
     #' Wait for a certain number of samples to be collected.
     #' @param n The number of samples to wait for. Defaults to 1.
     wait_for_samples = function(n = 1) {
-      private$py_obj$wait_for_samples(n)
+      invisible(private$py_obj$wait_for_samples(n))
     },
     #' @description
     #' Get the combined metrics of the tracked process.

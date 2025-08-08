@@ -3,4 +3,5 @@
 export(ResourceTracker)
 export(resource_tracker)
 importFrom(R6,R6Class)
+importFrom(reticulate,import_builtins)
 importFrom(reticulate,py_to_r)

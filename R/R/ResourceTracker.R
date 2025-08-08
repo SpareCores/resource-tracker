@@ -18,7 +18,7 @@ ls2df <- function(l) {
 #' `ResourceTracker` class.
 #' @export
 #' @importFrom R6 R6Class
-#' @importFrom reticulate py_to_r
+#' @importFrom reticulate py_to_r import_builtins
 #' @examples
 #' tracker <- ResourceTracker$new()
 #' tracker$wait_for_samples(1)

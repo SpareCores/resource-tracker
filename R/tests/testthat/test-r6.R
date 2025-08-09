@@ -15,7 +15,7 @@ test_that("ResourceTracker passing the process ID correctly", {
     expect_true(is.list(tracker$stats()))
     r <- as.character(tracker$report())
     expect_true(is.character(r))
-    expect_true(grepl("^<html>", r))s
+    expect_true(grepl("^<html>", r))
     expect_true(grepl("from <code>R</code>", r))
     expect_true(nchar(r) > 1000)
   }

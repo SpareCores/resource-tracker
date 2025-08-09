@@ -7,6 +7,8 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(resource.tracker)
 
-test_check("resource.tracker")
+if (reticulate::py_module_available("resource_tracker")) {
+  library(resource.tracker)
+  test_check("resource.tracker")
+}

@@ -32,7 +32,7 @@ Note that depending on your operating system, you might need to also install
 The `resource-tracker` Python package is designed to be used in a variety of
 ways, even outside of Python. Find more details about how to use it directly
 from Python, R, or via our framework integrations, such as Metaflow, in the
-[integrations](https://sparecores.github.io/resource-tracker/integrations/)
+[integrations](integrations/)
 section of the documentation.
 
 ## Operating System Support

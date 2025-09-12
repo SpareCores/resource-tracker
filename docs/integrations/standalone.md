@@ -1,6 +1,6 @@
 # Resource Tracker in Python
 
-After [installing](/#installation) the zero-dependency `resource-tracker` Python package, you can start using it right away by initializing a `ResourceTracker` object and later calling its methods to summarize the resource usage.
+After [installing](../../#installation) the zero-dependency `resource-tracker` Python package, you can start using it right away by initializing a `ResourceTracker` object and later calling its methods to summarize the resource usage.
 
 Quick example featuring the most common use cases:
 

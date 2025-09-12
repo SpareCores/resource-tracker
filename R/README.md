@@ -17,7 +17,7 @@ reticulate::py_install('resource-tracker')
 Note that on MacOS and Windows, you also need to install `psutil` that's used
 under the hood to collect metrics. On Linux, it's optional, and can rely on the
 `/proc` filesystem when using a modern kernel. For more details, see the
-[installation instructions for the Python package](/#installation).
+[installation instructions for the Python package](../../#installation).
 
 Once the Python dependencies are resolved, you can either install the R package
 from CRAN:

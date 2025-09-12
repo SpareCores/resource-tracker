@@ -27,7 +27,7 @@ def process_nvidia_smi_pmon(
 
     Args:
         nvidia_process: The subprocess object to monitor or None if not started.
-          Returned by `start_nvidia_smi_pmon`.
+            Returned by `start_nvidia_smi_pmon`.
         pids: A set of process IDs to monitor. If None, all processes are monitored.
 
     Returns:
@@ -85,7 +85,7 @@ def process_nvidia_smi(nvidia_process: Optional[Popen]) -> Dict[str, Union[int, 
 
     Args:
         nvidia_process: The subprocess object to monitor or None if not started.
-          Returned by `start_nvidia_smi`.
+            Returned by `start_nvidia_smi`.
 
     Returns:
         A dictionary of GPU stats:

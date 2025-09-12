@@ -1,3 +1,5 @@
+"""Helper class to browser and save HTML reports."""
+
 import tempfile
 import webbrowser
 from os import listdir, path
@@ -28,7 +30,7 @@ def _read_report_template_files():
 class Report(str):
     """A string subclass representing an HTML report with methods to view and save it."""
 
-    def browse(self):
+    def browse(self) -> "Report":
         """Open the report in the default web browser.
 
         Creates a temporary HTML file and opens it in the default web browser.
@@ -43,7 +45,7 @@ class Report(str):
         webbrowser.open("file://" + temp_path)
         return self
 
-    def save(self, filepath):
+    def save(self, filepath: str) -> "Report":
         """Save the report to a file.
 
         Args:

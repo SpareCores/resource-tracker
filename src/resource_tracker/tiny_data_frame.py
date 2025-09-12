@@ -19,19 +19,16 @@ logger = getLogger(__name__)
 
 
 class StatSpec(NamedTuple):
-    """Specification of a statistic to collect on a column.
-
-    Args:
-        column: The name of the column to apply the agg function to.
-        agg: The aggregation function to apply to the column.
-        agg_name: The name of the field to store the statistic in. Defaults to None, which means using the name of the agg function.
-        round: The number of decimal places to round the statistic to. Defaults to None, which means no rounding.
-    """
+    """Specification of a statistic to collect on a column."""
 
     column: str
+    """The name of the column to apply the agg function to."""
     agg: Callable
+    """The aggregation function to apply to the column."""
     agg_name: Optional[str] = None
+    """The name of the field to store the statistic in. Defaults to None, which means using the name of the agg function."""
     round: Optional[int] = None
+    """The number of decimal places to round the statistic to. Defaults to None, which means no rounding."""
 
 
 class TinyDataFrame:
@@ -372,7 +369,7 @@ class TinyDataFrame:
         """Collect statistics from the resource tracker.
 
         Args:
-            specs: A list of [resource_tracker.StatSpec][] objects specifying the statistics to collect.
+            specs: A list of [resource_tracker.tiny_data_frame.StatSpec][] objects specifying the statistics to collect.
 
         Returns:
             A dictionary containing the collected statistics.

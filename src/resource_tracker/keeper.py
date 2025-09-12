@@ -1,3 +1,5 @@
+"""Helpers to interact with the Spare Cores public Keeper API."""
+
 from json import loads
 from typing import Dict, List, Optional
 from urllib.parse import urlencode, urljoin
@@ -26,7 +28,9 @@ def keeper_request(
         return None
 
 
-def get_instance_price(vendor_id, region_id, instance_type) -> Optional[float]:
+def get_instance_price(
+    vendor_id: str, region_id: str, instance_type: str
+) -> Optional[float]:
     """Get the on-demand price for a specific instance type in a region.
 
     Args:

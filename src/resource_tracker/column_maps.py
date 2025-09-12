@@ -1,3 +1,6 @@
+"""Helper mappings."""
+
+"""Mapping of column names to human-readable names."""
 HUMAN_NAMES_MAPPING = {
     "timestamp": "Timestamp",
     # system-level metrics
@@ -29,6 +32,7 @@ HUMAN_NAMES_MAPPING = {
     "write_bytes": "disk write",
 }
 
+"""Mapping of how to convert column-specific values to bytes."""
 BYTE_MAPPING = {
     # KiB -> B
     "memory": 1024,
@@ -46,6 +50,7 @@ BYTE_MAPPING = {
     "disk_space_free_gb": 1024 * 1024 * 1024,
 }
 
+"""Ruleset to decide if a server is dedicated to the process(es) tracked or shared with other processes."""
 SERVER_ALLOCATION_CHECKS = [
     {
         "process_column": "cpu_usage",
@@ -73,6 +78,7 @@ SERVER_ALLOCATION_CHECKS = [
     },
 ]
 
+"""Mapping of columns used in various charts of the HTML report."""
 REPORT_CSV_MAPPING = {
     "cpu": ["Timestamp", "Process CPU usage", "System CPU usage"],
     "mem": ["Timestamp", "Process memory usage", "System used memory"],

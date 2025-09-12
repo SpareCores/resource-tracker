@@ -1,3 +1,5 @@
+"""Dummy workloads to burn CPU."""
+
 from multiprocessing import Pool, cpu_count
 from random import random
 from time import time

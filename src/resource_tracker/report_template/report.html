@@ -126,11 +126,11 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">CPU</div>
                         <div class="section-content-card-value">
-                            <span class="metric-highlight">{{{ stats.process_cpu_usage.mean }}}</span> avg
+                            <span class="metric-highlight">{{{ stats.process_cpu_usage.mean | round:2 }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.mean }}}{{ #else }}-{{/if}}</span> hist avg
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.mean | round:2 }}}{{ #else }}-{{/if}}</span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.max }}}{{ #else }}-{{/if}}</span> peak</div>
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.max | round:2 }}}{{ #else }}-{{/if}}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>

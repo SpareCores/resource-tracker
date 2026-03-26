@@ -15,7 +15,7 @@ from time import sleep, time
 from typing import Any, Dict, List, Optional
 
 from .s3_upload import put_bytes_with_sts
-from .sentinel_api import finish_run, refresh_credentials, register_run
+from .sentinel_api import RunStatus, finish_run, refresh_credentials, register_run
 
 logger = getLogger(__name__)
 
@@ -104,7 +104,6 @@ class StreamingManager:
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
 
-
     def start(self) -> None:
         """Register the run with the Sentinel API and start the upload thread."""
         resp = register_run(
@@ -123,16 +122,21 @@ class StreamingManager:
             self._upload_interval,
         )
 
-        self._thread = Thread(target=self._streaming_loop, daemon=True, name="streaming-upload")
+        self._thread = Thread(
+            target=self._streaming_loop, daemon=True, name="streaming-upload"
+        )
         self._thread.start()
 
-    def stop(self, exit_code: int = 0, run_status: str = "success") -> dict:
+    def stop(
+        self,
+        exit_code: int = 0,
+        run_status: RunStatus = RunStatus.finished,
+    ) -> dict:
         """Stop the upload thread, flush remaining data, and finish the run.
 
         Args:
             exit_code: Exit code of the monitored process.
-            run_status: Run outcome (``"success"``, ``"failure"``,
-                ``"interrupted"``).
+            run_status: Run outcome (e.g. ``"started"``, ``"finished"``, ``"failed"``, or ``"stale"``).
 
         Returns:
             The response dict from the Sentinel ``finish_run`` endpoint.
@@ -192,7 +196,6 @@ class StreamingManager:
         """S3 URIs of all successfully uploaded objects so far."""
         return list(self._uploaded_uris)
 
-
     def _set_credentials(self, creds: dict) -> None:
         """Store credentials and compute the expiry timestamp."""
         self._credentials = creds
@@ -241,7 +244,9 @@ class StreamingManager:
         """Background loop: upload batches and refresh credentials."""
         while not self._stop_event.is_set():
             # Sleep for the shorter of upload_interval or time-until-refresh-needed
-            time_until_refresh = max(0.0, self._seconds_until_expiry() - _CREDENTIAL_REFRESH_THRESHOLD)
+            time_until_refresh = max(
+                0.0, self._seconds_until_expiry() - _CREDENTIAL_REFRESH_THRESHOLD
+            )
             wait_secs = min(float(self._upload_interval), time_until_refresh)
             # Use the event's wait() so we can be woken early by stop()
             if self._stop_event.wait(timeout=max(0.1, wait_secs)):
@@ -305,15 +310,15 @@ class StreamingManager:
             self._seq -= 1
             logger.warning("Failed to upload %s: %s", s3_key, e)
 
-    def _read_all_csv(self) -> str:
-        """Read the full contents of the combined CSV file for inline submission.
+    def _read_all_csv(self) -> bytes:
+        """Read the full contents of the combined CSV file as gzipped bytes.
 
         Used for short runs where no S3 uploads have happened.
         """
         if self._csv_path is None:
-            return ""
+            return gzip_compress(b"")
         try:
-            with open(self._csv_path, "r", encoding="utf-8") as fh:
-                return fh.read()
+            with open(self._csv_path, "rb") as fh:
+                return gzip_compress(fh.read())
         except FileNotFoundError:
-            return ""
+            return gzip_compress(b"")

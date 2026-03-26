@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+from base64 import b64encode
+from enum import StrEnum
 from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
@@ -15,6 +17,18 @@ logger = getLogger(__name__)
 
 DEFAULT_SENTINEL_URL = "https://api.sentinel.sparecores.net"
 DEFAULT_TIMEOUT = 30  # seconds
+
+
+class RunStatus(StrEnum):
+    started = "started"
+    finished = "finished"
+    failed = "failed"
+    stale = "stale"
+
+
+class DataSource(StrEnum):
+    s3 = "s3"
+    local = "local"
 
 
 class SentinelAPIError(Exception):
@@ -162,10 +176,10 @@ def finish_run(
     run_id: str,
     *,
     exit_code: int = 0,
-    run_status: str = "success",
-    data_source: str = "s3",
+    run_status: RunStatus = RunStatus.finished,
+    data_source: DataSource = DataSource.s3,
     data_uris: Optional[List[str]] = None,
-    data_csv: Optional[str] = None,
+    data_csv: Optional[bytes] = None,
 ) -> dict:
     """Signal that a run has finished and submit final data.
 
@@ -173,13 +187,13 @@ def finish_run(
         token: Bearer token for authentication.
         run_id: The run identifier returned by :func:`register_run`.
         exit_code: The exit code of the monitored process.
-        run_status: Run outcome (e.g. ``"success"``, ``"failure"``,
-            ``"interrupted"``).
+        run_status: Run outcome (e.g. ``"started"``, ``"finished"``, ``"failed"``, or ``"stale"``).
         data_source: Either ``"s3"`` (uploaded CSV objects) or ``"local"``
             (inline CSV).
         data_uris: List of S3 URIs of uploaded gzipped CSV files.
             Required when ``data_source="s3"``.
-        data_csv: Raw CSV content to submit inline.
+        data_csv: Gzipped CSV content to submit inline (base64-encoded
+            automatically before sending).
             Required when ``data_source="local"``.
 
     Returns:
@@ -194,17 +208,17 @@ def finish_run(
         "data_source": data_source,
     }
 
-    if data_source == "s3":
+    if data_source == DataSource.s3:
         payload["data_uris"] = data_uris or []
     else:
-        payload["data_csv"] = data_csv or ""
+        payload["data_csv"] = b64encode(data_csv).decode("ascii") if data_csv else ""
 
-
-    logger.info("Finishing run %s (status=%s, exit_code=%d)", run_id, run_status, exit_code)
+    logger.info(
+        "Finishing run %s (status=%s, exit_code=%d)", run_id, run_status, exit_code
+    )
     return _request(
         "POST",
         f"/runs/{run_id}/finish",
         token=token,
         payload=payload,
     )
-

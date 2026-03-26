@@ -142,7 +142,6 @@ def test_start_calls_register_run(mock_register):
         metadata={"project_name": "test"},
         host_info={"host_vcpus": 4},
         cloud_info={"cloud_vendor_id": "aws"},
-        base_url=None,
     )
     assert mgr.run_id == FAKE_RUN_ID
     assert mgr.is_alive
@@ -177,9 +176,12 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
     mock_finish.assert_called_once()
     finish_kwargs = mock_finish.call_args
     assert finish_kwargs[1]["data_source"] == "local"
-    assert "timestamp" in finish_kwargs[1]["data_csv"]
-    assert "system_cpu_usage" in finish_kwargs[1]["data_csv"]
-    assert "process_cpu_usage" in finish_kwargs[1]["data_csv"]
+    # data_csv is now gzipped bytes — decompress to verify contents
+    import gzip
+    csv_text = gzip.decompress(finish_kwargs[1]["data_csv"]).decode()
+    assert "timestamp" in csv_text
+    assert "system_cpu_usage" in csv_text
+    assert "process_cpu_usage" in csv_text
     assert finish_kwargs[1]["exit_code"] == 0
     assert finish_kwargs[1]["run_status"] == "success"
     assert result == {"stats": {}}
@@ -424,7 +426,6 @@ def test_refresh_credentials_called_when_within_threshold(mock_register, mock_re
     mock_refresh.assert_called_once_with(
         FAKE_TOKEN,
         FAKE_RUN_ID,
-        base_url=None,
     )
     assert mgr._credentials["access_key"] == "AKIA-NEW"
 

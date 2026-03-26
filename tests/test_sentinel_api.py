@@ -146,10 +146,11 @@ REGISTER_RESPONSE = {
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_register_run_minimal(mock_urlopen):
+def test_register_run_minimal(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
-    result = register_run(FAKE_TOKEN, base_url="https://api.test")
+    result = register_run(FAKE_TOKEN)
 
     assert result["run_id"] == FAKE_RUN_ID
     assert result["upload_uri_prefix"].startswith("s3://")
@@ -161,8 +162,9 @@ def test_register_run_minimal(mock_urlopen):
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_register_run_with_metadata(mock_urlopen):
+def test_register_run_with_metadata(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     metadata = {
         "project_name": "my-project",
@@ -171,7 +173,7 @@ def test_register_run_with_metadata(mock_urlopen):
         "tags": {"env": "staging"},
         "ignored_none_field": None,
     }
-    register_run(FAKE_TOKEN, metadata=metadata, base_url="https://api.test")
+    register_run(FAKE_TOKEN, metadata=metadata)
 
     req = mock_urlopen.call_args[0][0]
     import json
@@ -199,15 +201,16 @@ REFRESH_RESPONSE = {
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_refresh_credentials(mock_urlopen):
+def test_refresh_credentials(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response(REFRESH_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
-    result = refresh_credentials(FAKE_TOKEN, FAKE_RUN_ID, base_url="https://api.test")
+    result = refresh_credentials(FAKE_TOKEN, FAKE_RUN_ID)
 
     assert result["upload_credentials"]["access_key"] == "AKIA-NEW..."
 
     req = mock_urlopen.call_args[0][0]
-    assert req.full_url == f"https://api.test/runs/{FAKE_RUN_ID}/refresh-tokens"
+    assert req.full_url == f"https://api.test/runs/{FAKE_RUN_ID}/refresh-credentials"
     assert req.get_method() == "POST"
 
 
@@ -217,8 +220,9 @@ def test_refresh_credentials(mock_urlopen):
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_finish_run_with_s3_uris(mock_urlopen):
+def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response({"stats": {"cpu_mean": 1.5}})
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     uris = [
         "s3://bucket/prefix/process_0001.csv.gz",
@@ -231,7 +235,6 @@ def test_finish_run_with_s3_uris(mock_urlopen):
         run_status="success",
         data_source="s3",
         data_uris=uris,
-        base_url="https://api.test",
     )
 
     assert "stats" in result
@@ -249,33 +252,37 @@ def test_finish_run_with_s3_uris(mock_urlopen):
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_finish_run_with_inline_csv(mock_urlopen):
+def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response({"stats": {}})
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
-    csv_content = "timestamp,cpu_usage\n1.0,0.5\n2.0,0.8\n"
+    import gzip
+    from base64 import b64encode
+    csv_content = b"timestamp,cpu_usage\n1.0,0.5\n2.0,0.8\n"
+    gzipped = gzip.compress(csv_content)
     finish_run(
         FAKE_TOKEN,
         FAKE_RUN_ID,
         exit_code=1,
         run_status="failure",
         data_source="local",
-        data_csv=csv_content,
-        base_url="https://api.test",
+        data_csv=gzipped,
     )
 
     import json
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
     assert sent["data_source"] == "local"
-    assert sent["data_csv"] == csv_content
+    assert sent["data_csv"] == b64encode(gzipped).decode("ascii")
     assert sent["exit_code"] == 1
     assert sent["run_status"] == "failure"
     assert "data_uris" not in sent
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_register_run_with_host_and_cloud_info(mock_urlopen):
+def test_register_run_with_host_and_cloud_info(mock_urlopen, monkeypatch):
     mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     host = {"host_vcpus": 4, "host_memory_mib": 8192, "host_gpu_count": None}
     cloud = {"cloud_vendor_id": "aws", "cloud_region_id": "us-east-1"}
@@ -285,7 +292,6 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen):
         metadata={"project_name": "proj"},
         host_info=host,
         cloud_info=cloud,
-        base_url="https://api.test",
     )
 
     import json
@@ -301,8 +307,9 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen):
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
-def test_finish_run_api_error(mock_urlopen):
+def test_finish_run_api_error(mock_urlopen, monkeypatch):
     from urllib.error import HTTPError
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     mock_urlopen.side_effect = HTTPError(
         url="https://api.test/runs/x/finish",
@@ -313,7 +320,7 @@ def test_finish_run_api_error(mock_urlopen):
     )
 
     with pytest.raises(SentinelAPIError) as exc_info:
-        finish_run(FAKE_TOKEN, "x", data_source="s3", data_uris=[], base_url="https://api.test")
+        finish_run(FAKE_TOKEN, "x", data_source="s3", data_uris=[])
 
     assert exc_info.value.status_code == 500
     assert "server broke" in exc_info.value.body

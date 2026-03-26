@@ -55,11 +55,6 @@ def _derive_signing_key(secret_key: str, date_stamp: str, region: str) -> bytes:
     return hmac.new(k_service, b"aws4_request", hashlib.sha256).digest()
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def put_bytes_with_sts(
     *,
     s3_uri: str,
@@ -193,11 +188,6 @@ def put_object_with_sts(
         region=region,
         timeout=timeout,
     )
-
-
-# ---------------------------------------------------------------------------
-# CLI (for manual testing)
-# ---------------------------------------------------------------------------
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:

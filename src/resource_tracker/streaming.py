@@ -71,7 +71,6 @@ class StreamingManager:
         metadata: Optional run metadata forwarded to :func:`register_run`.
         host_info: Optional ``host_*`` fields forwarded to :func:`register_run`.
         cloud_info: Optional ``cloud_*`` fields forwarded to :func:`register_run`.
-        api_base_url: Override the Sentinel API base URL.
     """
 
     def __init__(
@@ -82,7 +81,6 @@ class StreamingManager:
         metadata: Optional[Dict[str, Any]] = None,
         host_info: Optional[Dict[str, Any]] = None,
         cloud_info: Optional[Dict[str, Any]] = None,
-        api_base_url: Optional[str] = None,
     ):
         self._token = token
         self._csv_path = csv_path
@@ -90,7 +88,6 @@ class StreamingManager:
         self._metadata = metadata
         self._host_info = host_info
         self._cloud_info = cloud_info
-        self._api_base_url = api_base_url
 
         # Set after start()
         self._run_id: Optional[str] = None
@@ -115,7 +112,6 @@ class StreamingManager:
             metadata=self._metadata,
             host_info=self._host_info,
             cloud_info=self._cloud_info,
-            base_url=self._api_base_url,
         )
         self._run_id = resp["run_id"]
         self._upload_uri_prefix = resp["upload_uri_prefix"]
@@ -170,7 +166,6 @@ class StreamingManager:
             self._run_id,
             exit_code=exit_code,
             run_status=run_status,
-            base_url=self._api_base_url,
             **data_kwargs,
         )
 
@@ -220,7 +215,6 @@ class StreamingManager:
                 resp = refresh_credentials(
                     self._token,
                     self._run_id,
-                    base_url=self._api_base_url,
                 )
                 self._set_credentials(resp["upload_credentials"])
                 return

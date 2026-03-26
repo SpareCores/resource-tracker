@@ -95,8 +95,6 @@ def register_run(
     *,
     host_info: Optional[Dict[str, Any]] = None,
     cloud_info: Optional[Dict[str, Any]] = None,
-    base_url: Optional[str] = None,
-    timeout: int = DEFAULT_TIMEOUT,
 ) -> dict:
     """Register the start of a new Run with the Sentinel API.
 
@@ -112,8 +110,6 @@ def register_run(
         cloud_info: Optional dict of ``cloud_*`` fields (e.g.
             ``cloud_vendor_id``, ``cloud_region_id``,
             ``cloud_instance_type``, etc.).
-        base_url: Override the API base URL.
-        timeout: Request timeout in seconds.
 
     Returns:
         A dict containing at least:
@@ -133,23 +129,18 @@ def register_run(
     if cloud_info:
         payload.update({k: v for k, v in cloud_info.items() if v is not None})
     logger.info("Registering run with Sentinel API")
-    return _request("POST", "/runs", token=token, payload=payload, base_url=base_url, timeout=timeout)
+    return _request("POST", "/runs", token=token, payload=payload)
 
 
 def refresh_credentials(
     token: str,
     run_id: str,
-    *,
-    base_url: Optional[str] = None,
-    timeout: int = DEFAULT_TIMEOUT,
 ) -> dict:
     """Refresh the temporary upload credentials for an existing run.
 
     Args:
         token: Bearer token for authentication.
         run_id: The run identifier returned by :func:`register_run`.
-        base_url: Override the API base URL.
-        timeout: Request timeout in seconds.
 
     Returns:
         A dict with refreshed ``upload_credentials`` (same structure as in
@@ -163,8 +154,6 @@ def refresh_credentials(
         "POST",
         f"/runs/{run_id}/refresh-tokens",
         token=token,
-        base_url=base_url,
-        timeout=timeout,
     )
 
 
@@ -177,8 +166,6 @@ def finish_run(
     data_source: str = "s3",
     data_uris: Optional[List[str]] = None,
     data_csv: Optional[str] = None,
-    base_url: Optional[str] = None,
-    timeout: int = DEFAULT_TIMEOUT,
 ) -> dict:
     """Signal that a run has finished and submit final data.
 
@@ -194,8 +181,6 @@ def finish_run(
             Required when ``data_source="s3"``.
         data_csv: Raw CSV content to submit inline.
             Required when ``data_source="local"``.
-        base_url: Override the API base URL.
-        timeout: Request timeout in seconds.
 
     Returns:
         A dict with backend-computed statistics for the run.
@@ -221,7 +206,5 @@ def finish_run(
         f"/runs/{run_id}/finish",
         token=token,
         payload=payload,
-        base_url=base_url,
-        timeout=timeout,
     )
 

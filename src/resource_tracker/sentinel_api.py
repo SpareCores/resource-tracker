@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 logger = getLogger(__name__)
 
-DEFAULT_SENTINEL_URL = "https://sentinel.sparecores.net"
+DEFAULT_SENTINEL_URL = "https://api.sentinel.sparecores.net"
 DEFAULT_TIMEOUT = 30  # seconds
 
 
@@ -51,7 +51,7 @@ def _request(
         method: HTTP method (e.g. ``POST``).
         path: URL path relative to the base URL (e.g. ``/runs``).
         token: Bearer token for authentication.
-        payload: Optional JSON-serialisable body.
+        payload: Optional JSON-serializable body.
         base_url: Override the base URL (defaults to env / built-in default).
         timeout: Request timeout in seconds.
 
@@ -152,7 +152,7 @@ def refresh_credentials(
     logger.info("Refreshing credentials for run %s", run_id)
     return _request(
         "POST",
-        f"/runs/{run_id}/refresh-tokens",
+        f"/runs/{run_id}/refresh-credentials",
         token=token,
     )
 

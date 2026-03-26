@@ -40,6 +40,40 @@ def _parse_s3_uri(s3_uri: str) -> tuple[str, str]:
     return parsed.netloc, parsed.path.lstrip("/")
 
 
+def _get_bucket_region(bucket: str, timeout: int = 10) -> str:
+    """Determine the AWS region of an S3 bucket via a HEAD request.
+
+    Uses the ``x-amz-bucket-region`` response header, which S3 returns even
+    for 3xx/4xx responses.  Results are cached in a module-level dict so
+    repeated calls for the same bucket are free.
+
+    Args:
+        bucket: The S3 bucket name.
+        timeout: HTTP request timeout in seconds.
+
+    Returns:
+        The AWS region string (e.g. ``"eu-central-1"``).  Falls back to
+        ``"eu-central-1"`` if detection fails.
+    """
+
+    url = f"https://{bucket}.s3.amazonaws.com/"
+    req = Request(url, method="HEAD")
+    try:
+        with urlopen(req, timeout=timeout) as resp:
+            region = resp.headers.get("x-amz-bucket-region", "eu-central-1")
+    except HTTPError as exc:
+        # 301/403/404 responses still carry the header
+        region = exc.headers.get("x-amz-bucket-region", "eu-central-1")
+    except Exception:
+        logger.debug(
+            "Could not detect region for bucket %s, defaulting to eu-central-1", bucket
+        )
+        region = "eu-central-1"
+
+    logger.debug("Detected region for bucket %s: %s", bucket, region)
+    return region
+
+
 def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -62,7 +96,7 @@ def put_bytes_with_sts(
     access_key: str,
     secret_key: str,
     session_token: str,
-    region: str,
+    region: str | None = None,
     timeout: int = DEFAULT_UPLOAD_TIMEOUT,
 ) -> str:
     """Upload raw bytes to S3 using temporary STS credentials.
@@ -92,9 +126,18 @@ def put_bytes_with_sts(
     amz_date = now.strftime("%Y%m%dT%H%M%SZ")
     date_stamp = now.strftime("%Y%m%d")
 
+    if not region:
+        region = _get_bucket_region(bucket, timeout=timeout)
+
     host = f"{bucket}.s3.{region}.amazonaws.com"
     canonical_uri = "/" + key
     endpoint = f"https://{host}{canonical_uri}"
+
+    logger.debug(
+        "Uploading %s to %s",
+        s3_uri,
+        endpoint,
+    )
 
     canonical_headers = (
         f"host:{host}\n"

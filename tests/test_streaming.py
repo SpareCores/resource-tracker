@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import os
 import time as time_module
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import patch
 
 from resource_tracker.streaming import (
     StreamingManager,
-    _CREDENTIAL_REFRESH_THRESHOLD,
-    _parse_expiration,
+    _parse_expires_at,
     _read_new_bytes,
 )
 
@@ -30,7 +26,7 @@ FAKE_REGISTER_RESPONSE = {
         "access_key": "AKIA...",
         "secret_key": "secret...",
         "session_token": "token...",
-        "expiration": "2099-12-31T23:59:59Z",
+        "expires_at": "2099-12-31T23:59:59Z",
         "region": "us-east-1",
     },
 }
@@ -40,37 +36,37 @@ FAKE_REFRESH_RESPONSE = {
         "access_key": "AKIA-NEW...",
         "secret_key": "secret-new...",
         "session_token": "token-new...",
-        "expiration": "2099-12-31T23:59:59Z",
+        "expires_at": "2099-12-31T23:59:59Z",
         "region": "us-east-1",
     },
 }
 
 COMBINED_CSV_HEADER = '"timestamp","system_cpu_usage","system_memory_used","process_cpu_usage","process_memory"\n'
-COMBINED_CSV_ROW1 = '1774468571.001,0.57,6108688.0,0.0294,9840.0\n'
-COMBINED_CSV_ROW2 = '1774468572.001,1.5301,5868064.0,0.8516,8576.0\n'
-COMBINED_CSV_ROW3 = '1774468573.001,2.6301,5859120.0,1.1353,8464.0\n'
+COMBINED_CSV_ROW1 = "1774468571.001,0.57,6108688.0,0.0294,9840.0\n"
+COMBINED_CSV_ROW2 = "1774468572.001,1.5301,5868064.0,0.8516,8576.0\n"
+COMBINED_CSV_ROW3 = "1774468573.001,2.6301,5859120.0,1.1353,8464.0\n"
 
 
 # ---------------------------------------------------------------------------
-# _parse_expiration
+# _parse_expires_at
 # ---------------------------------------------------------------------------
 
 
-def test_parse_expiration_z_suffix():
-    ts = _parse_expiration("2026-03-26T12:00:00Z")
+def test_parse_expires_at_z_suffix():
+    ts = _parse_expires_at("2026-03-26T12:00:00Z")
     assert isinstance(ts, float)
     assert ts > 0
 
 
-def test_parse_expiration_offset_suffix():
-    ts = _parse_expiration("2026-03-26T12:00:00+00:00")
+def test_parse_expires_at_offset_suffix():
+    ts = _parse_expires_at("2026-03-26T12:00:00+00:00")
     assert isinstance(ts, float)
     assert ts > 0
 
 
-def test_parse_expiration_z_and_offset_equal():
-    ts_z = _parse_expiration("2026-03-26T12:00:00Z")
-    ts_off = _parse_expiration("2026-03-26T12:00:00+00:00")
+def test_parse_expires_at_z_and_offset_equal():
+    ts_z = _parse_expires_at("2026-03-26T12:00:00Z")
+    ts_off = _parse_expires_at("2026-03-26T12:00:00+00:00")
     assert ts_z == ts_off
 
 
@@ -175,9 +171,10 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
 
     mock_finish.assert_called_once()
     finish_kwargs = mock_finish.call_args
-    assert finish_kwargs[1]["data_source"] == "local"
+    assert finish_kwargs[1]["data_source"] == "inline"
     # data_csv is now gzipped bytes — decompress to verify contents
     import gzip
+
     csv_text = gzip.decompress(finish_kwargs[1]["data_csv"]).decode()
     assert "timestamp" in csv_text
     assert "system_cpu_usage" in csv_text
@@ -218,6 +215,7 @@ def test_upload_batch_uploads_gzipped_csv(mock_register, mock_put, tmp_path):
     assert put_kwargs["region"] == "us-east-1"
     # body should be gzipped
     import gzip
+
     decompressed = gzip.decompress(put_kwargs["body"])
     assert b"timestamp" in decompressed
     assert b"system_cpu_usage" in decompressed
@@ -233,7 +231,9 @@ def test_upload_batch_uploads_gzipped_csv(mock_register, mock_put, tmp_path):
 
 @patch("resource_tracker.streaming.put_bytes_with_sts")
 @patch("resource_tracker.streaming.register_run")
-def test_upload_batch_includes_header_in_subsequent_batches(mock_register, mock_put, tmp_path):
+def test_upload_batch_includes_header_in_subsequent_batches(
+    mock_register, mock_put, tmp_path
+):
     mock_register.return_value = FAKE_REGISTER_RESPONSE
     mock_put.side_effect = lambda **kw: kw["s3_uri"]
 
@@ -260,6 +260,7 @@ def test_upload_batch_includes_header_in_subsequent_batches(mock_register, mock_
     assert mock_put.call_count == 2
 
     import gzip
+
     second_body = mock_put.call_args_list[1][1]["body"]
     decompressed = gzip.decompress(second_body)
     lines = decompressed.decode().strip().split("\n")
@@ -331,7 +332,9 @@ def test_upload_batch_failed_does_not_advance_offset(mock_register, mock_put, tm
 @patch("resource_tracker.streaming.finish_run")
 @patch("resource_tracker.streaming.put_bytes_with_sts")
 @patch("resource_tracker.streaming.register_run")
-def test_stop_with_uploads_sends_data_uris(mock_register, mock_put, mock_finish, tmp_path):
+def test_stop_with_uploads_sends_data_uris(
+    mock_register, mock_put, mock_finish, tmp_path
+):
     mock_register.return_value = FAKE_REGISTER_RESPONSE
     mock_put.side_effect = lambda **kw: kw["s3_uri"]
     mock_finish.return_value = {"stats": {"cpu_mean": 1.5}}
@@ -388,6 +391,7 @@ def test_stop_interrupted(mock_register, mock_finish, tmp_path):
 def test_refresh_credentials_called_when_within_threshold(mock_register, mock_refresh):
     # Credentials that expire in 4 minutes (< 5 min threshold) → should refresh
     from datetime import datetime, timezone
+
     expiry = time_module.time() + 240  # 4 minutes
     expiry_iso = datetime.fromtimestamp(expiry, tz=timezone.utc).isoformat()
 
@@ -398,7 +402,7 @@ def test_refresh_credentials_called_when_within_threshold(mock_register, mock_re
             "access_key": "AKIA-OLD",
             "secret_key": "secret-old",
             "session_token": "token-old",
-            "expiration": expiry_iso,
+            "expires_at": expiry_iso,
             "region": "us-east-1",
         },
     }
@@ -411,7 +415,7 @@ def test_refresh_credentials_called_when_within_threshold(mock_register, mock_re
             "access_key": "AKIA-NEW",
             "secret_key": "secret-new",
             "session_token": "token-new",
-            "expiration": new_expiry_iso,
+            "expires_at": new_expiry_iso,
             "region": "us-east-1",
         },
     }
@@ -438,6 +442,7 @@ def test_refresh_credentials_called_when_within_threshold(mock_register, mock_re
 def test_no_refresh_when_credentials_far_from_expiry(mock_register):
     # Credentials that expire in 1 hour → should NOT refresh (well above 5-min threshold)
     from datetime import datetime, timezone
+
     expiry = time_module.time() + 3600  # 1 hour
     expiry_iso = datetime.fromtimestamp(expiry, tz=timezone.utc).isoformat()
 
@@ -448,7 +453,7 @@ def test_no_refresh_when_credentials_far_from_expiry(mock_register):
             "access_key": "AKIA-OLD",
             "secret_key": "secret-old",
             "session_token": "token-old",
-            "expiration": expiry_iso,
+            "expires_at": expiry_iso,
             "region": "us-east-1",
         },
     }
@@ -565,4 +570,3 @@ def test_is_alive(mock_register):
     mgr._stop_event.set()
     mgr._thread.join(timeout=5)
     assert mgr.is_alive is False
-

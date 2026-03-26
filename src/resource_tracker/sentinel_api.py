@@ -28,7 +28,7 @@ class RunStatus(StrEnum):
 
 class DataSource(StrEnum):
     s3 = "s3"
-    local = "local"
+    inline = "inline"
 
 
 class SentinelAPIError(Exception):
@@ -188,13 +188,13 @@ def finish_run(
         run_id: The run identifier returned by :func:`register_run`.
         exit_code: The exit code of the monitored process.
         run_status: Run outcome (e.g. ``"started"``, ``"finished"``, ``"failed"``, or ``"stale"``).
-        data_source: Either ``"s3"`` (uploaded CSV objects) or ``"local"``
-            (inline CSV).
+        data_source: Either ``"s3"`` (uploaded CSV objects) or ``"inline"``
+            (inline gzipped+base64 CSV).
         data_uris: List of S3 URIs of uploaded gzipped CSV files.
             Required when ``data_source="s3"``.
         data_csv: Gzipped CSV content to submit inline (base64-encoded
             automatically before sending).
-            Required when ``data_source="local"``.
+            Required when ``data_source="inline"``.
 
     Returns:
         A dict with backend-computed statistics for the run.

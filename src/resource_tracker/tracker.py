@@ -15,13 +15,15 @@ thread/process yourself.
 
 from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
+from csv import writer as csv_writer
 from gzip import open as gzip_open
+from io import StringIO
 from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import get_context
-from os import getpid, path
+from os import environ, getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
 from sys import platform, stdout
@@ -50,6 +52,7 @@ from .helpers import (
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
 from .report import Report, _read_report_template_files, round_memory
+from .sentinel_api import DataSource, RunStatus
 from .server_info import get_server_info
 from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame
@@ -471,6 +474,14 @@ class ResourceTracker:
             startup. Defaults to True.
         discover_cloud: Whether to discover the cloud environment in the background
             at startup. Defaults to True.
+        sentinel_token: Sentinel API bearer token for streaming metrics.  If
+            ``None`` (default), the ``SENTINEL_API_TOKEN`` environment variable
+            is checked.  When no token is available streaming is silently
+            disabled with zero overhead.
+        upload_interval: Seconds between metric uploads when streaming is
+            enabled.  Defaults to 60.
+        streaming_metadata: Optional dict of run metadata forwarded to the
+            Sentinel API (e.g. ``project_name``, ``job_name``, ``tags``).
 
     Example:
 
@@ -500,6 +511,9 @@ class ResourceTracker:
         track_system: bool = True,
         discover_server: bool = True,
         discover_cloud: bool = True,
+        sentinel_token: Optional[str] = None,
+        upload_interval: int = 60,
+        streaming_metadata: Optional[dict] = None,
     ):
         self.pid = pid
         self.children = children
@@ -513,6 +527,14 @@ class ResourceTracker:
             self.trackers.append("system_tracker")
         self.discover_server = discover_server
         self.discover_cloud = discover_cloud
+
+        # --- Streaming to Sentinel API ---
+        self._sentinel_token = sentinel_token or environ.get("SENTINEL_API_TOKEN")
+        self._upload_interval = upload_interval
+        self._streaming_metadata = streaming_metadata
+        self._streaming = None
+        self._sentinel_result: Optional[dict] = None
+        self._combined_csv_rows_written: int = 0
 
         if platform != "linux" and not is_psutil_available():
             raise ImportError(
@@ -627,6 +649,50 @@ class ResourceTracker:
             ],
         )
 
+        # --- Start streaming if a Sentinel API token is available ---
+        if self._sentinel_token:
+            combined_temp = NamedTemporaryFile(delete=False, suffix=".csv")
+            self._combined_csv_filepath = combined_temp.name
+            combined_temp.close()
+            finalize(self, cleanup_files, [self._combined_csv_filepath])
+
+            from .streaming import StreamingManager
+
+            self._streaming = StreamingManager(
+                token=self._sentinel_token,
+                csv_path=self._combined_csv_filepath,
+                upload_interval=self._upload_interval,
+                metadata=self._streaming_metadata,
+                csv_update_fn=self._update_combined_csv,
+            )
+            try:
+                self._streaming.start()
+            except Exception as e:
+                logger.warning("Failed to start streaming: %s", e)
+                self._streaming = None
+
+    def _update_combined_csv(self) -> None:
+        """Append new combined metric rows to the streaming CSV temp file.
+
+        Called by the :class:`~resource_tracker.streaming.StreamingManager`
+        before each upload cycle to ensure the combined CSV is up-to-date.
+        """
+        try:
+            combined = self.get_combined_metrics()
+            n = len(combined)
+            if n > self._combined_csv_rows_written:
+                buf = StringIO(newline="")
+                writer = csv_writer(buf, quoting=QUOTE_NONNUMERIC)
+                if self._combined_csv_rows_written == 0:
+                    writer.writerow(combined.columns)
+                for i in range(self._combined_csv_rows_written, n):
+                    writer.writerow([combined[col][i] for col in combined.columns])
+                with open(self._combined_csv_filepath, "ab") as f:
+                    f.write(buf.getvalue().encode("utf-8"))
+                self._combined_csv_rows_written = n
+        except Exception as e:
+            logger.debug("Combined CSV update: %s", e)
+
     def cleanup(self):
         """Cleanup temp files and background processes.
 
@@ -645,6 +711,9 @@ class ResourceTracker:
                 ]
             )
         with suppress(Exception):
+            if hasattr(self, "_combined_csv_filepath"):
+                cleanup_files([self._combined_csv_filepath])
+        with suppress(Exception):
             cleanup_processes(
                 [
                     getattr(self, f"{tracker_name}_process")
@@ -652,8 +721,16 @@ class ResourceTracker:
                 ]
             )
 
-    def stop(self):
-        """Stop the previously started resource trackers' background processes."""
+    def stop(self, exit_code: int = 0, run_status: RunStatus = RunStatus.finished):
+        """Stop the previously started resource trackers' background processes.
+
+        Args:
+            exit_code: Exit code of the monitored process.  Forwarded to the
+                Sentinel API when streaming is enabled.  Defaults to 0.
+            run_status: Run outcome (e.g. ``"finished"``, ``"failed"``,
+                ``"interrupted"``).  Forwarded to the Sentinel API when
+                streaming is enabled.  Defaults to ``"finished"``.
+        """
         self.stop_time = time()
         # check for errors in the subprocesses
         if not self.error_queue.empty():
@@ -670,6 +747,18 @@ class ResourceTracker:
             if hasattr(self, process_attr):
                 cleanup_processes([getattr(self, process_attr)])
         self.error_queue.close()
+
+        # Finalize streaming — flush remaining data and call finish_run
+        if self._streaming is not None:
+            try:
+                self._sentinel_result = self._streaming.stop(
+                    exit_code=exit_code,
+                    run_status=run_status,
+                )
+            except Exception as e:
+                logger.warning("Streaming finalization failed: %s", e)
+            self._streaming = None
+
         logger.debug(
             "Resource tracker stopped after %s seconds, logging %d process-level and %d system-wide records",
             self.stop_time - self.start_time,
@@ -720,6 +809,16 @@ class ResourceTracker:
         Collected data from [resource_tracker.get_cloud_info][].
         """
         return self._cloud_info
+
+    @property
+    def sentinel_result(self) -> Optional[dict]:
+        """Result from the Sentinel API ``finish_run`` call.
+
+        Only set after :meth:`stop` when streaming was enabled.  Returns
+        ``None`` when streaming is disabled or :meth:`stop` has not been
+        called yet.
+        """
+        return self._sentinel_result
 
     @property
     def process_metrics(self) -> TinyDataFrame:

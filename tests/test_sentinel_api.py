@@ -1,6 +1,5 @@
 """Tests for the Sentinel API client (sentinel_api.py)."""
 
-from http.client import HTTPResponse
 from io import BytesIO
 from json import dumps as json_dumps
 from unittest.mock import MagicMock, patch
@@ -76,7 +75,9 @@ def test_base_url_override(monkeypatch):
 def test_request_sends_correct_headers(mock_urlopen):
     mock_urlopen.return_value = _mock_response({"ok": True})
 
-    result = _request("POST", "/test", token=FAKE_TOKEN, payload={"a": 1}, base_url="https://api.test")
+    result = _request(
+        "POST", "/test", token=FAKE_TOKEN, payload={"a": 1}, base_url="https://api.test"
+    )
 
     assert result == {"ok": True}
 
@@ -177,6 +178,7 @@ def test_register_run_with_metadata(mock_urlopen, monkeypatch):
 
     req = mock_urlopen.call_args[0][0]
     import json
+
     sent_payload = json.loads(req.data.decode("utf-8"))
     assert sent_payload["project_name"] == "my-project"
     assert sent_payload["language"] == "python"
@@ -243,6 +245,7 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
     assert req.full_url == f"https://api.test/runs/{FAKE_RUN_ID}/finish"
 
     import json
+
     sent = json.loads(req.data.decode("utf-8"))
     assert sent["exit_code"] == 0
     assert sent["run_status"] == "success"
@@ -258,6 +261,7 @@ def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
 
     import gzip
     from base64 import b64encode
+
     csv_content = b"timestamp,cpu_usage\n1.0,0.5\n2.0,0.8\n"
     gzipped = gzip.compress(csv_content)
     finish_run(
@@ -265,14 +269,15 @@ def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
         FAKE_RUN_ID,
         exit_code=1,
         run_status="failure",
-        data_source="local",
+        data_source="inline",
         data_csv=gzipped,
     )
 
     import json
+
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
-    assert sent["data_source"] == "local"
+    assert sent["data_source"] == "inline"
     assert sent["data_csv"] == b64encode(gzipped).decode("ascii")
     assert sent["exit_code"] == 1
     assert sent["run_status"] == "failure"
@@ -295,6 +300,7 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen, monkeypatch):
     )
 
     import json
+
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
     assert sent["project_name"] == "proj"
@@ -309,6 +315,7 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen, monkeypatch):
 @patch("resource_tracker.sentinel_api.urlopen")
 def test_finish_run_api_error(mock_urlopen, monkeypatch):
     from urllib.error import HTTPError
+
     monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     mock_urlopen.side_effect = HTTPError(
@@ -324,4 +331,3 @@ def test_finish_run_api_error(mock_urlopen, monkeypatch):
 
     assert exc_info.value.status_code == 500
     assert "server broke" in exc_info.value.body
-

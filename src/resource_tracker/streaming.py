@@ -12,7 +12,7 @@ from gzip import compress as gzip_compress
 from logging import getLogger
 from threading import Event, Thread
 from time import sleep, time
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .s3_upload import put_bytes_with_sts
 from .sentinel_api import RunStatus, finish_run, refresh_credentials, register_run
@@ -26,15 +26,15 @@ _CREDENTIAL_REFRESH_THRESHOLD = 300  # 5 minutes
 _CREDENTIAL_REFRESH_RETRY_DELAY = 10
 
 
-def _parse_expiration(expiration: str) -> float:
-    """Parse an ISO-8601 expiration string into a UNIX timestamp.
+def _parse_expires_at(expires_at: str) -> float:
+    """Parse an ISO-8601 expires_at string into a UNIX timestamp.
 
     Handles both ``Z`` suffix and ``+00:00`` offset.
     """
     # normalise "Z" → "+00:00" so fromisoformat works on Python < 3.11
-    if expiration.endswith("Z"):
-        expiration = expiration[:-1] + "+00:00"
-    return datetime.fromisoformat(expiration).timestamp()
+    if expires_at.endswith("Z"):
+        expires_at = expires_at[:-1] + "+00:00"
+    return datetime.fromisoformat(expires_at).timestamp()
 
 
 def _read_new_bytes(filepath: str, offset: int) -> tuple[bytes, int]:
@@ -71,6 +71,8 @@ class StreamingManager:
         metadata: Optional run metadata forwarded to :func:`register_run`.
         host_info: Optional ``host_*`` fields forwarded to :func:`register_run`.
         cloud_info: Optional ``cloud_*`` fields forwarded to :func:`register_run`.
+        csv_update_fn: Optional callable invoked before each upload cycle to
+            refresh the combined CSV file (e.g. append new rows).
     """
 
     def __init__(
@@ -81,6 +83,7 @@ class StreamingManager:
         metadata: Optional[Dict[str, Any]] = None,
         host_info: Optional[Dict[str, Any]] = None,
         cloud_info: Optional[Dict[str, Any]] = None,
+        csv_update_fn: Optional[Callable[[], None]] = None,
     ):
         self._token = token
         self._csv_path = csv_path
@@ -88,6 +91,7 @@ class StreamingManager:
         self._metadata = metadata
         self._host_info = host_info
         self._cloud_info = cloud_info
+        self._csv_update_fn = csv_update_fn
 
         # Set after start()
         self._run_id: Optional[str] = None
@@ -112,7 +116,11 @@ class StreamingManager:
             host_info=self._host_info,
             cloud_info=self._cloud_info,
         )
-        self._run_id = resp["run_id"]
+        # The API may return the identifier as "run_id" or "job_id"
+        self._run_id = resp.get("run_id") or resp.get("job_id")
+        logger.debug("register_run response: %s", resp)
+        if not self._run_id:
+            raise KeyError("register_run response missing 'run_id' (or 'job_id')")
         self._upload_uri_prefix = resp["upload_uri_prefix"]
         self._set_credentials(resp["upload_credentials"])
 
@@ -152,17 +160,26 @@ class StreamingManager:
         except Exception as e:
             logger.warning("Final upload batch failed: %s", e)
 
-        # Decide data delivery mode
-        if self._uploaded_uris:
-            data_kwargs: Dict[str, Any] = {
-                "data_source": "s3",
-                "data_uris": list(self._uploaded_uris),
-            }
-        else:
-            # Short run — no S3 uploads happened yet; send inline CSV
+        # Decide data delivery mode — wrapped so finish_run is always attempted
+        data_kwargs: Dict[str, Any] = {}
+        try:
+            if self._uploaded_uris:
+                data_kwargs = {
+                    "data_source": "s3",
+                    "data_uris": list(self._uploaded_uris),
+                }
+            else:
+                # Short run — no S3 uploads happened yet; send inline CSV
+                data_kwargs = {
+                    "data_source": "inline",
+                    "data_csv": self._read_all_csv(),
+                }
+        except Exception as e:
+            logger.warning("Failed to prepare data for finish_run: %s", e)
+            # Fall back to inline with empty gzipped CSV so finish_run still fires
             data_kwargs = {
-                "data_source": "local",
-                "data_csv": self._read_all_csv(),
+                "data_source": "inline",
+                "data_csv": gzip_compress(b""),
             }
 
         result = finish_run(
@@ -199,7 +216,10 @@ class StreamingManager:
     def _set_credentials(self, creds: dict) -> None:
         """Store credentials and compute the expiry timestamp."""
         self._credentials = creds
-        self._credential_expiry = _parse_expiration(creds["expiration"])
+        expiry_str = creds.get("expires_at")
+        if not expiry_str:
+            raise KeyError("credentials missing 'expires_at'")
+        self._credential_expiry = _parse_expires_at(expiry_str)
         remaining = self._credential_expiry - time()
         logger.debug(
             "Credentials set, expiry in %.0fs, refresh threshold %ds",
@@ -264,6 +284,13 @@ class StreamingManager:
 
     def _upload_batch(self) -> None:
         """Read new CSV data from the combined CSV file and upload as a gzipped S3 object."""
+        # Refresh the combined CSV before reading (e.g. append new tracker rows)
+        if self._csv_update_fn is not None:
+            try:
+                self._csv_update_fn()
+            except Exception as e:
+                logger.debug("CSV update function failed: %s", e)
+
         creds = self._credentials
         if creds is None or self._csv_path is None:
             return
@@ -295,7 +322,6 @@ class StreamingManager:
                 access_key=creds["access_key"],
                 secret_key=creds["secret_key"],
                 session_token=creds["session_token"],
-                region=creds["region"],
             )
             self._uploaded_uris.append(uri)
             self._csv_offset = new_offset
@@ -315,6 +341,13 @@ class StreamingManager:
 
         Used for short runs where no S3 uploads have happened.
         """
+        # Refresh the combined CSV before reading
+        if self._csv_update_fn is not None:
+            try:
+                self._csv_update_fn()
+            except Exception as e:
+                logger.debug("CSV update function failed: %s", e)
+
         if self._csv_path is None:
             return gzip_compress(b"")
         try:

@@ -1,7 +1,8 @@
-"""Upload a local file to S3 using temporary STS credentials.
+"""Upload data to S3 using temporary STS credentials.
 
-This is a minimal, no-dependencies, POC implementation of a client utilizing the
-API's STS credentials.
+Minimal, zero-dependency implementation (stdlib only) of AWS Signature V4
+authenticated ``PUT`` requests, designed for uploading gzipped CSV metric
+files via the Sentinel API's temporary STS credentials.
 """
 
 from __future__ import annotations
@@ -10,13 +11,29 @@ import argparse
 import hashlib
 import hmac
 from datetime import UTC, datetime
+from logging import getLogger
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+logger = getLogger(__name__)
+
+DEFAULT_UPLOAD_TIMEOUT = 30  # seconds
+
 
 def _parse_s3_uri(s3_uri: str) -> tuple[str, str]:
+    """Parse an ``s3://bucket/key`` URI into *(bucket, key)*.
+
+    Args:
+        s3_uri: An S3 URI in the form ``s3://bucket/path/to/object``.
+
+    Returns:
+        A ``(bucket, key)`` tuple.
+
+    Raises:
+        ValueError: If the URI is not a valid S3 URI.
+    """
     parsed = urlparse(s3_uri)
     if parsed.scheme != "s3" or not parsed.netloc or not parsed.path.strip("/"):
         raise ValueError("Expected s3 URI like s3://bucket/path/to/object")
@@ -38,17 +55,42 @@ def _derive_signing_key(secret_key: str, date_stamp: str, region: str) -> bytes:
     return hmac.new(k_service, b"aws4_request", hashlib.sha256).digest()
 
 
-def put_object_with_sts(
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def put_bytes_with_sts(
     *,
     s3_uri: str,
-    file_path: Path,
+    body: bytes,
     access_key: str,
     secret_key: str,
     session_token: str,
     region: str,
-) -> None:
+    timeout: int = DEFAULT_UPLOAD_TIMEOUT,
+) -> str:
+    """Upload raw bytes to S3 using temporary STS credentials.
+
+    This is the core upload primitive used by the streaming module to push
+    gzipped CSV data without writing a temporary file.
+
+    Args:
+        s3_uri: Target S3 URI (``s3://bucket/path/to/object``).
+        body: Raw bytes to upload.
+        access_key: AWS STS access key ID.
+        secret_key: AWS STS secret access key.
+        session_token: AWS STS session token.
+        region: AWS region of the target bucket.
+        timeout: HTTP request timeout in seconds.
+
+    Returns:
+        The S3 URI that was written to (same as *s3_uri*).
+
+    Raises:
+        RuntimeError: If the upload fails.
+    """
     bucket, key = _parse_s3_uri(s3_uri)
-    body = file_path.read_bytes()
     payload_hash = _sha256_hex(body)
 
     now = datetime.now(UTC)
@@ -95,8 +137,10 @@ def put_object_with_sts(
     req.add_header("x-amz-content-sha256", payload_hash)
     req.add_header("Content-Length", str(len(body)))
 
+    logger.debug("S3 PUT %s (%d bytes)", s3_uri, len(body))
+
     try:
-        with urlopen(req) as resp:
+        with urlopen(req, timeout=timeout) as resp:
             if resp.status not in (200, 201):
                 raise RuntimeError(f"S3 upload failed with status {resp.status}")
     except HTTPError as exc:
@@ -104,6 +148,56 @@ def put_object_with_sts(
         raise RuntimeError(
             f"S3 upload failed with status {exc.code}: {error_body}"
         ) from exc
+
+    logger.debug("S3 PUT %s completed", s3_uri)
+    return s3_uri
+
+
+def put_object_with_sts(
+    *,
+    s3_uri: str,
+    file_path: Path,
+    access_key: str,
+    secret_key: str,
+    session_token: str,
+    region: str,
+    timeout: int = DEFAULT_UPLOAD_TIMEOUT,
+) -> str:
+    """Upload a local file to S3 using temporary STS credentials.
+
+    Convenience wrapper around :func:`put_bytes_with_sts` that reads the file
+    contents first.
+
+    Args:
+        s3_uri: Target S3 URI (``s3://bucket/path/to/object``).
+        file_path: Path to the local file to upload.
+        access_key: AWS STS access key ID.
+        secret_key: AWS STS secret access key.
+        session_token: AWS STS session token.
+        region: AWS region of the target bucket.
+        timeout: HTTP request timeout in seconds.
+
+    Returns:
+        The S3 URI that was written to (same as *s3_uri*).
+
+    Raises:
+        RuntimeError: If the upload fails.
+    """
+    logger.debug("Reading file %s for upload to %s", file_path, s3_uri)
+    return put_bytes_with_sts(
+        s3_uri=s3_uri,
+        body=file_path.read_bytes(),
+        access_key=access_key,
+        secret_key=secret_key,
+        session_token=session_token,
+        region=region,
+        timeout=timeout,
+    )
+
+
+# ---------------------------------------------------------------------------
+# CLI (for manual testing)
+# ---------------------------------------------------------------------------
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -123,7 +217,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = _build_arg_parser().parse_args()
-    put_object_with_sts(
+    uri = put_object_with_sts(
         s3_uri=args.s3_uri,
         file_path=args.file,
         access_key=args.access_key,
@@ -131,4 +225,4 @@ def main() -> None:
         session_token=args.session_token,
         region=args.region,
     )
-    print(f"Uploaded {args.file} to {args.s3_uri}")
+    print(f"Uploaded {args.file} to {uri}")

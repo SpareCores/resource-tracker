@@ -76,9 +76,9 @@ def get_recommended_cloud_servers(
 
     Args:
         cpu: The minimum number of vCPUs.
-        memory: The minimum amount of memory in MB.
+        memory: The minimum amount of memory in MiB.
         gpu: The minimum number of GPUs.
-        vram: The minimum amount of VRAM in GB.
+        vram: The minimum amount of VRAM in GiB.
         n: The number of recommended servers to return.
 
     Returns:

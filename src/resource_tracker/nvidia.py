@@ -34,13 +34,13 @@ def process_nvidia_smi_pmon(
         A dictionary of GPU stats:
 
             - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-            - gpu_vram (float): The current GPU memory/VRAM used in MiB.
+            - gpu_vram_mib (float): The current GPU memory/VRAM used in MiB.
             - gpu_utilized (int): The number of GPUs with utilization > 0.
             - gpu_utilized_indexes (set[int]): The set of GPU indexes with utilization > 0.
     """
     gpu_stats = {
         "gpu_usage": 0,  # between 0 and GPU count
-        "gpu_vram": 0,  # MiB
+        "gpu_vram_mib": 0,  # MiB
         "gpu_utilized": 0,  # number of GPUs with utilization > 0
         "gpu_utilized_indexes": set(),  # set of GPU indexes
     }
@@ -58,7 +58,7 @@ def process_nvidia_smi_pmon(
                         usage = float(parts[3])
                         gpu_stats["gpu_utilized_indexes"].add(int(parts[0]))
                     gpu_stats["gpu_usage"] += usage / 100
-                    gpu_stats["gpu_vram"] += float(parts[9])
+                    gpu_stats["gpu_vram_mib"] += float(parts[9])
             gpu_stats["gpu_utilized"] = len(gpu_stats["gpu_utilized_indexes"])
     except TimeoutExpired:
         nvidia_process.kill()
@@ -91,12 +91,12 @@ def process_nvidia_smi(nvidia_process: Optional[Popen]) -> Dict[str, Union[int, 
         A dictionary of GPU stats:
 
             - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-            - gpu_vram (float): The current GPU memory/VRAM used in MiB.
+            - gpu_vram_mib (float): The current GPU memory/VRAM used in MiB.
             - gpu_utilized (int): The number of GPUs with utilization > 0.
     """
     gpu_stats = {
         "gpu_usage": 0,  # between 0 and GPU count
-        "gpu_vram": 0,  # MiB
+        "gpu_vram_mib": 0,  # MiB
         "gpu_utilized": 0,  # number of GPUs with utilization > 0
     }
     try:
@@ -109,7 +109,7 @@ def process_nvidia_smi(nvidia_process: Optional[Popen]) -> Dict[str, Union[int, 
                 if len(parts) == 2:
                     usage = float(parts[0].rstrip(" %"))
                     gpu_stats["gpu_usage"] += usage / 100
-                    gpu_stats["gpu_vram"] += float(parts[1].rstrip(" MiB"))
+                    gpu_stats["gpu_vram_mib"] += float(parts[1].rstrip(" MiB"))
                     gpu_stats["gpu_utilized"] += usage > 0
     except TimeoutExpired:
         nvidia_process.kill()

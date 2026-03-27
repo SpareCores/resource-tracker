@@ -74,7 +74,7 @@ def get_process_rss(pid: int) -> int:
         pid: The process ID to get the resident set size for.
 
     Returns:
-        The current resident set size of the process in kB.
+        The current resident set size of the process in KiB.
     """
     try:
         with open(f"/proc/{pid}/status", "r") as f:
@@ -92,7 +92,7 @@ def get_process_pss_rollup(pid: int) -> int:
         pid: The process ID to get the total PSS for.
 
     Returns:
-        The total PSS in kB.
+        The total PSS in KiB.
     """
     with suppress(ProcessLookupError, FileNotFoundError):
         with open(f"/proc/{pid}/smaps_rollup", "r") as f:
@@ -168,11 +168,11 @@ def get_process_stats(
             - children (int | None): The current number of child processes.
             - utime (int): The total user mode CPU time in seconds.
             - stime (int): The total system mode CPU time in seconds.
-            - memory (int): The current PSS (Proportional Set Size) in kB.
-            - read_bytes (int): The total number of bytes read.
-            - write_bytes (int): The total number of bytes written.
+            - memory_mib (float): The current PSS (Proportional Set Size) in MiB.
+            - disk_read_bytes (int): The total number of bytes read.
+            - disk_write_bytes (int): The total number of bytes written.
             - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-            - gpu_vram (float): The current GPU memory used in MiB.
+            - gpu_vram_mib (float): The current GPU memory used in MiB.
             - gpu_utilized (int): The number of GPUs with utilization > 0.
     """
     current_time = time()
@@ -204,9 +204,9 @@ def get_process_stats(
         "children": len(current_children) if children else None,
         "utime": current_proc_times["utime"] / sysconf("SC_CLK_TCK"),
         "stime": current_proc_times["stime"] / sysconf("SC_CLK_TCK"),
-        "memory": current_pss,
-        "read_bytes": current_io["read_bytes"],
-        "write_bytes": current_io["write_bytes"],
+        "memory_mib": current_pss / 1024,
+        "disk_read_bytes": current_io["read_bytes"],
+        "disk_write_bytes": current_io["write_bytes"],
         **gpu_stats,
     }
 
@@ -221,12 +221,12 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - processes (int): Number of running processes.
             - utime (int): Total user mode CPU time in seconds.
             - stime (int): Total system mode CPU time in seconds.
-            - memory_free (int): Free physical memory in kB.
-            - memory_used (int): Used physical memory in kB (excluding buffers/cache).
-            - memory_buffers (int): Memory used for buffers in kB.
-            - memory_cached (int): Memory used for cache in kB.
-            - memory_active (int): Memory used for active pages in kB.
-            - memory_inactive (int): Memory used for inactive pages in kB.
+            - memory_free_mib (float): Free physical memory in MiB.
+            - memory_used_mib (float): Used physical memory in MiB (excluding buffers/cache).
+            - memory_buffers_mib (float): Memory used for buffers in MiB.
+            - memory_cached_mib (float): Memory used for cache in MiB.
+            - memory_active_mib (float): Memory used for active pages in MiB.
+            - memory_inactive_mib (float): Memory used for inactive pages in MiB.
             - disk_stats (dict): Dictionary mapping disk names to their stats:
 
                 - read_bytes (int): Bytes read from this disk.
@@ -246,12 +246,12 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
         "processes": 0,
         "utime": 0,
         "stime": 0,
-        "memory_free": 0,
-        "memory_used": 0,
-        "memory_buffers": 0,
-        "memory_cached": 0,
-        "memory_active": 0,
-        "memory_inactive": 0,
+        "memory_free_mib": 0,
+        "memory_used_mib": 0,
+        "memory_buffers_mib": 0,
+        "memory_cached_mib": 0,
+        "memory_active_mib": 0,
+        "memory_inactive_mib": 0,
         "disk_stats": {},
         "disk_spaces": {},
         "net_recv_bytes": 0,
@@ -271,7 +271,7 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
                     stats["stime"] = int(cpu_stats[3]) / tps
         stats["processes"] = len([x for x in listdir("/proc") if x.isdigit()])
 
-    # memory stats reported in kB
+    # memory stats reported in KiB
     with suppress(FileNotFoundError):
         with open("/proc/meminfo", "r") as f:
             mem_info = {}
@@ -287,18 +287,18 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
                             pass
 
             total = mem_info.get("MemTotal", 0)
-            stats["memory_free"] = mem_info.get("MemFree", 0)
-            stats["memory_buffers"] = mem_info.get("Buffers", 0)
-            stats["memory_cached"] = mem_info.get("Cached", 0)
-            stats["memory_cached"] += mem_info.get("SReclaimable", 0)
-            stats["memory_used"] = (
+            stats["memory_free_mib"] = mem_info.get("MemFree", 0) / 1024
+            stats["memory_buffers_mib"] = mem_info.get("Buffers", 0) / 1024
+            stats["memory_cached_mib"] = mem_info.get("Cached", 0) / 1024
+            stats["memory_cached_mib"] += mem_info.get("SReclaimable", 0) / 1024
+            stats["memory_used_mib"] = (
                 total
-                - stats["memory_free"]
-                - stats["memory_buffers"]
-                - stats["memory_cached"]
-            )
-            stats["memory_active"] = mem_info.get("Active", 0)
-            stats["memory_inactive"] = mem_info.get("Inactive", 0)
+                - stats["memory_free_mib"]
+                - stats["memory_buffers_mib"]
+                - stats["memory_cached_mib"]
+            ) / 1024
+            stats["memory_active_mib"] = mem_info.get("Active", 0) / 1024
+            stats["memory_inactive_mib"] = mem_info.get("Inactive", 0) / 1024
 
     with suppress(FileNotFoundError):
         with open("/proc/diskstats", "r") as f:

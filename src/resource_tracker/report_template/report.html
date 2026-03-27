@@ -43,11 +43,11 @@
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Memory</div>
-                        <div class="section-content-card-value">{{{ server_info.memory_mb | pretty_number }}} MiB</div>
+                        <div class="section-content-card-value">{{{ server_info.memory_mib | pretty_number }}} MiB</div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Storage</div>
-                        <div class="section-content-card-value">{{{ system_metrics.disk_space_total_gb | index:0 | pretty_number }}} GiB</div>
+                        <div class="section-content-card-value">{{{ system_metrics.disk_space_total_gib | index:0 | pretty_number }}} GiB</div>
                     </div>
                     {{ #if server_info.gpu_names }}
                     <div class="section-content-card">
@@ -56,7 +56,7 @@
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">VRAM</div>
-                        <div class="section-content-card-value">{{{server_info.gpu_memory_mb | pretty_number }}} MiB</div>
+                        <div class="section-content-card-value">{{{server_info.gpu_memory_mib | pretty_number }}} MiB</div>
                     </div>
                     {{ /if }}
                 </div>
@@ -135,11 +135,11 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.process_memory.mean | divide:1024 | pretty_number:2 }}} MiB</span> avg
+                            <span class="metric">{{{stats.process_memory_mib.mean | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.process_memory.max | divide:1024 | pretty_number:2 }}} MiB</span> peak
+                            <span class="metric">{{{stats.process_memory_mib.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.process_memory.max | divide:1024 | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.process_memory_mib.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
@@ -194,19 +194,19 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">VRAM</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{ stats.process_gpu_vram.mean | pretty_number:2 }}} MiB</span> avg
+                            <span class="metric">{{{ stats.process_gpu_vram_mib.mean | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{ stats.process_gpu_vram.max | pretty_number:2 }}} MiB</span> peak
+                            <span class="metric">{{{ stats.process_gpu_vram_mib.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
                             <span class="metric-highlight">
-                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_vram.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
+                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_vram_mib.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
                             </span> hist peak</div>
                     </div>
                     {{ /if }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">Disk Space</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{ stats.system_disk_space_used_gb.max | pretty_number }}} GiB</span> peak
+                            <span class="metric">{{{ stats.system_disk_space_used_gib.max | pretty_number }}} GiB</span> peak
                         </div>
                     </div>
                     <div class="section-content-card">
@@ -465,7 +465,7 @@
             {{ #if server_info.gpu_names }}
             var gpuUsageGraph = createGraph("plot_gpu_usage", `{{{ csv.gpu_usage }}}`, 'labels_gpu_usage'),
                 gpuUtilizedGraph = createGraph("plot_gpu_utilized", `{{{ csv.gpu_utilized }}}`, 'labels_gpu_utilized'),
-                gpuVramGraph = createGraph("plot_gpu_vram", `{{{ csv.gpu_vram }}}`, 'labels_gpu_vram', { labelsKMG2: true });
+                gpuVramGraph = createGraph("plot_gpu_vram", `{{{ csv.gpu_vram_mib }}}`, 'labels_gpu_vram', { labelsKMG2: true });
             {{ /if }}
             var sync = Dygraph.synchronize([
                 cpuGraph, memGraph, diskGraph, netGraph,

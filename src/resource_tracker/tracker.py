@@ -52,7 +52,7 @@ from .helpers import (
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
 from .report import Report, _read_report_template_files, round_memory
-from .sentinel_api import DataSource, RunStatus
+from .sentinel_api import RunStatus
 from .server_info import get_server_info
 from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame
@@ -77,14 +77,14 @@ class ProcessTracker:
     - utime (int): The total user+nice mode CPU time in seconds.
     - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
-    - memory (int): The current memory usage in kB. Implementation depends on the
+    - memory_mib (float): The current memory usage in MiB. Implementation depends on the
       operating system, and it is preferably PSS (Proportional Set Size) on Linux,
       USS (Unique Set Size) on macOS and Windows, and RSS (Resident Set Size) on
       Windows.
-    - read_bytes (int): The total number of bytes read from disk.
-    - write_bytes (int): The total number of bytes written to disk.
+    - disk_read_bytes (int): The total number of bytes read from disk.
+    - disk_write_bytes (int): The total number of bytes written to disk.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_vram_mib (float): The current GPU memory used in MiB.
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
@@ -136,8 +136,10 @@ class ProcessTracker:
 
         return {
             "timestamp": round(self.stats["timestamp"], 3),
-            "pid": self.pid,
-            "children": self.stats["children"],
+            "pid": int(self.pid),
+            "children": (
+                int(self.stats["children"]) if self.stats.get("children") else None
+            ),
             "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
             "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
@@ -151,14 +153,16 @@ class ProcessTracker:
                 ),
                 4,
             ),
-            "memory": self.stats["memory"],
-            "read_bytes": max(0, self.stats["read_bytes"] - last_stats["read_bytes"]),
-            "write_bytes": max(
-                0, self.stats["write_bytes"] - last_stats["write_bytes"]
+            "memory_mib": round(self.stats["memory_mib"], 4),
+            "disk_read_bytes": max(
+                0, int(self.stats["disk_read_bytes"] - last_stats["disk_read_bytes"])
             ),
-            "gpu_usage": self.stats["gpu_usage"],
-            "gpu_vram": self.stats["gpu_vram"],
-            "gpu_utilized": self.stats["gpu_utilized"],
+            "disk_write_bytes": max(
+                0, int(self.stats["disk_write_bytes"] - last_stats["disk_write_bytes"])
+            ),
+            "gpu_usage": round(self.stats["gpu_usage"], 4),
+            "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
+            "gpu_utilized": int(self.stats["gpu_utilized"]),
         }
 
     def start_tracking(
@@ -176,7 +180,7 @@ class ProcessTracker:
         try:
             while True:
                 current_stats = self.diff_stats()
-                if current_stats["memory"] == 0:
+                if current_stats["memory_mib"] == 0:
                     # the process has exited
                     self.status = "exited"
                     break
@@ -232,21 +236,21 @@ class SystemTracker:
     - utime (int): The total user+nice mode CPU time in seconds.
     - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
-    - memory_free (int): The amount of free memory in kB.
-    - memory_used (int): The amount of used memory in kB.
-    - memory_buffers (int): The amount of memory used for buffers in kB.
-    - memory_cached (int): The amount of memory used for caching in kB.
-    - memory_active (int): The amount of memory used for active pages in kB.
-    - memory_inactive (int): The amount of memory used for inactive pages in kB.
+    - memory_free_mib (float): The amount of free memory in MiB.
+    - memory_used_mib (float): The amount of used memory in MiB.
+    - memory_buffers_mib (float): The amount of memory used for buffers in MiB.
+    - memory_cached_mib (float): The amount of memory used for caching in MiB.
+    - memory_active_mib (float): The amount of memory used for active pages in MiB.
+    - memory_inactive_mib (float): The amount of memory used for inactive pages in MiB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
-    - disk_space_total_gb (float): The total disk space in GB.
-    - disk_space_used_gb (float): The used disk space in GB.
-    - disk_space_free_gb (float): The free disk space in GB.
+    - disk_space_total_gib (float): The total disk space in GiB.
+    - disk_space_used_gib (float): The used disk space in GiB.
+    - disk_space_free_gib (float): The free disk space in GiB.
     - net_recv_bytes (int): The total number of bytes received over network.
     - net_sent_bytes (int): The total number of bytes sent over network.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_vram_mib (float): The current GPU memory used in MiB.
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
@@ -318,7 +322,7 @@ class SystemTracker:
 
         return {
             "timestamp": round(self.stats["timestamp"], 3),
-            "processes": self.stats["processes"],
+            "processes": int(self.stats["processes"]),
             "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
             "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
@@ -332,26 +336,26 @@ class SystemTracker:
                 ),
                 4,
             ),
-            "memory_free": self.stats["memory_free"],
-            "memory_used": self.stats["memory_used"],
-            "memory_buffers": self.stats["memory_buffers"],
-            "memory_cached": self.stats["memory_cached"],
-            "memory_active": self.stats["memory_active"],
-            "memory_inactive": self.stats["memory_inactive"],
-            "disk_read_bytes": total_read_bytes,
-            "disk_write_bytes": total_write_bytes,
-            "disk_space_total_gb": round(disk_space_total / (1024**3), 2),
-            "disk_space_used_gb": round(disk_space_used / (1024**3), 2),
-            "disk_space_free_gb": round(disk_space_free / (1024**3), 2),
+            "memory_free_mib": round(self.stats["memory_free_mib"], 4),
+            "memory_used_mib": round(self.stats["memory_used_mib"], 4),
+            "memory_buffers_mib": round(self.stats["memory_buffers_mib"], 4),
+            "memory_cached_mib": round(self.stats["memory_cached_mib"], 4),
+            "memory_active_mib": round(self.stats["memory_active_mib"], 4),
+            "memory_inactive_mib": round(self.stats["memory_inactive_mib"], 4),
+            "disk_read_bytes": int(total_read_bytes),
+            "disk_write_bytes": int(total_write_bytes),
+            "disk_space_total_gib": round(disk_space_total / (1024**3), 2),
+            "disk_space_used_gib": round(disk_space_used / (1024**3), 2),
+            "disk_space_free_gib": round(disk_space_free / (1024**3), 2),
             "net_recv_bytes": max(
-                0, self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"]
+                0, int(self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"])
             ),
             "net_sent_bytes": max(
-                0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
+                0, int(self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"])
             ),
-            "gpu_usage": self.stats["gpu_usage"],
-            "gpu_vram": self.stats["gpu_vram"],
-            "gpu_utilized": self.stats["gpu_utilized"],
+            "gpu_usage": round(self.stats["gpu_usage"], 4),
+            "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
+            "gpu_utilized": int(self.stats["gpu_utilized"]),
         }
 
     def start_tracking(
@@ -967,7 +971,7 @@ class ResourceTracker:
         and adding a prefix to the column names to distinguish between the system and process metrics.
 
         Args:
-            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
+            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (KiB, MiB, or GiB).
             human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
             system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
             process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
@@ -1033,15 +1037,15 @@ class ResourceTracker:
         specs: List[StatSpec] = [
             StatSpec(column="process_cpu_usage", agg=mean, round=2),
             StatSpec(column="process_cpu_usage", agg=max, round=2),
-            StatSpec(column="process_memory", agg=mean, round=2),
-            StatSpec(column="process_memory", agg=max, round=2),
+            StatSpec(column="process_memory_mib", agg=mean, round=2),
+            StatSpec(column="process_memory_mib", agg=max, round=2),
             StatSpec(column="process_gpu_usage", agg=mean, round=2),
             StatSpec(column="process_gpu_usage", agg=max, round=2),
-            StatSpec(column="process_gpu_vram", agg=mean, round=2),
-            StatSpec(column="process_gpu_vram", agg=max, round=2),
+            StatSpec(column="process_gpu_vram_mib", agg=mean, round=2),
+            StatSpec(column="process_gpu_vram_mib", agg=max, round=2),
             StatSpec(column="process_gpu_utilized", agg=mean, round=2),
             StatSpec(column="process_gpu_utilized", agg=max, round=2),
-            StatSpec(column="system_disk_space_used_gb", agg=max, round=2),
+            StatSpec(column="system_disk_space_used_gib", agg=max, round=2),
             StatSpec(column="system_net_recv_bytes", agg=sum),
             StatSpec(column="system_net_sent_bytes", agg=sum),
             StatSpec(
@@ -1122,8 +1126,10 @@ class ResourceTracker:
         rec = {}
         # target average CPU usage
         rec["cpu"] = max(1, round(stats["process_cpu_usage"]["mean"]))
-        # target maximum memory usage (kB->MB) with a 20% buffer
-        rec["memory"] = round_memory(mb=stats["process_memory"]["max"] * 1.2 / 1024)
+        # target maximum memory usage (KiB->MiB) with a 20% buffer
+        rec["memory"] = round_memory(
+            mib=stats["process_memory_mib"]["max"] * 1.2 / 1024
+        )
         # target maximum GPU number of GPUs used
         rec["gpu"] = (
             max(1, round(stats["process_gpu_usage"]["max"]))
@@ -1132,8 +1138,8 @@ class ResourceTracker:
         )
         # target maximum VRAM usage (MiB) with a 20% buffer
         rec["vram"] = (
-            round_memory(mb=stats["process_gpu_vram"]["max"] * 1.2)
-            if stats["process_gpu_vram"]["max"] > 0
+            round_memory(mib=stats["process_gpu_vram_mib"]["max"] * 1.2)
+            if stats["process_gpu_vram_mib"]["max"] > 0
             else 0
         )
         return rec

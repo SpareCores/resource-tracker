@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from base64 import b64encode
-from enum import StrEnum
+from enum import Enum
 from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
@@ -19,14 +19,14 @@ DEFAULT_SENTINEL_URL = "https://api.sentinel.sparecores.net"
 DEFAULT_TIMEOUT = 30  # seconds
 
 
-class RunStatus(StrEnum):
+class RunStatus(Enum):
     started = "started"
     finished = "finished"
     failed = "failed"
     stale = "stale"
 
 
-class DataSource(StrEnum):
+class DataSource(Enum):
     s3 = "s3"
     inline = "inline"
 

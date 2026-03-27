@@ -5,6 +5,7 @@ from __future__ import annotations
 import time as time_module
 from unittest.mock import patch
 
+from resource_tracker.sentinel_api import DataSource, RunStatus
 from resource_tracker.streaming import (
     StreamingManager,
     _parse_expires_at,
@@ -167,11 +168,11 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
         upload_interval=9999,  # won't trigger during test
     )
     mgr.start()
-    result = mgr.stop(exit_code=0, run_status="success")
+    result = mgr.stop(exit_code=0, run_status=RunStatus.finished)
 
     mock_finish.assert_called_once()
     finish_kwargs = mock_finish.call_args
-    assert finish_kwargs[1]["data_source"] == "inline"
+    assert finish_kwargs[1]["data_source"] == DataSource.inline
     # data_csv is now gzipped bytes — decompress to verify contents
     import gzip
 
@@ -180,7 +181,7 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
     assert "system_cpu_usage" in csv_text
     assert "process_cpu_usage" in csv_text
     assert finish_kwargs[1]["exit_code"] == 0
-    assert finish_kwargs[1]["run_status"] == "success"
+    assert finish_kwargs[1]["run_status"] == RunStatus.finished
     assert result == {"stats": {}}
 
 
@@ -349,11 +350,11 @@ def test_stop_with_uploads_sends_data_uris(
     mgr.start()
     mgr._upload_batch()  # produces one upload
 
-    result = mgr.stop(exit_code=0, run_status="success")
+    result = mgr.stop(exit_code=0, run_status=RunStatus.finished)
 
     mock_finish.assert_called_once()
     finish_kwargs = mock_finish.call_args[1]
-    assert finish_kwargs["data_source"] == "s3"
+    assert finish_kwargs["data_source"] == DataSource.s3
     # Should have URIs from the manual batch + final flush
     assert len(finish_kwargs["data_uris"]) >= 1
     assert result["stats"]["cpu_mean"] == 1.5

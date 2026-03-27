@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from resource_tracker.dummy_workloads import cpu_single
+from resource_tracker.sentinel_api import DataSource, RunStatus
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -165,7 +166,7 @@ def test_short_run_sends_inline_csv(mock_register, mock_finish, monkeypatch):
     tracker.stop()
 
     finish_kwargs = mock_finish.call_args[1]
-    assert finish_kwargs["data_source"] == "inline"
+    assert finish_kwargs["data_source"] == DataSource.inline
     # data_csv is gzipped bytes — decompress and verify structure
     csv_text = gzip.decompress(finish_kwargs["data_csv"]).decode()
     assert "timestamp" in csv_text
@@ -391,7 +392,7 @@ def test_stop_with_uploads_sends_data_uris(
     tracker.stop()
 
     finish_kwargs = mock_finish.call_args[1]
-    assert finish_kwargs["data_source"] == "s3"
+    assert finish_kwargs["data_source"] == DataSource.s3
     assert len(finish_kwargs["data_uris"]) >= 1
 
 

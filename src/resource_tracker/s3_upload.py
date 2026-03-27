@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import hmac
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
 from urllib.error import HTTPError
@@ -129,7 +129,7 @@ def put_bytes_with_sts(
     bucket, key = _parse_s3_uri(s3_uri)
     payload_hash = _sha256_hex(body)
 
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     amz_date = now.strftime("%Y%m%dT%H%M%SZ")
     date_stamp = now.strftime("%Y%m%d")
 

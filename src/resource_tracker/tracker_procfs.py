@@ -287,16 +287,13 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
                             pass
 
             total = mem_info.get("MemTotal", 0)
-            stats["memory_free_mib"] = mem_info.get("MemFree", 0) / 1024
-            stats["memory_buffers_mib"] = mem_info.get("Buffers", 0) / 1024
-            stats["memory_cached_mib"] = mem_info.get("Cached", 0) / 1024
-            stats["memory_cached_mib"] += mem_info.get("SReclaimable", 0) / 1024
-            stats["memory_used_mib"] = (
-                total
-                - stats["memory_free_mib"]
-                - stats["memory_buffers_mib"]
-                - stats["memory_cached_mib"]
-            ) / 1024
+            free = mem_info.get("MemFree", 0)
+            buffers = mem_info.get("Buffers", 0)
+            cached = mem_info.get("Cached", 0) + mem_info.get("SReclaimable", 0)
+            stats["memory_free_mib"] = free / 1024
+            stats["memory_buffers_mib"] = buffers / 1024
+            stats["memory_cached_mib"] = cached / 1024
+            stats["memory_used_mib"] = (total - free - buffers - cached) / 1024
             stats["memory_active_mib"] = mem_info.get("Active", 0) / 1024
             stats["memory_inactive_mib"] = mem_info.get("Inactive", 0) / 1024
 

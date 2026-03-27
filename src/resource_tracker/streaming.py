@@ -15,7 +15,13 @@ from time import sleep, time
 from typing import Any, Callable, Dict, List, Optional
 
 from .s3_upload import put_bytes_with_sts
-from .sentinel_api import RunStatus, finish_run, refresh_credentials, register_run
+from .sentinel_api import (
+    DataSource,
+    RunStatus,
+    finish_run,
+    refresh_credentials,
+    register_run,
+)
 
 logger = getLogger(__name__)
 
@@ -163,20 +169,20 @@ class StreamingManager:
         try:
             if self._uploaded_uris:
                 data_kwargs = {
-                    "data_source": "s3",
+                    "data_source": DataSource.s3,
                     "data_uris": list(self._uploaded_uris),
                 }
             else:
                 # Short run — no S3 uploads happened yet; send inline CSV
                 data_kwargs = {
-                    "data_source": "inline",
+                    "data_source": DataSource.inline,
                     "data_csv": self._read_all_csv(),
                 }
         except Exception as e:
             logger.warning("Failed to prepare data for finish_run: %s", e)
             # Fall back to inline with empty gzipped CSV so finish_run still fires
             data_kwargs = {
-                "data_source": "inline",
+                "data_source": DataSource.inline,
                 "data_csv": gzip_compress(b""),
             }
 

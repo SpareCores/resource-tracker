@@ -8,6 +8,8 @@ import pytest
 
 from resource_tracker.sentinel_api import (
     DEFAULT_SENTINEL_URL,
+    DataSource,
+    RunStatus,
     SentinelAPIError,
     _get_base_url,
     _request,
@@ -234,8 +236,8 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
         FAKE_TOKEN,
         FAKE_RUN_ID,
         exit_code=0,
-        run_status="success",
-        data_source="s3",
+        run_status=RunStatus.started,
+        data_source=DataSource.s3,
         data_uris=uris,
     )
 
@@ -248,7 +250,7 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
 
     sent = json.loads(req.data.decode("utf-8"))
     assert sent["exit_code"] == 0
-    assert sent["run_status"] == "success"
+    assert sent["run_status"] == "started"
     assert sent["data_source"] == "s3"
     assert sent["data_uris"] == uris
     assert "data_csv" not in sent
@@ -268,8 +270,8 @@ def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
         FAKE_TOKEN,
         FAKE_RUN_ID,
         exit_code=1,
-        run_status="failure",
-        data_source="inline",
+        run_status=RunStatus.failed,
+        data_source=DataSource.inline,
         data_csv=gzipped,
     )
 
@@ -280,7 +282,7 @@ def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
     assert sent["data_source"] == "inline"
     assert sent["data_csv"] == b64encode(gzipped).decode("ascii")
     assert sent["exit_code"] == 1
-    assert sent["run_status"] == "failure"
+    assert sent["run_status"] == "failed"
     assert "data_uris" not in sent
 
 
@@ -327,7 +329,7 @@ def test_finish_run_api_error(mock_urlopen, monkeypatch):
     )
 
     with pytest.raises(SentinelAPIError) as exc_info:
-        finish_run(FAKE_TOKEN, "x", data_source="s3", data_uris=[])
+        finish_run(FAKE_TOKEN, "x", data_source=DataSource.s3, data_uris=[])
 
     assert exc_info.value.status_code == 500
     assert "server broke" in exc_info.value.body

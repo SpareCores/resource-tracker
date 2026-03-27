@@ -317,7 +317,7 @@ def test_stop_no_args_backward_compatible(mock_register, mock_finish, monkeypatc
 
     finish_kwargs = mock_finish.call_args[1]
     assert finish_kwargs["exit_code"] == 0
-    assert finish_kwargs["run_status"] == "finished"
+    assert finish_kwargs["run_status"].value == "finished"
 
 
 # ---------------------------------------------------------------------------

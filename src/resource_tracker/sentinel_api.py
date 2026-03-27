@@ -204,8 +204,8 @@ def finish_run(
     """
     payload: Dict[str, Any] = {
         "exit_code": exit_code,
-        "run_status": run_status,
-        "data_source": data_source,
+        "run_status": run_status.value,
+        "data_source": data_source.value,
     }
 
     if data_source == DataSource.s3:

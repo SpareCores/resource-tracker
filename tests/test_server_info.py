@@ -12,6 +12,6 @@ def test_server_info():
     info = get_server_info()
     assert info["os"] is not None
     assert info["vcpus"] > 0
-    assert info["memory_mb"] > 0
+    assert info["memory_mib"] > 0
     assert info["gpu_count"] >= 0
-    assert info["gpu_memory_mb"] >= 0
+    assert info["gpu_memory_mib"] >= 0

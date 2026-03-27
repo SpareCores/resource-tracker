@@ -116,11 +116,9 @@ class StreamingManager:
             host_info=self._host_info,
             cloud_info=self._cloud_info,
         )
-        # The API may return the identifier as "run_id" or "job_id"
-        self._run_id = resp.get("run_id") or resp.get("job_id")
-        logger.debug("register_run response: %s", resp)
+        self._run_id = resp.get("run_id")
         if not self._run_id:
-            raise KeyError("register_run response missing 'run_id' (or 'job_id')")
+            raise KeyError("register_run response missing 'run_id'")
         self._upload_uri_prefix = resp["upload_uri_prefix"]
         self._set_credentials(resp["upload_credentials"])
 

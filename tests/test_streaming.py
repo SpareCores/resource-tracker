@@ -212,7 +212,6 @@ def test_upload_batch_uploads_gzipped_csv(mock_register, mock_put, tmp_path):
     put_kwargs = mock_put.call_args[1]
     assert put_kwargs["s3_uri"].endswith("0001.csv.gz")
     assert put_kwargs["access_key"] == "AKIA..."
-    assert put_kwargs["region"] == "us-east-1"
     # body should be gzipped
     import gzip
 

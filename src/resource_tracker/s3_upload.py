@@ -40,6 +40,9 @@ def _parse_s3_uri(s3_uri: str) -> tuple[str, str]:
     return parsed.netloc, parsed.path.lstrip("/")
 
 
+bucket_region_cache: dict[str, str] = {}
+
+
 def _get_bucket_region(bucket: str, timeout: int = 10) -> str:
     """Determine the AWS region of an S3 bucket via a HEAD request.
 
@@ -55,6 +58,8 @@ def _get_bucket_region(bucket: str, timeout: int = 10) -> str:
         The AWS region string (e.g. ``"eu-central-1"``).  Falls back to
         ``"eu-central-1"`` if detection fails.
     """
+    if bucket_region_cache.get(bucket):
+        return bucket_region_cache[bucket]
 
     url = f"https://{bucket}.s3.amazonaws.com/"
     req = Request(url, method="HEAD")
@@ -69,6 +74,8 @@ def _get_bucket_region(bucket: str, timeout: int = 10) -> str:
             "Could not detect region for bucket %s, defaulting to eu-central-1", bucket
         )
         region = "eu-central-1"
+
+    bucket_region_cache[bucket] = region
 
     logger.debug("Detected region for bucket %s: %s", bucket, region)
     return region

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from resource_tracker.dummy_workloads import cpu_single
-from resource_tracker.sentinel_api import DataSource, RunStatus
+from resource_tracker.sentinel_api import DataSource
 
 # ---------------------------------------------------------------------------
 # Helpers

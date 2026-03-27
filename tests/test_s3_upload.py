@@ -58,9 +58,15 @@ def test_parse_s3_uri_empty():
 
 def test_sha256_hex():
     # Known SHA-256 of empty bytes
-    assert _sha256_hex(b"") == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    assert (
+        _sha256_hex(b"")
+        == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    )
     # Known SHA-256 of "hello"
-    assert _sha256_hex(b"hello") == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    assert (
+        _sha256_hex(b"hello")
+        == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    )
 
 
 def test_hmac_sha256():
@@ -70,7 +76,9 @@ def test_hmac_sha256():
 
 
 def test_derive_signing_key():
-    key = _derive_signing_key("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "20260326", "us-east-1")
+    key = _derive_signing_key(
+        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "20260326", "us-east-1"
+    )
     assert isinstance(key, bytes)
     assert len(key) == 32
 
@@ -234,4 +242,3 @@ def test_put_object_with_sts_passes_timeout(mock_urlopen, tmp_path):
     )
 
     assert mock_urlopen.call_args[1]["timeout"] == 99
-

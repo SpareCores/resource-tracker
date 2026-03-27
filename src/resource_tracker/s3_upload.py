@@ -140,12 +140,6 @@ def put_bytes_with_sts(
     canonical_uri = "/" + key
     endpoint = f"https://{host}{canonical_uri}"
 
-    logger.debug(
-        "Uploading %s to %s",
-        s3_uri,
-        endpoint,
-    )
-
     canonical_headers = (
         f"host:{host}\n"
         f"x-amz-content-sha256:{payload_hash}\n"

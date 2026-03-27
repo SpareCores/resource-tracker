@@ -172,7 +172,7 @@ def test_short_run_sends_inline_csv(mock_register, mock_finish, monkeypatch):
     assert "system_" in csv_text
     assert "process_" in csv_text
     # Should have at least a header + one data row
-    lines = [l for l in csv_text.strip().split("\n") if l]
+    lines = [line for line in csv_text.strip().split("\n") if line]
     assert len(lines) >= 2
 
 
@@ -200,7 +200,7 @@ def test_update_combined_csv_appends_rows(mock_register, monkeypatch):
     # Read the file and verify structure
     with open(tracker._combined_csv_filepath, "r") as f:
         content = f.read()
-    lines = [l for l in content.strip().split("\n") if l]
+    lines = [line for line in content.strip().split("\n") if line]
     assert len(lines) == n_first + 1  # header + data rows
     assert "timestamp" in lines[0]
     assert "system_" in lines[0]
@@ -214,7 +214,7 @@ def test_update_combined_csv_appends_rows(mock_register, monkeypatch):
 
     with open(tracker._combined_csv_filepath, "r") as f:
         content2 = f.read()
-    lines2 = [l for l in content2.strip().split("\n") if l]
+    lines2 = [line for line in content2.strip().split("\n") if line]
     assert len(lines2) == n_second + 1  # header + all data rows
     # First lines should be identical (append-only)
     for i in range(len(lines)):

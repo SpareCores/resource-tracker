@@ -249,7 +249,7 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
 
     import json
 
-    sent = json.loads(gzip.decompress(req.data).decode("utf-8"))
+    sent = json.loads(req.data.decode("utf-8"))
     assert sent["exit_code"] == 0
     assert sent["run_status"] == "started"
     assert sent["data_source"] == "s3"

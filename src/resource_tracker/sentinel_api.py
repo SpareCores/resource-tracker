@@ -228,5 +228,5 @@ def finish_run(
         f"/runs/{run_id}/finish",
         token=token,
         payload=payload,
-        compress=True,
+        compress=data_source == DataSource.inline,
     )

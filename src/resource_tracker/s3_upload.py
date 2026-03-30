@@ -22,6 +22,9 @@ logger = getLogger(__name__)
 DEFAULT_UPLOAD_TIMEOUT = 30  # seconds
 
 
+bucket_region_cache: dict[str, str] = {}
+
+
 def _parse_s3_uri(s3_uri: str) -> tuple[str, str]:
     """Parse an ``s3://bucket/key`` URI into *(bucket, key)*.
 
@@ -38,9 +41,6 @@ def _parse_s3_uri(s3_uri: str) -> tuple[str, str]:
     if parsed.scheme != "s3" or not parsed.netloc or not parsed.path.strip("/"):
         raise ValueError("Expected s3 URI like s3://bucket/path/to/object")
     return parsed.netloc, parsed.path.lstrip("/")
-
-
-bucket_region_cache: dict[str, str] = {}
 
 
 def _get_bucket_region(bucket: str, timeout: int = 10) -> str:

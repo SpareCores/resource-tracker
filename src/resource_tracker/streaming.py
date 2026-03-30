@@ -158,13 +158,14 @@ class StreamingManager:
         if self._thread is not None and self._thread.is_alive():
             self._thread.join(timeout=30)
 
-        # Final flush — upload whatever is left
-        try:
-            self._upload_batch()
-        except Exception as e:
-            logger.warning("Final upload batch failed: %s", e)
+        # Final S3 flush — only when prior uploads exist
+        if self._uploaded_uris:
+            try:
+                self._upload_batch()
+            except Exception as e:
+                logger.warning("Final upload batch failed: %s", e)
 
-        # Decide data delivery mode — wrapped so finish_run is always attempted
+        # Decide data delivery mode for finish_run
         data_kwargs: Dict[str, Any] = {}
         try:
             if self._uploaded_uris:
@@ -173,14 +174,12 @@ class StreamingManager:
                     "data_uris": list(self._uploaded_uris),
                 }
             else:
-                # Short run — no S3 uploads happened yet; send inline CSV
                 data_kwargs = {
                     "data_source": DataSource.inline,
                     "data_csv": self._read_all_csv(),
                 }
         except Exception as e:
             logger.warning("Failed to prepare data for finish_run: %s", e)
-            # Fall back to inline with empty gzipped CSV so finish_run still fires
             data_kwargs = {
                 "data_source": DataSource.inline,
                 "data_csv": "",

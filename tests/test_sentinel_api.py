@@ -1,6 +1,5 @@
 """Tests for the Sentinel API client (sentinel_api.py)."""
 
-import gzip
 from io import BytesIO
 from json import dumps as json_dumps
 from unittest.mock import MagicMock, patch

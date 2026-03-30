@@ -770,6 +770,29 @@ class ResourceTracker:
             len(self.system_metrics),
         )
 
+    def __enter__(self) -> "ResourceTracker":
+        """Support ``with ResourceTracker(...) as tracker:`` usage.
+
+        Returns:
+            self
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """Stop the tracker on context-manager exit.
+
+        Calls :meth:`stop` with ``run_status="failed"`` when an exception
+        occurred inside the ``with`` block, or ``run_status="finished"`` on
+        clean exit.  Exceptions are never suppressed.
+        """
+        if not self.running:
+            return False
+        if exc_type is not None:
+            self.stop(exit_code=1, run_status=RunStatus.failed)
+        else:
+            self.stop(exit_code=0, run_status=RunStatus.finished)
+        return False  # do not suppress exceptions
+
     @property
     def n_samples(self) -> int:
         """Number of samples collected by the resource tracker."""

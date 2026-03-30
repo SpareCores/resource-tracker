@@ -173,10 +173,7 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
     mock_finish.assert_called_once()
     finish_kwargs = mock_finish.call_args
     assert finish_kwargs[1]["data_source"] == DataSource.inline
-    # data_csv is now gzipped bytes — decompress to verify contents
-    import gzip
-
-    csv_text = gzip.decompress(finish_kwargs[1]["data_csv"]).decode()
+    csv_text = finish_kwargs[1]["data_csv"]
     assert "timestamp" in csv_text
     assert "system_cpu_usage" in csv_text
     assert "process_cpu_usage" in csv_text

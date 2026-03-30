@@ -244,9 +244,9 @@ class SystemTracker:
     - memory_inactive_mib (float): The amount of memory used for inactive pages in MiB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
-    - disk_space_total_gib (float): The total disk space in GiB.
-    - disk_space_used_gib (float): The used disk space in GiB.
-    - disk_space_free_gib (float): The free disk space in GiB.
+    - disk_space_total_gb (float): The total disk space in GB.
+    - disk_space_used_gb (float): The used disk space in GB.
+    - disk_space_free_gb (float): The free disk space in GB.
     - net_recv_bytes (int): The total number of bytes received over network.
     - net_sent_bytes (int): The total number of bytes sent over network.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
@@ -344,9 +344,9 @@ class SystemTracker:
             "memory_inactive_mib": round(self.stats["memory_inactive_mib"], 4),
             "disk_read_bytes": int(total_read_bytes),
             "disk_write_bytes": int(total_write_bytes),
-            "disk_space_total_gib": round(disk_space_total / (1024**3), 2),
-            "disk_space_used_gib": round(disk_space_used / (1024**3), 2),
-            "disk_space_free_gib": round(disk_space_free / (1024**3), 2),
+            "disk_space_total_gb": round(disk_space_total / 1000_000_000, 2),
+            "disk_space_used_gb": round(disk_space_used / 1000_000_000, 2),
+            "disk_space_free_gb": round(disk_space_free / 1000_000_000, 2),
             "net_recv_bytes": max(
                 0, int(self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"])
             ),
@@ -1045,7 +1045,7 @@ class ResourceTracker:
             StatSpec(column="process_gpu_vram_mib", agg=max, round=2),
             StatSpec(column="process_gpu_utilized", agg=mean, round=2),
             StatSpec(column="process_gpu_utilized", agg=max, round=2),
-            StatSpec(column="system_disk_space_used_gib", agg=max, round=2),
+            StatSpec(column="system_disk_space_used_gb", agg=max, round=2),
             StatSpec(column="system_net_recv_bytes", agg=sum),
             StatSpec(column="system_net_sent_bytes", agg=sum),
             StatSpec(

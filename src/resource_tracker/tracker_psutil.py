@@ -2,6 +2,7 @@
 Helpers to track resource usage via `psutil`.
 """
 
+import re
 from contextlib import suppress
 from time import time
 from typing import Dict, Set, Union
@@ -24,6 +25,9 @@ from .nvidia import (
     start_nvidia_smi,
     start_nvidia_smi_pmon,
 )
+
+# Known APFS data-volume mountpoints in priority order
+_APFS_DATA_MOUNTPOINTS: tuple = ("/System/Volumes/Data",)
 
 
 def get_process_stats(
@@ -184,18 +188,44 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
     stats["net_recv_bytes"] = net_io.bytes_recv
     stats["net_sent_bytes"] = net_io.bytes_sent
 
-    check_zfs = False
     disks = disk_partitions()
+    check_zfs = False
+    apfs_candidates: Dict[str, list] = {}  # container → [(priority, mountpoint)]
+
     for disk in disks:
         if disk.fstype == "zfs":
             check_zfs = True
             continue
-        usage = disk_usage(disk.mountpoint)
-        stats["disk_spaces"][disk.mountpoint] = {
-            "total": usage.total,
-            "used": usage.used,
-            "free": usage.free,
-        }
+        if disk.fstype == "apfs":
+            if "ro" in disk.opts.split(","):
+                continue
+            m = re.match(r"(/dev/disk\d+)", disk.device)
+            container = m.group(1) if m else disk.device
+            prio = (
+                _APFS_DATA_MOUNTPOINTS.index(disk.mountpoint)
+                if disk.mountpoint in _APFS_DATA_MOUNTPOINTS
+                else len(_APFS_DATA_MOUNTPOINTS)  # fallback: first rw volume
+            )
+            apfs_candidates.setdefault(container, []).append((prio, disk.mountpoint))
+            continue
+        with suppress(Exception):
+            usage = disk_usage(disk.mountpoint)
+            stats["disk_spaces"][disk.mountpoint] = {
+                "total": usage.total,
+                "used": usage.used,
+                "free": usage.free,
+            }
+
+    for candidates in apfs_candidates.values():
+        _, mountpoint = min(candidates)
+        with suppress(Exception):
+            usage = disk_usage(mountpoint)
+            stats["disk_spaces"][mountpoint] = {
+                "total": usage.total,
+                "used": usage.used,
+                "free": usage.free,
+            }
+
     if check_zfs:
         stats["disk_spaces"].update(get_zfs_pools_space())
 

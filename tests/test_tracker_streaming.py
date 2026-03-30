@@ -167,8 +167,7 @@ def test_short_run_sends_inline_csv(mock_register, mock_finish, monkeypatch):
 
     finish_kwargs = mock_finish.call_args[1]
     assert finish_kwargs["data_source"] == DataSource.inline
-    # data_csv is gzipped bytes — decompress and verify structure
-    csv_text = gzip.decompress(finish_kwargs["data_csv"]).decode()
+    csv_text = finish_kwargs["data_csv"]
     assert "timestamp" in csv_text
     assert "system_" in csv_text
     assert "process_" in csv_text

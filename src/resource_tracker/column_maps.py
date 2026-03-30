@@ -16,9 +16,9 @@ HUMAN_NAMES_MAPPING = {
     "memory_inactive_mib": "inactive memory",
     "disk_read_bytes": "disk read",
     "disk_write_bytes": "disk write",
-    "disk_space_total_gib": "disk space total",
-    "disk_space_used_gib": "disk space used",
-    "disk_space_free_gib": "disk space free",
+    "disk_space_total_gb": "disk space total",
+    "disk_space_used_gb": "disk space used",
+    "disk_space_free_gb": "disk space free",
     "net_recv_bytes": "inbound network traffic",
     "net_sent_bytes": "outbound network traffic",
     "gpu_usage": "GPU usage",
@@ -43,9 +43,9 @@ BYTE_MAPPING = {
     # MiB -> B
     "gpu_vram_mib": 1024 * 1024,
     # GiB -> B
-    "disk_space_total_gib": 1024 * 1024 * 1024,
-    "disk_space_used_gib": 1024 * 1024 * 1024,
-    "disk_space_free_gib": 1024 * 1024 * 1024,
+    "disk_space_total_gb": 1000 * 1000 * 1000,
+    "disk_space_used_gb": 1000 * 1000 * 1000,
+    "disk_space_free_gb": 1000 * 1000 * 1000,
 }
 
 """Ruleset to decide if a server is dedicated to the process(es) tracked or shared with other processes."""

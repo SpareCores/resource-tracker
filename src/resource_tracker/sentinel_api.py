@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import gzip
 import os
-from base64 import b64encode
 from enum import Enum
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -58,6 +58,7 @@ def _request(
     payload: Optional[dict] = None,
     base_url: Optional[str] = None,
     timeout: int = DEFAULT_TIMEOUT,
+    compress: bool = False,
 ) -> dict:
     """Send a JSON request to the Sentinel API and return the parsed response.
 
@@ -68,6 +69,8 @@ def _request(
         payload: Optional JSON-serializable body.
         base_url: Override the base URL (defaults to env / built-in default).
         timeout: Request timeout in seconds.
+        compress: If ``True``, gzip-compress the request body and set the
+            ``Content-Encoding: gzip`` header.
 
     Returns:
         The JSON-decoded response body as a dictionary.
@@ -77,11 +80,15 @@ def _request(
     """
     url = urljoin(base_url or _get_base_url(), path)
     body = json_dumps(payload).encode("utf-8") if payload is not None else None
+    if compress and body is not None:
+        body = gzip.compress(body)
 
     req = Request(url, data=body, method=method)
     req.add_header("Authorization", f"Bearer {token}")
     req.add_header("Content-Type", "application/json")
     req.add_header("Accept", "application/json")
+    if compress and body is not None:
+        req.add_header("Content-Encoding", "gzip")
 
     logger.debug("Sentinel API %s %s", method, url)
 
@@ -179,7 +186,7 @@ def finish_run(
     run_status: RunStatus = RunStatus.finished,
     data_source: DataSource = DataSource.s3,
     data_uris: Optional[List[str]] = None,
-    data_csv: Optional[bytes] = None,
+    data_csv: Optional[str] = None,
 ) -> dict:
     """Signal that a run has finished and submit final data.
 
@@ -189,11 +196,11 @@ def finish_run(
         exit_code: The exit code of the monitored process.
         run_status: Run outcome (e.g. ``"started"``, ``"finished"``, ``"failed"``, or ``"stale"``).
         data_source: Either ``"s3"`` (uploaded CSV objects) or ``"inline"``
-            (inline gzipped+base64 CSV).
+            (plain CSV string sent inline; the request body is gzip-compressed
+            by :func:`_request` so no pre-encoding is needed).
         data_uris: List of S3 URIs of uploaded gzipped CSV files.
             Required when ``data_source="s3"``.
-        data_csv: Gzipped CSV content to submit inline (base64-encoded
-            automatically before sending).
+        data_csv: Plain CSV string to submit inline.
             Required when ``data_source="inline"``.
 
     Returns:
@@ -211,7 +218,7 @@ def finish_run(
     if data_source == DataSource.s3:
         payload["data_uris"] = data_uris or []
     else:
-        payload["data_csv"] = b64encode(data_csv).decode("ascii") if data_csv else ""
+        payload["data_csv"] = data_csv or ""
 
     logger.info(
         "Finishing run %s (status=%s, exit_code=%d)", run_id, run_status, exit_code
@@ -221,4 +228,5 @@ def finish_run(
         f"/runs/{run_id}/finish",
         token=token,
         payload=payload,
+        compress=True,
     )

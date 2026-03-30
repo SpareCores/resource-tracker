@@ -262,25 +262,22 @@ def test_finish_run_with_inline_csv(mock_urlopen, monkeypatch):
     monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
     import gzip
-    from base64 import b64encode
+    import json
 
-    csv_content = b"timestamp,cpu_usage\n1.0,0.5\n2.0,0.8\n"
-    gzipped = gzip.compress(csv_content)
+    csv_content = "timestamp,cpu_usage\n1.0,0.5\n2.0,0.8\n"
     finish_run(
         FAKE_TOKEN,
         FAKE_RUN_ID,
         exit_code=1,
         run_status=RunStatus.failed,
         data_source=DataSource.inline,
-        data_csv=gzipped,
+        data_csv=csv_content,
     )
 
-    import json
-
     req = mock_urlopen.call_args[0][0]
-    sent = json.loads(req.data.decode("utf-8"))
+    sent = json.loads(gzip.decompress(req.data).decode("utf-8"))
     assert sent["data_source"] == "inline"
-    assert sent["data_csv"] == b64encode(gzipped).decode("ascii")
+    assert sent["data_csv"] == csv_content
     assert sent["exit_code"] == 1
     assert sent["run_status"] == "failed"
     assert "data_uris" not in sent

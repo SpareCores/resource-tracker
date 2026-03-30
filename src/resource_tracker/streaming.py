@@ -183,7 +183,7 @@ class StreamingManager:
             # Fall back to inline with empty gzipped CSV so finish_run still fires
             data_kwargs = {
                 "data_source": DataSource.inline,
-                "data_csv": gzip_compress(b""),
+                "data_csv": "",
             }
 
         result = finish_run(
@@ -340,8 +340,8 @@ class StreamingManager:
             self._seq -= 1
             logger.warning("Failed to upload %s: %s", s3_key, e)
 
-    def _read_all_csv(self) -> bytes:
-        """Read the full contents of the combined CSV file as gzipped bytes.
+    def _read_all_csv(self) -> str:
+        """Read the full contents of the combined CSV file as a plain string.
 
         Used for short runs where no S3 uploads have happened.
         """
@@ -353,9 +353,9 @@ class StreamingManager:
                 logger.debug("CSV update function failed: %s", e)
 
         if self._csv_path is None:
-            return gzip_compress(b"")
+            return ""
         try:
-            with open(self._csv_path, "rb") as fh:
-                return gzip_compress(fh.read())
+            with open(self._csv_path, "r") as fh:
+                return fh.read()
         except FileNotFoundError:
-            return gzip_compress(b"")
+            return ""

@@ -136,9 +136,9 @@ class ProcessTracker:
 
         return {
             "timestamp": round(self.stats["timestamp"], 3),
-            "pid": int(self.pid),
+            "pid": self.pid,
             "children": (
-                int(self.stats["children"]) if self.stats.get("children") else None
+                self.stats["children"] if self.stats.get("children") else None
             ),
             "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
             "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
@@ -155,14 +155,14 @@ class ProcessTracker:
             ),
             "memory_mib": round(self.stats["memory_mib"], 4),
             "disk_read_bytes": max(
-                0, int(self.stats["disk_read_bytes"] - last_stats["disk_read_bytes"])
+                0, self.stats["disk_read_bytes"] - last_stats["disk_read_bytes"]
             ),
             "disk_write_bytes": max(
-                0, int(self.stats["disk_write_bytes"] - last_stats["disk_write_bytes"])
+                0, self.stats["disk_write_bytes"] - last_stats["disk_write_bytes"]
             ),
             "gpu_usage": round(self.stats["gpu_usage"], 4),
             "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
-            "gpu_utilized": int(self.stats["gpu_utilized"]),
+            "gpu_utilized": self.stats["gpu_utilized"],
         }
 
     def start_tracking(
@@ -322,7 +322,7 @@ class SystemTracker:
 
         return {
             "timestamp": round(self.stats["timestamp"], 3),
-            "processes": int(self.stats["processes"]),
+            "processes": self.stats["processes"],
             "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
             "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
@@ -342,20 +342,20 @@ class SystemTracker:
             "memory_cached_mib": round(self.stats["memory_cached_mib"], 4),
             "memory_active_mib": round(self.stats["memory_active_mib"], 4),
             "memory_inactive_mib": round(self.stats["memory_inactive_mib"], 4),
-            "disk_read_bytes": int(total_read_bytes),
-            "disk_write_bytes": int(total_write_bytes),
+            "disk_read_bytes": total_read_bytes,
+            "disk_write_bytes": total_write_bytes,
             "disk_space_total_gb": round(disk_space_total / 1000_000_000, 2),
             "disk_space_used_gb": round(disk_space_used / 1000_000_000, 2),
             "disk_space_free_gb": round(disk_space_free / 1000_000_000, 2),
             "net_recv_bytes": max(
-                0, int(self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"])
+                0, self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"]
             ),
             "net_sent_bytes": max(
-                0, int(self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"])
+                0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
             ),
             "gpu_usage": round(self.stats["gpu_usage"], 4),
             "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
-            "gpu_utilized": int(self.stats["gpu_utilized"]),
+            "gpu_utilized": self.stats["gpu_utilized"],
         }
 
     def start_tracking(

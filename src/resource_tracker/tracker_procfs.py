@@ -296,8 +296,8 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             # Use MemAvailable to match psutil's calculation: used = total - MemAvailable.
             # MemAvailable (Linux 3.14+) is more accurate than MemFree+Buffers+Cached
             # because it also accounts for kernel low-watermark reservations.
-            used = mem_info.get("MemAvailable", free + buffers + cached)
-            stats["memory_used_mib"] = (total - used) / 1024
+            available = mem_info.get("MemAvailable", free + buffers + cached)
+            stats["memory_used_mib"] = (total - available) / 1024
             stats["memory_active_mib"] = mem_info.get("Active", 0) / 1024
             stats["memory_inactive_mib"] = mem_info.get("Inactive", 0) / 1024
 

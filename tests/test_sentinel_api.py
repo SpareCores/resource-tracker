@@ -220,7 +220,7 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
         FAKE_TOKEN,
         FAKE_RUN_ID,
         exit_code=0,
-        run_status=RunStatus.started,
+        run_status=RunStatus.finished,
         data_source=DataSource.s3,
         data_uris=uris,
     )
@@ -234,7 +234,7 @@ def test_finish_run_with_s3_uris(mock_urlopen, monkeypatch):
 
     sent = json.loads(req.data.decode("utf-8"))
     assert sent["exit_code"] == 0
-    assert sent["run_status"] == "started"
+    assert sent["run_status"] == "finished"
     assert sent["data_source"] == "s3"
     assert sent["data_uris"] == uris
     assert "data_csv" not in sent
@@ -310,7 +310,7 @@ def test_finish_run_api_error(mock_urlopen, monkeypatch):
     )
 
     with pytest.raises(SentinelAPIError) as exc_info:
-        finish_run(FAKE_TOKEN, "x", data_source=DataSource.s3, data_uris=[])
+        finish_run(FAKE_TOKEN, "x", data_source=DataSource.s3, data_uris=["s3://bucket/run-x/0001.csv.gz"])
 
     assert exc_info.value.status_code == 500
     assert "server broke" in exc_info.value.body

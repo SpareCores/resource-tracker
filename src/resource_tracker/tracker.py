@@ -682,18 +682,17 @@ class ResourceTracker:
         before each upload cycle to ensure the combined CSV is up-to-date.
         """
         try:
-            combined = self.get_combined_metrics()
-            n = len(combined)
-            if n > self._combined_csv_rows_written:
+            combined_new_lines = self.get_combined_metrics(offset=self._combined_csv_rows_written)
+            if combined_new_lines:
                 buf = StringIO(newline="")
                 writer = csv_writer(buf, quoting=QUOTE_NONNUMERIC)
                 if self._combined_csv_rows_written == 0:
-                    writer.writerow(combined.columns)
-                for i in range(self._combined_csv_rows_written, n):
-                    writer.writerow([combined[col][i] for col in combined.columns])
+                    writer.writerow(combined_new_lines.columns)
+                for i in range(len(combined_new_lines)):
+                    writer.writerow([combined_new_lines[col][i] for col in combined_new_lines.columns])
                 with open(self._combined_csv_filepath, "ab") as f:
                     f.write(buf.getvalue().encode("utf-8"))
-                self._combined_csv_rows_written = n
+                self._combined_csv_rows_written += len(combined_new_lines)
         except Exception as e:
             logger.debug("Combined CSV update: %s", e)
 
@@ -987,6 +986,7 @@ class ResourceTracker:
         human_names: bool = False,
         system_prefix: Optional[str] = None,
         process_prefix: Optional[str] = None,
+        offset: Optional[int] = None,
     ) -> TinyDataFrame:
         """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
@@ -998,6 +998,9 @@ class ResourceTracker:
             human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
             system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
             process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
+            offset: If set, only return records starting from this index (exclusive lower bound).
+                Useful for incremental reads: pass the number of records already consumed and
+                receive only the new ones. Defaults to ``None`` (all data).
 
         Returns:
             A [resource_tracker.tiny_data_frame.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
@@ -1011,6 +1014,11 @@ class ResourceTracker:
                 process_metrics = process_metrics[: len(system_metrics)]
             elif len(system_metrics) > len(process_metrics):
                 system_metrics = system_metrics[: len(process_metrics)]
+
+            # optionally restrict to records from offset onwards
+            if offset is not None and offset > 0:
+                process_metrics = process_metrics[offset:]
+                system_metrics = system_metrics[offset:]
 
             # nothing to report on
             if len(process_metrics) == 0:

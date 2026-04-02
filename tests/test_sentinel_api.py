@@ -310,7 +310,12 @@ def test_finish_run_api_error(mock_urlopen, monkeypatch):
     )
 
     with pytest.raises(SentinelAPIError) as exc_info:
-        finish_run(FAKE_TOKEN, "x", data_source=DataSource.s3, data_uris=["s3://bucket/run-x/0001.csv.gz"])
+        finish_run(
+            FAKE_TOKEN,
+            "x",
+            data_source=DataSource.s3,
+            data_uris=["s3://bucket/run-x/0001.csv.gz"],
+        )
 
     assert exc_info.value.status_code == 500
     assert "server broke" in exc_info.value.body

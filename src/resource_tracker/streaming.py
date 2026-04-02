@@ -43,8 +43,18 @@ def _parse_expires_at(expires_at: str) -> float:
     return datetime.fromisoformat(expires_at).timestamp()
 
 
-def _read_new_bytes(filepath: str, offset: int) -> tuple[bytes, int]:
+def _read_new_bytes(
+    filepath: str, offset: int, until: Optional[bytes] = None
+) -> tuple[bytes, int]:
     """Read new bytes from *filepath* starting at *offset*.
+
+    Args:
+        filepath: Path to the file to read.
+        offset: Byte position to start reading from.
+        until: If given, stop reading at (and including) the first occurrence
+            of this delimiter after *offset*.  Useful for reading a single
+            line, e.g. ``until=b"\\n"`` to grab the CSV header without
+            loading the whole file.
 
     Returns:
         A ``(new_bytes, new_offset)`` tuple.  *new_bytes* may be empty if
@@ -53,7 +63,19 @@ def _read_new_bytes(filepath: str, offset: int) -> tuple[bytes, int]:
     try:
         with open(filepath, "rb") as fh:
             fh.seek(offset)
-            data = fh.read()
+            if until is not None:
+                data = b""
+                while True:
+                    chunk = fh.read(256)
+                    if not chunk:
+                        break
+                    idx = chunk.find(until)
+                    if idx >= 0:
+                        data += chunk[: idx + len(until)]
+                        break
+                    data += chunk
+            else:
+                data = fh.read()
             return data, offset + len(data)
     except FileNotFoundError:
         return b"", offset
@@ -307,11 +329,8 @@ class StreamingManager:
         # If this is not the first batch, prepend the CSV header so every
         # uploaded object is a self-contained CSV.
         if current_offset > 0:
-            header, _ = _read_new_bytes(self._csv_path, 0)
-            # header is everything up to (and including) the first newline
-            header_end = header.find(b"\n")
-            if header_end >= 0:
-                header_line = header[: header_end + 1]
+            header_line, _ = _read_new_bytes(self._csv_path, 0, b"\n")
+            if header_line:
                 new_data = header_line + new_data
 
         compressed = gzip_compress(new_data)

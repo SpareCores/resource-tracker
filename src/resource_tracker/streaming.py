@@ -214,7 +214,7 @@ class StreamingManager:
     @property
     def uploaded_uris(self) -> List[str]:
         """S3 URIs of all successfully uploaded objects so far."""
-        return list(self._uploaded_uris)
+        return self._uploaded_uris
 
     def _set_credentials(self, creds: dict) -> None:
         """Store credentials and compute the expiry timestamp."""

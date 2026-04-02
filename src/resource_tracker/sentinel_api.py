@@ -20,10 +20,8 @@ DEFAULT_TIMEOUT = 30  # seconds
 
 
 class RunStatus(Enum):
-    started = "started"
     finished = "finished"
     failed = "failed"
-    stale = "stale"
 
 
 class DataSource(Enum):
@@ -185,7 +183,7 @@ def finish_run(
         token: Bearer token for authentication.
         run_id: The run identifier returned by :func:`register_run`.
         exit_code: The exit code of the monitored process.
-        run_status: Run outcome (e.g. ``"started"``, ``"finished"``, ``"failed"``, or ``"stale"``).
+        run_status: Run outcome, either ``"finished"`` or ``"failed"``.
         data_source: Either ``"s3"`` (uploaded CSV objects) or ``"inline"``
             (plain CSV string sent inline; the request body is gzip-compressed
             by :func:`_request` so no pre-encoding is needed).
@@ -206,10 +204,15 @@ def finish_run(
         "data_source": data_source.value,
     }
 
+    if not data_uris and not data_csv:
+        raise ValueError(
+            "Either 'data_uris' (for data_source='s3') or 'data_csv' (for data_source='inline') must be provided."
+        )
+
     if data_source == DataSource.s3:
-        payload["data_uris"] = data_uris or []
+        payload["data_uris"] = data_uris
     else:
-        payload["data_csv"] = data_csv or ""
+        payload["data_csv"] = data_csv
 
     logger.info(
         "Finishing run %s (status=%s, exit_code=%d)", run_id, run_status, exit_code

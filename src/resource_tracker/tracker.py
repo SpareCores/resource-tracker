@@ -682,14 +682,21 @@ class ResourceTracker:
         before each upload cycle to ensure the combined CSV is up-to-date.
         """
         try:
-            combined_new_lines = self.get_combined_metrics(offset=self._combined_csv_rows_written)
+            combined_new_lines = self.get_combined_metrics(
+                offset=self._combined_csv_rows_written
+            )
             if combined_new_lines:
                 buf = StringIO(newline="")
                 writer = csv_writer(buf, quoting=QUOTE_NONNUMERIC)
                 if self._combined_csv_rows_written == 0:
                     writer.writerow(combined_new_lines.columns)
                 for i in range(len(combined_new_lines)):
-                    writer.writerow([combined_new_lines[col][i] for col in combined_new_lines.columns])
+                    writer.writerow(
+                        [
+                            combined_new_lines[col][i]
+                            for col in combined_new_lines.columns
+                        ]
+                    )
                 with open(self._combined_csv_filepath, "ab") as f:
                     f.write(buf.getvalue().encode("utf-8"))
                 self._combined_csv_rows_written += len(combined_new_lines)

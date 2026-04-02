@@ -40,7 +40,6 @@ BYTE_MAPPING = {
     "memory_cached_mib": 1024 * 1024,
     "memory_active_mib": 1024 * 1024,
     "memory_inactive_mib": 1024 * 1024,
-    # MiB -> B
     "gpu_vram_mib": 1024 * 1024,
     # GiB -> B
     "disk_space_total_gb": 1000 * 1000 * 1000,

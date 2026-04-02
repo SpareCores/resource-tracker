@@ -14,7 +14,6 @@ from resource_tracker.sentinel_api import (
     _get_base_url,
     _request,
     finish_run,
-    get_token,
     refresh_credentials,
     register_run,
 )
@@ -36,21 +35,6 @@ def _mock_response(body: dict, status: int = 200) -> MagicMock:
     resp.__enter__ = MagicMock(return_value=resp)
     resp.__exit__ = MagicMock(return_value=False)
     return resp
-
-
-# ---------------------------------------------------------------------------
-# get_token
-# ---------------------------------------------------------------------------
-
-
-def test_get_token_when_set(monkeypatch):
-    monkeypatch.setenv("SENTINEL_API_TOKEN", "my-secret")
-    assert get_token() == "my-secret"
-
-
-def test_get_token_when_unset(monkeypatch):
-    monkeypatch.delenv("SENTINEL_API_TOKEN", raising=False)
-    assert get_token() is None
 
 
 # ---------------------------------------------------------------------------

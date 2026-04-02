@@ -101,15 +101,6 @@ def _request(
         raise SentinelAPIError(exc.code, error_body) from exc
 
 
-def get_token() -> Optional[str]:
-    """Read the Sentinel API token from the ``SENTINEL_API_TOKEN`` environment variable.
-
-    Returns:
-        The token string, or ``None`` if the variable is not set.
-    """
-    return os.environ.get("SENTINEL_API_TOKEN")
-
-
 def register_run(
     token: str,
     metadata: Optional[Dict[str, Any]] = None,

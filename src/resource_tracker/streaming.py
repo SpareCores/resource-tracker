@@ -68,7 +68,9 @@ def _read_new_bytes(
                 while True:
                     chunk = fh.read(256)
                     if not chunk:
-                        break
+                        raise ValueError(
+                            f"Delimiter {until!r} not found in {filepath!r} from offset {offset}"
+                        )
                     idx = chunk.find(until)
                     if idx >= 0:
                         data += chunk[: idx + len(until)]
@@ -130,6 +132,7 @@ class StreamingManager:
         # Upload bookkeeping
         self._uploaded_uris: List[str] = []
         self._seq: int = 0  # sequence counter for S3 keys
+        self._csv_header: bytes = b""
         self._csv_offset: int = 0
 
         # Thread control
@@ -326,12 +329,15 @@ class StreamingManager:
         if not new_data:
             return
 
-        # If this is not the first batch, prepend the CSV header so every
-        # uploaded object is a self-contained CSV.
-        if current_offset > 0:
-            header_line, _ = _read_new_bytes(self._csv_path, 0, b"\n")
-            if header_line:
-                new_data = header_line + new_data
+        if current_offset == 0 and not self._csv_header:
+            header_end = new_data.find(b"\n")
+            if header_end > 0:
+                self._csv_header = new_data[: header_end + 1]
+            else:
+                raise ValueError(f"CSV data at {self._csv_path!r} has no header line")
+
+        if current_offset > 0 and self._csv_header:
+            new_data = self._csv_header + new_data
 
         compressed = gzip_compress(new_data)
         self._seq += 1

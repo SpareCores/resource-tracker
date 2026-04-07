@@ -510,7 +510,7 @@ class ResourceTracker:
         children: bool = True,
         interval: float = 1,
         method: Optional[str] = None,
-        autostart: bool = True,
+        autostart: bool = False,
         track_processes: bool = True,
         track_system: bool = True,
         discover_server: bool = True,
@@ -782,6 +782,7 @@ class ResourceTracker:
         Returns:
             self
         """
+        self.autostart = True
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:

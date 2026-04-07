@@ -329,14 +329,14 @@ class StreamingManager:
         if not new_data:
             return
 
-        if current_offset == 0 and not self._csv_header:
+        if current_offset == 0:
             header_end = new_data.find(b"\n")
             if header_end > 0:
                 self._csv_header = new_data[: header_end + 1]
             else:
                 raise ValueError(f"CSV data at {self._csv_path!r} has no header line")
 
-        if current_offset > 0 and self._csv_header:
+        if current_offset > 0:
             new_data = self._csv_header + new_data
 
         compressed = gzip_compress(new_data)

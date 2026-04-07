@@ -13,6 +13,11 @@
 - Add `offset` parameter to `get_combined_metrics` for incremental reads
 - Add context manager support to `ResourceTracker`
 
+!! Breaking changes:
+
+- `autostart` parameter of `ResourceTracker` is now defaulted to `False` and defaulted to `True` in the Metaflow
+  extension.
+
 ## v0.4.2 (August 8, 2025)
 
 - Add `cleanup` method to `ResourceTracker` to cleanup temp files and background processes.

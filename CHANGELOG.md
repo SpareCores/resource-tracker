@@ -1,6 +1,6 @@
 ## v0.5.0 (April 2, 2026)
 
-- Add real-time metric streaming to the [Spare Cores Sentinel API](https://sentinel.sparecores.net): pass
+- Add optional and configurable metric streaming to the [Spare Cores Sentinel API](https://sparecores.com): pass
   `sentinel_token` to `ResourceTracker` (or set `SENTINEL_API_TOKEN` env var) to periodically upload gzipped CSV batches
   to S3, with automatic STS credential refresh and inline CSV fallback for short runs
 - Add `sentinel_api` module: HTTP client for registering runs, refreshing credentials, and submitting final data

@@ -1,4 +1,4 @@
-## v0.4.3 (April 2, 2026)
+## v0.5.0 (April 2, 2026)
 
 - Add real-time metric streaming to the [Spare Cores Sentinel API](https://sentinel.sparecores.net): pass
   `sentinel_token` to `ResourceTracker` (or set `SENTINEL_API_TOKEN` env var) to periodically upload gzipped CSV batches

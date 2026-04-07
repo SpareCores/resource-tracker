@@ -490,11 +490,12 @@ class ResourceTracker:
     Example:
 
         >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
-        >>> tracker = ResourceTracker()
+        >>> tracker = ResourceTracker(autostart=True)
         >>> cpu_single()
         >>> tracker.recommend_resources()  # doctest: +SKIP
         {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
         >>> tracker = ResourceTracker()
+        >>> tracker.start()
         >>> while tracker.n_samples == 0:
         ...     cpu_multi(duration=0.25, ncores=2)
         >>> tracker.recommend_resources()  # multiprocessing is not enough efficient on Windows/macOS  # doctest: +SKIP

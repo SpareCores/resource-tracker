@@ -50,7 +50,7 @@ def test_no_streaming_when_token_is_absent(monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker()
+    tracker = ResourceTracker(autostart=True)
     _wait_for_tracker(tracker)
     tracker.stop()
 
@@ -76,6 +76,7 @@ def test_start_registers_run_with_sentinel(mock_register, monkeypatch):
         sentinel_token="test-token",
         upload_interval=9999,
         streaming_metadata={"project_name": "test-project"},
+        autostart=True,
     )
     _wait_for_tracker(tracker)
 
@@ -109,6 +110,7 @@ def test_stop_calls_finish_run(mock_register, mock_finish, monkeypatch):
     tracker = ResourceTracker(
         sentinel_token="test-token",
         upload_interval=9999,
+        autostart=True,
     )
     _wait_for_tracker(tracker)
     tracker.stop(exit_code=0, run_status="finished")
@@ -137,7 +139,9 @@ def test_stop_forwards_failure_status(mock_register, mock_finish, monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
     tracker.stop(exit_code=1, run_status="failed")
 
@@ -161,7 +165,9 @@ def test_short_run_sends_inline_csv(mock_register, mock_finish, monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
     tracker.stop()
 
@@ -189,7 +195,9 @@ def test_update_combined_csv_appends_rows(mock_register, monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
 
     # Manually trigger a combined CSV update
@@ -237,7 +245,7 @@ def test_token_from_env_variable(mock_register, monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(upload_interval=9999)
+    tracker = ResourceTracker(upload_interval=9999, autostart=True)
     _wait_for_tracker(tracker)
 
     mock_register.assert_called_once()
@@ -261,7 +269,9 @@ def test_streaming_start_failure_degrades_gracefully(mock_register, monkeypatch)
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
 
     assert tracker._streaming is None  # streaming disabled after failure
@@ -288,7 +298,9 @@ def test_streaming_stop_failure_degrades_gracefully(
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
     tracker.stop()  # should not raise despite finish_run failure
 
@@ -311,7 +323,9 @@ def test_stop_no_args_backward_compatible(mock_register, mock_finish, monkeypatc
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
     tracker.stop()  # no args — uses defaults
 
@@ -339,7 +353,9 @@ def test_upload_batch_uses_csv_update_fn(
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
 
     # Manually trigger an upload cycle
@@ -381,7 +397,9 @@ def test_stop_with_uploads_sends_data_uris(
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
 
     # Manually trigger an upload to get at least one S3 URI
@@ -410,7 +428,9 @@ def test_sentinel_result_property(mock_register, mock_finish, monkeypatch):
 
     from resource_tracker import ResourceTracker
 
-    tracker = ResourceTracker(sentinel_token="test-token", upload_interval=9999)
+    tracker = ResourceTracker(
+        sentinel_token="test-token", upload_interval=9999, autostart=True
+    )
     _wait_for_tracker(tracker)
 
     assert tracker.sentinel_result is None  # not set yet

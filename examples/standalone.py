@@ -3,7 +3,7 @@ from time import sleep
 from resource_tracker import ResourceTracker
 
 # both process-level and system-wide trackers will start automatically in the background by default
-tracker = ResourceTracker()
+tracker = ResourceTracker(autostart=True)
 
 # there is no collected data so far
 tracker.process_metrics

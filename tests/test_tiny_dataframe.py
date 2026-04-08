@@ -251,7 +251,9 @@ def test_csv_numeric_types(tmp_path):
 
     # Check that types are preserved
     assert isinstance(loaded_df["string_col"][0], str)
-    assert isinstance(loaded_df["int_col"][0], int)  # integers must survive the round-trip as int
+    assert isinstance(
+        loaded_df["int_col"][0], int
+    )  # integers must survive the round-trip as int
     assert isinstance(loaded_df["float_col"][0], float)
 
     # Check values
@@ -436,7 +438,7 @@ def test_read_csv_from_http_url():
 
     assert df.columns == ["name", "count", "score"]
     assert df["name"][0] == "Alice"
-    assert df["count"][0] == 10          # must be int, not float
+    assert df["count"][0] == 10  # must be int, not float
     assert isinstance(df["count"][0], int)
     assert df["score"][0] == 9.5
     assert isinstance(df["score"][0], float)
@@ -477,7 +479,9 @@ def test_read_csv_retries_on_dict_reader_failure(tmp_path):
             raise OSError("File temporarily locked")
         return real_dict_reader(source, *args, **kwargs)
 
-    with patch("resource_tracker.tiny_data_frame.DictReader", side_effect=flaky_dict_reader):
+    with patch(
+        "resource_tracker.tiny_data_frame.DictReader", side_effect=flaky_dict_reader
+    ):
         with patch("resource_tracker.tiny_data_frame.sleep"):
             df = TinyDataFrame(csv_file_path=str(csv_path), retries=2, retry_delay=0.01)
 
@@ -559,12 +563,12 @@ def test_csv_round_trip_with_mixed_types_and_strings(tmp_path):
 
 def test_csv_round_trip_strings_with_commas_and_quotes(tmp_path):
     """String values that contain commas or quotes are quoted and round-trip correctly."""
-    df = TinyDataFrame({"desc": ['hello, world', 'say "hi"', "plain"]})
+    df = TinyDataFrame({"desc": ["hello, world", 'say "hi"', "plain"]})
     csv_path = tmp_path / "special.csv"
     df.to_csv(str(csv_path))
     loaded = TinyDataFrame(csv_file_path=str(csv_path))
 
-    assert loaded["desc"] == ['hello, world', 'say "hi"', "plain"]
+    assert loaded["desc"] == ["hello, world", 'say "hi"', "plain"]
 
 
 # ---------------------------------------------------------------------------
@@ -623,7 +627,7 @@ def test_str_with_string_column():
     assert "score" in output
     # Numbers should be right-aligned; verify both rows appear
     lines = output.split("\n")
-    data_lines = [l for l in lines if "Alice" in l or "Bob" in l]
+    data_lines = [line for line in lines if "Alice" in line or "Bob" in line]
     assert len(data_lines) == 2
 
 
@@ -638,7 +642,7 @@ def test_to_csv_returns_string(sample_data):
     csv_str = df.to_csv()  # no path
 
     assert isinstance(csv_str, str)
-    assert '"timestamp"' in csv_str   # header string-quoted
+    assert '"timestamp"' in csv_str  # header string-quoted
     assert "15.5" in csv_str
     assert "92.7" in csv_str
 
@@ -677,4 +681,3 @@ def test_stats_with_failing_agg(sample_data):
     assert "bad" not in result.get("cpu", {})
     # the valid spec should still produce a result
     assert result["memory"]["max"] == 4800
-

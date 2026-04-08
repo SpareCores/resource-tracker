@@ -1,8 +1,9 @@
 from statistics import mean
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from resource_tracker.tiny_data_frame import StatSpec, TinyDataFrame
+from resource_tracker.tiny_data_frame import DictReader, StatSpec, TinyDataFrame
 
 
 @pytest.fixture
@@ -414,3 +415,266 @@ def test_stats(sample_data):
     assert stats["cpu"]["mean"] == 46
     assert stats["memory"]["max"] == 4800
     assert stats["memory"]["count"] == 12
+
+
+# ---------------------------------------------------------------------------
+# CSV structure: read from HTTP URL
+# ---------------------------------------------------------------------------
+
+
+def test_read_csv_from_http_url():
+    """_read_csv fetches and parses a CSV from an HTTP/HTTPS URL."""
+    csv_bytes = b'"name","count","score"\n"Alice",10,9.5\n"Bob",3,7.25\n'
+
+    mock_response = MagicMock()
+    mock_response.read.return_value = csv_bytes
+    mock_response.__enter__ = lambda s: s
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("resource_tracker.tiny_data_frame.urlopen", return_value=mock_response):
+        df = TinyDataFrame(csv_file_path="https://example.com/data.csv")
+
+    assert df.columns == ["name", "count", "score"]
+    assert df["name"][0] == "Alice"
+    assert df["count"][0] == 10          # must be int, not float
+    assert isinstance(df["count"][0], int)
+    assert df["score"][0] == 9.5
+    assert isinstance(df["score"][0], float)
+    assert len(df) == 2
+
+
+# ---------------------------------------------------------------------------
+# CSV structure: corrupt file (extra fields create None key)
+# ---------------------------------------------------------------------------
+
+
+def test_read_csv_corrupt_extra_fields(tmp_path):
+    """Rows with more fields than the header produce a None key → RuntimeError."""
+    csv_path = tmp_path / "corrupt.csv"
+    # Third field on the data row has no matching header → DictReader uses None as key
+    csv_path.write_text('"a","b"\n"x","y","z"\n')
+
+    with pytest.raises(RuntimeError):
+        TinyDataFrame(csv_file_path=str(csv_path))
+
+
+# ---------------------------------------------------------------------------
+# CSV structure: retry on transient read failure
+# ---------------------------------------------------------------------------
+
+
+def test_read_csv_retries_on_dict_reader_failure(tmp_path):
+    """_read_csv retries when DictReader raises, succeeds on a later attempt."""
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text('"col"\n"hello"\n"world"\n')
+
+    real_dict_reader = DictReader
+    call_count = [0]
+
+    def flaky_dict_reader(source, *args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise OSError("File temporarily locked")
+        return real_dict_reader(source, *args, **kwargs)
+
+    with patch("resource_tracker.tiny_data_frame.DictReader", side_effect=flaky_dict_reader):
+        with patch("resource_tracker.tiny_data_frame.sleep"):
+            df = TinyDataFrame(csv_file_path=str(csv_path), retries=2, retry_delay=0.01)
+
+    assert call_count[0] == 2
+    assert df["col"] == ["hello", "world"]
+
+
+def test_read_csv_raises_after_all_retries_exhausted():
+    """RuntimeError is raised when every retry attempt fails."""
+    with pytest.raises(RuntimeError, match="Failed to read CSV file after"):
+        TinyDataFrame(
+            csv_file_path="/nonexistent/does_not_exist.csv",
+            retries=2,
+            retry_delay=0,
+        )
+
+
+# ---------------------------------------------------------------------------
+# CSV structure: various numeric types round-trip
+# ---------------------------------------------------------------------------
+
+
+def test_csv_round_trip_preserves_int_type(tmp_path):
+    """Integers survive write→read as int, not float."""
+    df = TinyDataFrame({"pid": [1001, 1002, 1003], "count": [5, 10, 15]})
+    csv_path = tmp_path / "ints.csv"
+    df.to_csv(str(csv_path))
+    loaded = TinyDataFrame(csv_file_path=str(csv_path))
+
+    assert loaded["pid"] == [1001, 1002, 1003]
+    assert all(isinstance(v, int) for v in loaded["pid"])
+    assert all(isinstance(v, int) for v in loaded["count"])
+
+
+def test_csv_round_trip_preserves_float_type(tmp_path):
+    """Floats survive write→read as float (not collapsed to int even if whole-number)."""
+    df = TinyDataFrame({"cpu": [1.0, 2.5, 3.14]})
+    csv_path = tmp_path / "floats.csv"
+    df.to_csv(str(csv_path))
+    loaded = TinyDataFrame(csv_file_path=str(csv_path))
+
+    assert loaded["cpu"] == [1.0, 2.5, 3.14]
+    assert all(isinstance(v, float) for v in loaded["cpu"])
+
+
+def test_csv_round_trip_preserves_negative_numbers(tmp_path):
+    """Negative ints and floats survive write→read with correct sign and type."""
+    df = TinyDataFrame({"delta": [-10, -3, 0, 7], "rate": [-1.5, 0.0, 2.5, -3.14]})
+    csv_path = tmp_path / "neg.csv"
+    df.to_csv(str(csv_path))
+    loaded = TinyDataFrame(csv_file_path=str(csv_path))
+
+    assert loaded["delta"] == [-10, -3, 0, 7]
+    assert all(isinstance(v, int) for v in loaded["delta"])
+    assert loaded["rate"] == [-1.5, 0.0, 2.5, -3.14]
+    assert all(isinstance(v, float) for v in loaded["rate"])
+
+
+def test_csv_round_trip_with_mixed_types_and_strings(tmp_path):
+    """Mixed string/int/float columns all survive a full write→read round-trip."""
+    df = TinyDataFrame(
+        {
+            "label": ["foo", "bar", "baz"],
+            "n": [42, 0, -7],
+            "x": [3.14, -0.5, 1.0],
+        }
+    )
+    csv_path = tmp_path / "mixed.csv"
+    df.to_csv(str(csv_path))
+    loaded = TinyDataFrame(csv_file_path=str(csv_path))
+
+    assert loaded["label"] == ["foo", "bar", "baz"]
+    assert all(isinstance(v, str) for v in loaded["label"])
+    assert loaded["n"] == [42, 0, -7]
+    assert all(isinstance(v, int) for v in loaded["n"])
+    assert loaded["x"] == [3.14, -0.5, 1.0]
+    assert all(isinstance(v, float) for v in loaded["x"])
+
+
+def test_csv_round_trip_strings_with_commas_and_quotes(tmp_path):
+    """String values that contain commas or quotes are quoted and round-trip correctly."""
+    df = TinyDataFrame({"desc": ['hello, world', 'say "hi"', "plain"]})
+    csv_path = tmp_path / "special.csv"
+    df.to_csv(str(csv_path))
+    loaded = TinyDataFrame(csv_file_path=str(csv_path))
+
+    assert loaded["desc"] == ['hello, world', 'say "hi"', "plain"]
+
+
+# ---------------------------------------------------------------------------
+# __iter__ and to_dict
+# ---------------------------------------------------------------------------
+
+
+def test_iter(sample_data):
+    """Iterating over TinyDataFrame yields row dicts."""
+    df = TinyDataFrame(sample_data)
+    rows = list(df)
+
+    assert len(rows) == 12
+    assert rows[0] == {"timestamp": 1737676800, "cpu": 15.5, "memory": 2500}
+    assert rows[5]["cpu"] == 92.7
+
+
+def test_to_dict(sample_data):
+    """to_dict returns a list of row dictionaries."""
+    df = TinyDataFrame(sample_data)
+    result = df.to_dict()
+
+    assert isinstance(result, list)
+    assert len(result) == 12
+    assert result[5]["cpu"] == 92.7
+    assert result[0] == {"timestamp": 1737676800, "cpu": 15.5, "memory": 2500}
+
+
+# ---------------------------------------------------------------------------
+# __repr__
+# ---------------------------------------------------------------------------
+
+
+def test_repr(sample_data):
+    """__repr__ returns the expected one-liner summary."""
+    df = TinyDataFrame(sample_data)
+    r = repr(df)
+
+    assert "TinyDataFrame with 12 rows and 3 columns" in r
+    assert "First row as a dict" in r
+    assert "timestamp" in r
+
+
+# ---------------------------------------------------------------------------
+# __str__ with string-valued column (left-align branch)
+# ---------------------------------------------------------------------------
+
+
+def test_str_with_string_column():
+    """__str__ left-aligns string cells (exercises the except ValueError branch)."""
+    df = TinyDataFrame({"name": ["Alice", "Bob"], "score": [95.5, 87.3]})
+    output = str(df)
+
+    assert "Alice" in output
+    assert "Bob" in output
+    assert "score" in output
+    # Numbers should be right-aligned; verify both rows appear
+    lines = output.split("\n")
+    data_lines = [l for l in lines if "Alice" in l or "Bob" in l]
+    assert len(data_lines) == 2
+
+
+# ---------------------------------------------------------------------------
+# to_csv: no-path (returns string) and quote_strings=False
+# ---------------------------------------------------------------------------
+
+
+def test_to_csv_returns_string(sample_data):
+    """to_csv() without a path returns the CSV content as a string."""
+    df = TinyDataFrame(sample_data)
+    csv_str = df.to_csv()  # no path
+
+    assert isinstance(csv_str, str)
+    assert '"timestamp"' in csv_str   # header string-quoted
+    assert "15.5" in csv_str
+    assert "92.7" in csv_str
+
+
+def test_to_csv_no_quoting(sample_data):
+    """to_csv(quote_strings=False) uses QUOTE_MINIMAL (no forced string quotes)."""
+    df = TinyDataFrame(sample_data)
+    csv_str = df.to_csv(quote_strings=False)
+
+    assert isinstance(csv_str, str)
+    # QUOTE_MINIMAL: plain column names without surrounding double-quotes
+    assert "timestamp" in csv_str
+    assert '"timestamp"' not in csv_str
+
+
+# ---------------------------------------------------------------------------
+# stats: error handling when agg function raises
+# ---------------------------------------------------------------------------
+
+
+def test_stats_with_failing_agg(sample_data):
+    """stats() logs and skips a spec whose agg function raises; other specs still work."""
+    df = TinyDataFrame(sample_data)
+
+    def bad_agg(col):
+        raise RuntimeError("intentional failure")
+
+    result = df.stats(
+        [
+            StatSpec(column="cpu", agg=bad_agg, agg_name="bad"),
+            StatSpec(column="memory", agg=max),
+        ]
+    )
+
+    # bad_agg result should be absent (error was caught and logged)
+    assert "bad" not in result.get("cpu", {})
+    # the valid spec should still produce a result
+    assert result["memory"]["max"] == 4800
+

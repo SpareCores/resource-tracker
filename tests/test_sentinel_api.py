@@ -296,6 +296,44 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen, monkeypatch):
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
+def test_register_run_command_as_list_sent_as_json_array(mock_urlopen, monkeypatch):
+    """command provided as a list is sent verbatim as a JSON array."""
+    mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
+
+    import json
+
+    register_run(
+        FAKE_TOKEN,
+        metadata={"command": ["python", "train.py", "--epochs", "10"]},
+    )
+
+    req = mock_urlopen.call_args[0][0]
+    sent = json.loads(req.data.decode("utf-8"))
+    assert sent["command"] == ["python", "train.py", "--epochs", "10"]
+    assert isinstance(sent["command"], list)
+
+
+@patch("resource_tracker.sentinel_api.urlopen")
+def test_register_run_command_as_string_coerced_to_list(mock_urlopen, monkeypatch):
+    """A plain string command is split with shlex and sent as a JSON array."""
+    mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
+    monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
+
+    import json
+
+    register_run(
+        FAKE_TOKEN,
+        metadata={"command": 'python train.py --epochs 10 --name "my run"'},
+    )
+
+    req = mock_urlopen.call_args[0][0]
+    sent = json.loads(req.data.decode("utf-8"))
+    assert sent["command"] == ["python", "train.py", "--epochs", "10", "--name", "my run"]
+    assert isinstance(sent["command"], list)
+
+
+@patch("resource_tracker.sentinel_api.urlopen")
 def test_finish_run_api_error(mock_urlopen, monkeypatch):
     from urllib.error import HTTPError
 

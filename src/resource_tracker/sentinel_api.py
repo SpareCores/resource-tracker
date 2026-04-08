@@ -8,6 +8,7 @@ from enum import Enum
 from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
+from shlex import split as shlex_split
 from typing import Any, Dict, List, Optional
 from urllib.error import HTTPError
 from urllib.parse import urljoin
@@ -112,7 +113,11 @@ def register_run(
         token: Bearer token for authentication.
         metadata: Optional run metadata. Recognised keys include
             ``project_name``, ``job_name``, ``stage_name``, ``task_name``,
-            ``external_run_id``, ``pid``, ``container_image``, ``command``,
+            ``external_run_id``, ``pid``, ``container_image``,
+            ``command`` (a ``List[str]`` JSON array, e.g.
+            ``["python", "train.py", "--epochs", "10"]``; a plain ``str``
+            is automatically split with :func:`shlex.split` for backward
+            compatibility),
             ``env``, ``language``, ``orchestrator``, ``executor``, ``team``,
             and ``tags`` (an arbitrary key-value dict).
         host_info: Optional dict of ``host_*`` fields (e.g. ``host_vcpus``,
@@ -138,6 +143,8 @@ def register_run(
         payload.update({k: v for k, v in host_info.items() if v is not None})
     if cloud_info:
         payload.update({k: v for k, v in cloud_info.items() if v is not None})
+    if isinstance(payload.get("command"), str):
+        payload["command"] = shlex_split(payload["command"])
     logger.info("Registering run with Sentinel API")
     return _request("POST", "/runs", token=token, payload=payload)
 

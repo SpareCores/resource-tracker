@@ -57,21 +57,21 @@ class TinyDataFrame:
 
         >>> df = TinyDataFrame(csv_file_path="https://raw.githubusercontent.com/plotly/datasets/refs/heads/master/mtcars.csv")
         >>> df
-        TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'manufacturer': 'Mazda RX4', 'mpg': 21.0, 'cyl': 6.0, 'disp': 160.0, 'hp': 110.0, 'drat': 3.9, 'wt': 2.62, 'qsec': 16.46, 'vs': 0.0, 'am': 1.0, 'gear': 4.0, 'carb': 4.0}
+        TinyDataFrame with 32 rows and 12 columns. First row as a dict: {'manufacturer': 'Mazda RX4', 'mpg': 21, 'cyl': 6, 'disp': 160, 'hp': 110, 'drat': 3.9, 'wt': 2.62, 'qsec': 16.46, 'vs': 0, 'am': 1, 'gear': 4, 'carb': 4}
         >>> df[2:5][['manufacturer', 'hp']]
-        TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'manufacturer': 'Datsun 710', 'hp': 93.0}
+        TinyDataFrame with 3 rows and 2 columns. First row as a dict: {'manufacturer': 'Datsun 710', 'hp': 93}
         >>> print(df[2:5][['manufacturer', 'hp']])  # doctest: +NORMALIZE_WHITESPACE
         TinyDataFrame with 3 rows and 2 columns:
         manufacturer      | hp
-        ------------------+------
-        Datsun 710        |  93.0
-        Hornet 4 Drive    | 110.0
-        Hornet Sportabout | 175.0
+        ------------------+----
+        Datsun 710        |  93
+        Hornet 4 Drive    | 110
+        Hornet Sportabout | 175
         >>> print(df[2:5][['manufacturer', 'hp']].to_csv())  # doctest: +NORMALIZE_WHITESPACE
         "manufacturer","hp"
-        "Datsun 710",93.0
-        "Hornet 4 Drive",110.0
-        "Hornet Sportabout",175.0
+        "Datsun 710",93
+        "Hornet 4 Drive",110
+        "Hornet Sportabout",175
     """
 
     _data: List[List[float]] = []

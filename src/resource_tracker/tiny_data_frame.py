@@ -162,10 +162,20 @@ class TinyDataFrame:
                         csv_source = content
                 else:
                     csv_source = open(csv_file_path, "r", newline="")
-                records = list(DictReader(csv_source, quoting=QUOTE_NONNUMERIC))
+                records = list(DictReader(csv_source))
                 for record in records:
                     if None in record.keys():
                         raise ValueError("Corrupt CSV file with unknown column names.")
+                    # convert numeric strings to int/float as appropriate, keep string otherwise
+                    for key, value in record.items():
+                        if isinstance(value, str):
+                            try:
+                                record[key] = int(value)
+                            except ValueError:
+                                try:
+                                    record[key] = float(value)
+                                except ValueError:
+                                    pass
                 return records
             except Exception as e:
                 last_error = e

@@ -784,6 +784,7 @@ class ResourceTracker:
             self
         """
         self.autostart = True
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:

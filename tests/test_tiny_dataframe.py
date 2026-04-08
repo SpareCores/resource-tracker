@@ -250,7 +250,7 @@ def test_csv_numeric_types(tmp_path):
 
     # Check that types are preserved
     assert isinstance(loaded_df["string_col"][0], str)
-    assert isinstance(loaded_df["int_col"][0], (int, float))  # CSV might load as float
+    assert isinstance(loaded_df["int_col"][0], int)  # integers must survive the round-trip as int
     assert isinstance(loaded_df["float_col"][0], float)
 
     # Check values

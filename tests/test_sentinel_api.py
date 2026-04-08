@@ -297,7 +297,7 @@ def test_register_run_with_host_and_cloud_info(mock_urlopen, monkeypatch):
 
 @patch("resource_tracker.sentinel_api.urlopen")
 def test_register_run_command_as_list_sent_as_json_array(mock_urlopen, monkeypatch):
-    """command provided as a list is sent verbatim as a JSON array."""
+    """command provided as a list is serialised to a JSON-array string on the wire."""
     mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
     monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
@@ -310,13 +310,14 @@ def test_register_run_command_as_list_sent_as_json_array(mock_urlopen, monkeypat
 
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
-    assert sent["command"] == ["python", "train.py", "--epochs", "10"]
-    assert isinstance(sent["command"], list)
+    # The value must be a string on the wire (JSON array serialised as a string)
+    assert isinstance(sent["command"], str)
+    assert json.loads(sent["command"]) == ["python", "train.py", "--epochs", "10"]
 
 
 @patch("resource_tracker.sentinel_api.urlopen")
 def test_register_run_command_as_string_coerced_to_list(mock_urlopen, monkeypatch):
-    """A plain string command is split with shlex and sent as a JSON array."""
+    """A plain shell string is split via shlex and serialised to a JSON-array string."""
     mock_urlopen.return_value = _mock_response(REGISTER_RESPONSE)
     monkeypatch.setenv("SENTINEL_API_URL", "https://api.test")
 
@@ -329,7 +330,8 @@ def test_register_run_command_as_string_coerced_to_list(mock_urlopen, monkeypatc
 
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
-    assert sent["command"] == [
+    assert isinstance(sent["command"], str)
+    assert json.loads(sent["command"]) == [
         "python",
         "train.py",
         "--epochs",
@@ -337,7 +339,6 @@ def test_register_run_command_as_string_coerced_to_list(mock_urlopen, monkeypatc
         "--name",
         "my run",
     ]
-    assert isinstance(sent["command"], list)
 
 
 @patch("resource_tracker.sentinel_api.urlopen")

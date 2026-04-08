@@ -114,10 +114,9 @@ def register_run(
         metadata: Optional run metadata. Recognised keys include
             ``project_name``, ``job_name``, ``stage_name``, ``task_name``,
             ``external_run_id``, ``pid``, ``container_image``,
-            ``command`` (a ``List[str]`` JSON array, e.g.
-            ``["python", "train.py", "--epochs", "10"]``; a plain ``str``
-            is automatically split with :func:`shlex.split` for backward
-            compatibility),
+            ``command`` (a ``List[str]`` or a plain shell ``str``; both are
+            serialized to a JSON-array string on the wire, e.g.
+            ``'["python", "train.py", "--epochs", "10"]'``),
             ``env``, ``language``, ``orchestrator``, ``executor``, ``team``,
             and ``tags`` (an arbitrary key-value dict).
         host_info: Optional dict of ``host_*`` fields (e.g. ``host_vcpus``,
@@ -143,8 +142,11 @@ def register_run(
         payload.update({k: v for k, v in host_info.items() if v is not None})
     if cloud_info:
         payload.update({k: v for k, v in cloud_info.items() if v is not None})
-    if isinstance(payload.get("command"), str):
-        payload["command"] = shlex_split(payload["command"])
+    if "command" in payload:
+        cmd = payload["command"]
+        if isinstance(cmd, str):
+            cmd = shlex_split(cmd)
+        payload["command"] = json_dumps(cmd)
     logger.info("Registering run with Sentinel API")
     return _request("POST", "/runs", token=token, payload=payload)
 

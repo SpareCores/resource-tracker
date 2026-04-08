@@ -607,7 +607,9 @@ def test_read_all_csv_file_not_found_returns_empty(mock_register):
 @patch("resource_tracker.streaming.put_bytes_with_sts")
 @patch("resource_tracker.streaming.refresh_credentials")
 @patch("resource_tracker.streaming.register_run")
-def test_streaming_loop_runs_normal_cycle(mock_register, mock_refresh, mock_put, tmp_path):
+def test_streaming_loop_runs_normal_cycle(
+    mock_register, mock_refresh, mock_put, tmp_path
+):
     """The streaming loop refreshes credentials and uploads in one controlled cycle."""
     from datetime import datetime, timezone
 
@@ -645,9 +647,7 @@ def test_streaming_loop_runs_normal_cycle(mock_register, mock_refresh, mock_put,
     csv_file = tmp_path / "combined.csv"
     csv_file.write_text(COMBINED_CSV_HEADER + COMBINED_CSV_ROW1)
 
-    mgr = StreamingManager(
-        token=FAKE_TOKEN, csv_path=str(csv_file), upload_interval=1
-    )
+    mgr = StreamingManager(token=FAKE_TOKEN, csv_path=str(csv_file), upload_interval=1)
     mgr.start()
 
     # Stop after two loop ticks (≈0.2 s) to cover the loop body (lines 304-309)
@@ -684,15 +684,15 @@ def test_streaming_loop_catches_upload_exception(mock_register, mock_refresh, tm
         },
     }
     mock_register.return_value = register_resp
-    mock_refresh.return_value = {"upload_credentials": register_resp["upload_credentials"]}
+    mock_refresh.return_value = {
+        "upload_credentials": register_resp["upload_credentials"]
+    }
 
     # CSV with no newline → ValueError("no header line") propagates from _upload_batch
     csv_file = tmp_path / "bad.csv"
     csv_file.write_bytes(b"x" * 512)
 
-    mgr = StreamingManager(
-        token=FAKE_TOKEN, csv_path=str(csv_file), upload_interval=1
-    )
+    mgr = StreamingManager(token=FAKE_TOKEN, csv_path=str(csv_file), upload_interval=1)
     mgr.start()
 
     # Wait for the loop to run at least two iterations without crashing

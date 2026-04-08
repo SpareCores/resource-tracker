@@ -329,7 +329,14 @@ def test_register_run_command_as_string_coerced_to_list(mock_urlopen, monkeypatc
 
     req = mock_urlopen.call_args[0][0]
     sent = json.loads(req.data.decode("utf-8"))
-    assert sent["command"] == ["python", "train.py", "--epochs", "10", "--name", "my run"]
+    assert sent["command"] == [
+        "python",
+        "train.py",
+        "--epochs",
+        "10",
+        "--name",
+        "my run",
+    ]
     assert isinstance(sent["command"], list)
 
 

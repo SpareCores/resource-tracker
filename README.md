@@ -8,6 +8,9 @@ step decorator in Metaflow to automatically track resource usage and generate a
 card with data visualizations on historical resource usage and cloud server
 recommendations for future runs.
 
+For an alternative implementation of the same concept, but less tied to the
+Python ecosystem, see [resource-tracker-rs](https://github.com/sparecores/resource-tracker-rs).
+
 ## Installation
 
 You can install the stable version of the package from PyPI:

@@ -32,8 +32,7 @@ Note that depending on your operating system, you might need to also install
 The `resource-tracker` Python package is designed to be used in a variety of
 ways, even outside of Python. Find more details about how to use it directly
 from Python, R, or via our framework integrations, such as Metaflow, in the
-[integrations](integrations/)
-section of the documentation.
+[integrations](integrations/) section of the documentation.
 
 ## Operating System Support
 
@@ -74,6 +73,7 @@ CI/CD is set up to run tests on the below Python versions on Ubuntu latest LTS, 
 - 3.11
 - 3.12
 - 3.13
+- 3.14
 
 [![Unit tests status per Python version](https://github-actions.40ants.com/spareCores/resource-tracker/matrix.svg?only=Unit%20tests.pytest.ubuntu-latest)](https://github.com/SpareCores/resource-tracker/actions/workflows/tests.yaml)
 

@@ -1,4 +1,4 @@
-site_name: "SC Resource Tracker"
+site_name: "Spare Cores Resource Tracker (Python)"
 repo_url: https://github.com/spareCores/resource-tracker/
 edit_uri: blob/main/docs/
 
@@ -21,6 +21,7 @@ nav:
     - Standalone: integrations/standalone.md
     - Metaflow: integrations/metaflow.md
     - R: integrations/r.md
+  - Streaming: streaming.md
   - Changelog: CHANGELOG.md
 
 theme:
@@ -48,14 +49,14 @@ plugins:
 - search
 - autorefs
 - api-autonav:
-    modules: 
+    modules:
       - 'src/resource_tracker'
 - section-index
 - mkdocstrings:
     default_handler: python
     handlers:
       python:
-        import:
+        inventories:
         - https://docs.python.org/3/objects.inv
         options:
           show_source: true

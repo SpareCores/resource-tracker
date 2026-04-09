@@ -1,21 +1,22 @@
 ## v0.5.0 (April 2, 2026)
 
-- Add optional and configurable metric streaming to the [Spare Cores Sentinel API](https://sparecores.com): pass
+- Add optional and configurable metric streaming to the [Spare Cores Sentinel](https://sentinel.sparecores.com): pass
   `sentinel_token` to `ResourceTracker` (or set `SENTINEL_API_TOKEN` env var) to periodically upload gzipped CSV batches
-  to S3, with automatic STS credential refresh and inline CSV fallback for short runs
-- Add `sentinel_api` module: HTTP client for registering runs, refreshing credentials, and submitting final data
-- Add `s3_upload` module: lightweight S3 uploader using temporary STS credentials
+  to the Sentinel object storage, with automatic STS credential refresh and inline CSV fallback for short runs.
+- Add `sentinel_api` module: HTTP client for registering runs, refreshing credentials, and submitting final data.
+- Add `s3_upload` module: lightweight S3 uploader using temporary STS credentials.
 - Fix macOS disk space reporting: correctly use the APFS data volume (`/System/Volumes/Data`) instead of summing all
-  partitions; switch disk space calculation from binary (÷ 1024³) to SI (÷ 10⁹)
+  partitions; switch disk space calculation from binary (1024^3) to SI (10^9).
 - Fix memory column naming and units: rename `memory` → `memory_mib` (process), `memory_free`/`memory_used`/etc. →
-  `*_mib` suffix (system), `gpu_vram` → `gpu_vram_mib`; all memory metrics now in MiB
-- Fix process I/O column naming: rename `read_bytes`/`write_bytes` → `disk_read_bytes`/`disk_write_bytes`
-- Add `offset` parameter to `get_combined_metrics` for incremental reads
-- Add context manager support to `ResourceTracker`
+  `*_mib` suffix (system), `gpu_vram` → `gpu_vram_mib`; all memory metrics now in MiB.
+- Fix process I/O column naming: rename `read_bytes`/`write_bytes` → `disk_read_bytes`/`disk_write_bytes`.
+- Add `offset` parameter to `get_combined_metrics` for incremental reads.
+- Add context manager support to `ResourceTracker`.
 
 !! Breaking changes:
 
-- The `autostart` parameter of `ResourceTracker` now defaults to `False`, but it's still autostarted when used in Metaflow or as a context manager.
+- The `autostart` parameter of `ResourceTracker` now defaults to `False`, but
+  it's still auto-started when used in Metaflow or as a context manager.
 
 ## v0.4.2 (August 8, 2025)
 

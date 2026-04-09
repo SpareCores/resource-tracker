@@ -37,6 +37,13 @@ ways, even outside of Python. Find more details about how to use it directly
 from Python, R, or via our framework integrations, such as Metaflow, in the
 [integrations](integrations/) section of the documentation.
 
+It also supports streaming resource usage data to a remote location for central
+analysis, visualization, and recommendations. To get started, visit the
+[sentinel.sparecores.com](https://sentinel.sparecores.com) website to register a
+free account, generate an API key, and use it to configure the
+`resource-tracker` package via the `SENTINEL_API_KEY` environment variable. Find
+more details in the the [streaming](streaming.md) section of the documentation.
+
 ## Operating System Support
 
 The package was originally created to work on Linux systems (as the most

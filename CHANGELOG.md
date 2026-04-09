@@ -15,8 +15,7 @@
 
 !! Breaking changes:
 
-- `autostart` parameter of `ResourceTracker` is now defaulted to `False` and defaulted to `True` in the Metaflow
-  extension.
+- The `autostart` parameter of `ResourceTracker` now defaults to `False`, but it's still autostarted when used in Metaflow or as a context manager.
 
 ## v0.4.2 (August 8, 2025)
 

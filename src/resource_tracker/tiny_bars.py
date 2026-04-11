@@ -209,8 +209,8 @@ def _filter_round(value: Union[int, float], digits: int = 0) -> Union[int, float
         return value
 
 
-def _filter_round_memory(mb: Union[int, float]) -> int:
-    return round_memory(mb)
+def _filter_round_memory(mib: Union[int, float]) -> int:
+    return round_memory(mib)
 
 
 def _filter_unix_timestamp_to_local_tz_string(value: Union[int, float]) -> str:

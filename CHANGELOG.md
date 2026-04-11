@@ -1,4 +1,4 @@
-## v0.5.0 (April 2, 2026)
+## v0.5.0 (April 10, 2026)
 
 - Add optional and configurable metric streaming to the [Spare Cores Sentinel](https://sentinel.sparecores.com): pass
   `sentinel_token` to `ResourceTracker` (or set `SENTINEL_API_TOKEN` env var) to periodically upload gzipped CSV batches

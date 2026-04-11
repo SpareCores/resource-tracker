@@ -8,7 +8,11 @@ dynamic = ["version"]
 description = "Lightweight Python package for monitoring process and system resource usage with optional Metaflow integration for cloud cost optimization."
 readme = "README.md"
 authors = [
-    {name = "Gergely Daroczi", email = "daroczig@sparecores.com"}
+  { name = "Gergely Daroczi" },
+  { name = "Tamás Hidvégi" },
+]
+maintainers = [
+  { name = "Spare Cores team", email = "pkg@sparecores.com" }
 ]
 keywords = ["resource-monitor", "metaflow"]
 license = "MPL-2.0"

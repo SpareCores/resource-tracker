@@ -38,11 +38,11 @@ def test_flow_execution(artifacts_dir):
     tracker = ResourceTracker.from_snapshot(tracker_data["tracker"])
     process_metrics = tracker.process_metrics
     assert max(process_metrics["cpu_usage"]) > 0
-    assert max(process_metrics["memory"]) > 0
+    assert max(process_metrics["memory_mib"]) > 0
 
     system_metrics = tracker.system_metrics
     assert max(system_metrics["cpu_usage"]) > 0
-    assert max(system_metrics["memory_used"]) > 0
+    assert max(system_metrics["memory_used_mib"]) > 0
 
     assert tracker.snapshot()["metadata"]["duration"] > 0
 
@@ -130,11 +130,11 @@ def test_flow_execution_failed(artifacts_dir):
     tracker = ResourceTracker.from_snapshot(tracker_data["tracker"])
     process_metrics = tracker.process_metrics
     assert max(process_metrics["cpu_usage"]) > 0
-    assert max(process_metrics["memory"]) > 0
+    assert max(process_metrics["memory_mib"]) > 0
 
     system_metrics = tracker.system_metrics
     assert max(system_metrics["cpu_usage"]) > 0
-    assert max(system_metrics["memory_used"]) > 0
+    assert max(system_metrics["memory_used_mib"]) > 0
 
     assert tracker.snapshot()["metadata"]["duration"] > 0
 

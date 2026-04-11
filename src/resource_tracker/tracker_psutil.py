@@ -2,6 +2,7 @@
 Helpers to track resource usage via `psutil`.
 """
 
+import re
 from contextlib import suppress
 from time import time
 from typing import Dict, Set, Union
@@ -25,6 +26,9 @@ from .nvidia import (
     start_nvidia_smi_pmon,
 )
 
+# Known APFS data-volume mountpoints in priority order
+_APFS_DATA_MOUNTPOINTS: tuple = ("/System/Volumes/Data",)
+
 
 def get_process_stats(
     pid: int, children: bool = True
@@ -43,14 +47,14 @@ def get_process_stats(
             - children (int | None): The current number of child processes.
             - utime (int): The total user mode CPU time in seconds.
             - stime (int): The total system mode CPU time in seconds.
-            - memory (int): The current PSS (Proportional Set Size) on Linux,
+            - memory_mib (float): The current PSS (Proportional Set Size) on Linux,
               USS (Unique Set Size) on macOS and Windows, and RSS (Resident Set Size) on
-              other OSs where neither PSS nor USS are available in kB. See more details at
+              other OSs where neither PSS nor USS are available in KiB. See more details at
               <https://gmpy.dev/blog/2016/real-process-memory-and-environ-in-python>.
-            - read_bytes (int): The total number of bytes read.
-            - write_bytes (int): The total number of bytes written.
+            - disk_read_bytes (int): The total number of bytes read.
+            - disk_write_bytes (int): The total number of bytes written.
             - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-            - gpu_vram (float): The current GPU memory used in MiB.
+            - gpu_vram_mib (float): The current GPU memory used in MiB.
             - gpu_utilized (int): The number of GPUs with utilization > 0.
     """
     current_time = time()
@@ -67,9 +71,9 @@ def get_process_stats(
         "children": len(current_children) if children else None,
         "utime": 0,
         "stime": 0,
-        "memory": 0,
-        "read_bytes": 0,
-        "write_bytes": 0,
+        "memory_mib": 0,
+        "disk_read_bytes": 0,
+        "disk_write_bytes": 0,
     }
 
     for process in processes:
@@ -85,11 +89,11 @@ def get_process_stats(
                     and getattr(memory_info, attr) is not None
                     and getattr(memory_info, attr) != 0
                 ):
-                    stats["memory"] += getattr(memory_info, attr) / 1024  # kB
+                    stats["memory_mib"] += getattr(memory_info, attr) / 1024**2  # Mib
                     break
             io_counters = process.io_counters()
-            stats["read_bytes"] += io_counters.read_bytes
-            stats["write_bytes"] += io_counters.write_bytes
+            stats["disk_read_bytes"] += io_counters.read_bytes
+            stats["disk_write_bytes"] += io_counters.write_bytes
 
     stats.update(process_nvidia_smi_pmon(nvidia_process, [p.pid for p in processes]))
 
@@ -111,12 +115,12 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
             - processes (int): Number of running processes.
             - utime (int): Total user mode CPU time in seconds.
             - stime (int): Total system mode CPU time in seconds.
-            - memory_free (int): Free physical memory in kB.
-            - memory_used (int): Used physical memory in kB (excluding buffers/cache).
-            - memory_buffers (int): Memory used for buffers in kB.
-            - memory_cached (int): Memory used for cache in kB.
-            - memory_active (int): Memory used for active pages in kB.
-            - memory_inactive (int): Memory used for inactive pages in kB.
+            - memory_free_mib (float): Free physical memory in MiB.
+            - memory_used_mib (float): Used physical memory in MiB (excluding buffers/cache).
+            - memory_buffers_mib (float): Memory used for buffers in MiB.
+            - memory_cached_mib (float): Memory used for cache in MiB.
+            - memory_active_mib (float): Memory used for active pages in MiB.
+            - memory_inactive_mib (float): Memory used for inactive pages in MiB.
             - disk_stats (dict): Dictionary mapping disk names to their stats:
 
                 - read_bytes (int): Bytes read from this disk.
@@ -136,12 +140,12 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
         "processes": 0,
         "utime": 0,
         "stime": 0,
-        "memory_free": 0,
-        "memory_used": 0,
-        "memory_buffers": 0,
-        "memory_cached": 0,
-        "memory_active": 0,
-        "memory_inactive": 0,
+        "memory_free_mib": 0,
+        "memory_used_mib": 0,
+        "memory_buffers_mib": 0,
+        "memory_cached_mib": 0,
+        "memory_active_mib": 0,
+        "memory_inactive_mib": 0,
         "disk_stats": {},
         "disk_spaces": {},
         "net_recv_bytes": 0,
@@ -157,18 +161,18 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
     stats["stime"] = cpu.system
     stats["processes"] = len(pids())
 
-    # store memory stats in kB
+    # store memory stats in KiB
     memory = virtual_memory()
-    stats["memory_free"] = memory.free / 1024
+    stats["memory_free_mib"] = memory.free / 1024**2  # MiB
     if hasattr(memory, "buffers"):
-        stats["memory_buffers"] = memory.buffers / 1024
+        stats["memory_buffers_mib"] = memory.buffers / 1024**2  # MiB
     if hasattr(memory, "cached"):
-        stats["memory_cached"] = memory.cached / 1024
+        stats["memory_cached_mib"] = memory.cached / 1024**2  # MiB
     if hasattr(memory, "active"):
-        stats["memory_active"] = memory.active / 1024
+        stats["memory_active_mib"] = memory.active / 1024**2  # MiB
     if hasattr(memory, "inactive"):
-        stats["memory_inactive"] = memory.inactive / 1024
-    stats["memory_used"] = memory.used / 1024
+        stats["memory_inactive_mib"] = memory.inactive / 1024**2  # MiB
+    stats["memory_used_mib"] = memory.used / 1024**2  # MiB
 
     disk_io = disk_io_counters(perdisk=True)
     stats["disk_stats"] = {
@@ -184,18 +188,44 @@ def get_system_stats() -> Dict[str, Union[int, float, Dict]]:
     stats["net_recv_bytes"] = net_io.bytes_recv
     stats["net_sent_bytes"] = net_io.bytes_sent
 
-    check_zfs = False
     disks = disk_partitions()
+    check_zfs = False
+    apfs_candidates: Dict[str, list] = {}  # container → [(priority, mountpoint)]
+
     for disk in disks:
         if disk.fstype == "zfs":
             check_zfs = True
             continue
-        usage = disk_usage(disk.mountpoint)
-        stats["disk_spaces"][disk.mountpoint] = {
-            "total": usage.total,
-            "used": usage.used,
-            "free": usage.free,
-        }
+        if disk.fstype == "apfs":
+            if "ro" in disk.opts.split(","):
+                continue
+            m = re.match(r"(/dev/disk\d+)", disk.device)
+            container = m.group(1) if m else disk.device
+            prio = (
+                _APFS_DATA_MOUNTPOINTS.index(disk.mountpoint)
+                if disk.mountpoint in _APFS_DATA_MOUNTPOINTS
+                else len(_APFS_DATA_MOUNTPOINTS)  # fallback: first rw volume
+            )
+            apfs_candidates.setdefault(container, []).append((prio, disk.mountpoint))
+            continue
+        with suppress(Exception):
+            usage = disk_usage(disk.mountpoint)
+            stats["disk_spaces"][disk.mountpoint] = {
+                "total": usage.total,
+                "used": usage.used,
+                "free": usage.free,
+            }
+
+    for candidates in apfs_candidates.values():
+        _, mountpoint = min(candidates)
+        with suppress(Exception):
+            usage = disk_usage(mountpoint)
+            stats["disk_spaces"][mountpoint] = {
+                "total": usage.total,
+                "used": usage.used,
+                "free": usage.free,
+            }
+
     if check_zfs:
         stats["disk_spaces"].update(get_zfs_pools_space())
 

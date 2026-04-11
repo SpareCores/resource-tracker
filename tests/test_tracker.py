@@ -33,13 +33,13 @@ def test_get_process_stats_implementations(tracker_implementation):
     assert stats["children"] is not None
     assert stats["utime"] is not None
     assert stats["stime"] is not None
-    assert stats["memory"] is not None
+    assert stats["memory_mib"] is not None
 
     # test memory allocation is tracked
-    memory = stats["memory"]
+    memory = stats["memory_mib"]
     bigobj = bytearray(50 * 1024 * 1024)  # 50MB
     stats = get_process_stats(pid)
-    assert stats["memory"] >= memory + 40 * 1024  # kB
+    assert stats["memory_mib"] >= memory + 40  # MiB
     del bigobj
 
 
@@ -67,8 +67,8 @@ def test_get_system_stats_implementations(tracker_implementation):
     assert stats["processes"] > 0
     assert stats["utime"] > 0
     assert stats["stime"] > 0
-    assert stats["memory_free"] > 0
-    assert stats["memory_used"] > 0
+    assert stats["memory_free_mib"] > 0
+    assert stats["memory_used_mib"] > 0
 
 
 @pytest.mark.skipif(
@@ -78,11 +78,11 @@ def test_get_system_stats_implementations(tracker_implementation):
     "field,percent_threshold,absolute_threshold,unit",
     [
         ("children", None, 0, "processes"),
-        ("memory", None, 50_000, "KB"),
+        ("memory_mib", None, 50, "Mib"),
         ("utime", None, 0.25, "s"),
         ("stime", None, 1, "s"),
-        ("read_bytes", 10, None, "B"),
-        ("write_bytes", 10, None, "B"),
+        ("disk_read_bytes", 10, None, "B"),
+        ("disk_write_bytes", 10, None, "B"),
     ],
 )
 def test_process_stats_procfs_vs_psutil(
@@ -97,7 +97,7 @@ def test_process_stats_procfs_vs_psutil(
     )
 
     # make use of memory for testing
-    if field == "memory":
+    if field == "memory_mib":
         big_array = bytearray(100 * 1024 * 1024)
     # make use of cpu for testing
     if field == "utime":
@@ -121,7 +121,7 @@ def test_process_stats_procfs_vs_psutil(
             f"{field} absolute difference between {value1} (procfs) and {value2} (psutil) too large: {diff} {unit}"
         )
 
-    if field == "memory":
+    if field == "memory_mib":
         del big_array
 
 
@@ -134,16 +134,16 @@ def test_process_stats_procfs_vs_psutil(
         ("processes", None, 5, "processes"),
         ("utime", None, 0.25, "s"),
         ("stime", None, 1, "s"),
-        ("memory_free", None, 50_000, "KB"),
-        ("memory_used", None, 50_000, "KB"),
-        ("memory_buffers", None, 50_000, "KB"),
-        ("memory_cached", None, 50_000, "KB"),
-        ("memory_active", None, 50_000, "KB"),
-        ("memory_inactive", None, 50_000, "KB"),
+        ("memory_free_mib", None, 50, "MiB"),
+        ("memory_used_mib", None, 50, "MiB"),
+        ("memory_buffers_mib", None, 50, "MiB"),
+        ("memory_cached_mib", None, 50, "MiB"),
+        ("memory_active_mib", None, 50, "MiB"),
+        ("memory_inactive_mib", None, 50, "MiB"),
         ("net_recv_bytes", 10, None, "B"),
         ("net_sent_bytes", 10, None, "B"),
         ("gpu_usage", None, 0.25, "GPUs"),
-        ("gpu_vram", None, 50_000, "MiB"),
+        ("gpu_vram_mib", None, 50_000, "MiB"),
         ("gpu_utilized", None, 0, "GPUs"),
     ],
 )
@@ -200,14 +200,15 @@ def test_resource_tracker_subprocesses():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
+    tracker.start()
     wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.process_metrics) > 0
     assert len(tracker.system_metrics) > 0
     assert tracker.process_metrics[0]["utime"] >= 0
     assert tracker.system_metrics[0]["utime"] >= 0
-    assert tracker.process_metrics[0]["memory"] > 0
-    assert tracker.system_metrics[0]["memory_used"] > 0
+    assert tracker.process_metrics[0]["memory_mib"] > 0
+    assert tracker.system_metrics[0]["memory_used_mib"] > 0
     assert tracker.system_metrics[0]["processes"] > 0
 
 
@@ -216,12 +217,13 @@ def test_resource_tracker_subprocess():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker(track_processes=False)
+    tracker.start()
     wait_for_tracker(tracker, check_process_tracker=False)
     tracker.stop()
     assert len(tracker.process_metrics) == 0
     assert len(tracker.system_metrics) > 0
     assert tracker.system_metrics[0]["utime"] >= 0
-    assert tracker.system_metrics[0]["memory_used"] > 0
+    assert tracker.system_metrics[0]["memory_used_mib"] > 0
     assert tracker.system_metrics[0]["processes"] > 0
 
 
@@ -230,6 +232,7 @@ def test_resource_tracker_combined_metrics():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
+    tracker.start()
     wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.get_combined_metrics()) > 0
@@ -242,14 +245,14 @@ def test_resource_tracker_combined_metrics():
         tracker.get_combined_metrics(human_names=True)[0]["Process CPU time (user)"]
         >= 0
     )
-    assert tracker.get_combined_metrics()[0]["system_memory_used"] > 0
-    assert tracker.get_combined_metrics()[0]["process_memory"] > 0
+    assert tracker.get_combined_metrics()[0]["system_memory_used_mib"] > 0
+    assert tracker.get_combined_metrics()[0]["process_memory_mib"] > 0
     assert (
-        tracker.get_combined_metrics(bytes=True)[0]["process_memory"]
-        > tracker.get_combined_metrics(bytes=False)[0]["process_memory"]
+        tracker.get_combined_metrics(bytes=True)[0]["process_memory_mib"]
+        > tracker.get_combined_metrics(bytes=False)[0]["process_memory_mib"]
     )
     assert tracker.stats()["process_cpu_usage"]["max"] > 0
-    assert tracker.stats()["process_memory"]["mean"] > 0
+    assert tracker.stats()["process_memory_mib"]["mean"] > 0
 
 
 def test_resource_tracker_report():
@@ -257,6 +260,7 @@ def test_resource_tracker_report():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
+    tracker.start()
     wait_for_tracker(tracker)
 
     report = tracker.report()
@@ -277,6 +281,7 @@ def test_resource_tracker_restart():
     from resource_tracker import ResourceTracker
 
     tracker = ResourceTracker()
+    tracker.start()
     pytest.raises(RuntimeError, tracker.start)
     tracker.stop()
     pytest.raises(RuntimeError, tracker.start)

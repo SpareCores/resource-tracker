@@ -3,7 +3,7 @@ from time import sleep
 from resource_tracker import ResourceTracker
 
 # both process-level and system-wide trackers will start automatically in the background by default
-tracker = ResourceTracker()
+tracker = ResourceTracker(autostart=True)
 
 # there is no collected data so far
 tracker.process_metrics
@@ -35,7 +35,7 @@ tracker.get_combined_metrics()
 # average CPU usage
 sum(tracker.process_metrics["utime"]) / len(tracker.process_metrics["utime"])
 # peak memory usage in MiB
-max(tracker.process_metrics["memory"]) / 1024
+max(tracker.process_metrics["memory_mib"])
 # or more conveniently
 tracker.stats()
 

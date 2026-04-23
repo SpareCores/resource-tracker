@@ -9,15 +9,15 @@ from platform import system
 from subprocess import check_output
 
 
-def get_total_memory_mb() -> float:
-    """Get total system memory in MB from `/proc/meminfo` or using `psutil`."""
+def get_total_memory_mib() -> float:
+    """Get total system memory in MiB from `/proc/meminfo` or using `psutil`."""
     with suppress(Exception):
         with open("/proc/meminfo", "r") as f:
             for line in f:
                 if "MemTotal" in line:
                     parts = line.split(":")
-                    kb = int(parts[1].strip().split()[0])
-                    return round(kb / (1024), 2)
+                    kib = int(parts[1].strip().split()[0])
+                    return round(kib / 1024, 2)
     with suppress(Exception):
         from psutil import virtual_memory
 
@@ -32,10 +32,10 @@ def get_gpu_info() -> dict:
         A dictionary containing GPU information:
 
             - `count`: Number of GPUs
-            - `memory_mb`: Total VRAM in MB
+            - `memory_mib`: Total VRAM in MiB
             - `gpu_names`: List of GPU names
     """
-    result = {"count": 0, "memory_mb": 0, "gpu_names": []}
+    result = {"count": 0, "memory_mib": 0, "gpu_names": []}
 
     with suppress(Exception):
         nvidia_smi_output = check_output(
@@ -50,15 +50,15 @@ def get_gpu_info() -> dict:
         lines = nvidia_smi_output.strip().split("\n")
         result["count"] = len(lines)
 
-        total_memory_mb = 0
+        total_memory_mib = 0
         for line in lines:
             if line.strip():
                 parts = line.split(",")
-                memory_mb = float(parts[1].strip())
-                total_memory_mb += memory_mb
+                memory_mib = float(parts[1].strip())
+                total_memory_mib += memory_mib
                 result["gpu_names"].append(parts[0].strip())
 
-        result["memory_mb"] = total_memory_mb
+        result["memory_mib"] = total_memory_mib
 
     return result
 
@@ -72,17 +72,17 @@ def get_server_info() -> dict:
 
             - `os`: Operating system
             - `vcpus`: Number of virtual CPUs
-            - `memory_mb`: Total memory in MB
+            - `memory_mib`: Total memory in MiB
             - `gpu_count`: Number of GPUs (`0` if not available)
             - `gpu_names`: List of GPU names (`[]` if not available)
             - `gpu_name`: Most common GPU name (`""` if not available)
-            - `gpu_memory_mb`: Total VRAM in MB (`0` if not available)
+            - `gpu_memory_mib`: Total VRAM in MiB (`0` if not available)
     """
     gpu_info = get_gpu_info()
     info = {
         "os": system(),
         "vcpus": cpu_count(),
-        "memory_mb": get_total_memory_mb(),
+        "memory_mib": get_total_memory_mib(),
         "gpu_count": gpu_info["count"],
         "gpu_names": gpu_info["gpu_names"],
         "gpu_name": (
@@ -90,6 +90,6 @@ def get_server_info() -> dict:
             if gpu_info["gpu_names"]
             else ""
         ),
-        "gpu_memory_mb": gpu_info["memory_mb"],
+        "gpu_memory_mib": gpu_info["memory_mib"],
     }
     return info

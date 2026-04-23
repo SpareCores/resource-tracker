@@ -8,12 +8,12 @@ HUMAN_NAMES_MAPPING = {
     "utime": "CPU time (user)",
     "stime": "CPU time (system)",
     "cpu_usage": "CPU usage",
-    "memory_free": "free memory",
-    "memory_used": "used memory",
-    "memory_buffers": "memory buffers",
-    "memory_cached": "memory page/file cached",
-    "memory_active": "active memory",
-    "memory_inactive": "inactive memory",
+    "memory_free_mib": "free memory",
+    "memory_used_mib": "used memory",
+    "memory_buffers_mib": "memory buffers",
+    "memory_cached_mib": "memory page/file cached",
+    "memory_active_mib": "active memory",
+    "memory_inactive_mib": "inactive memory",
     "disk_read_bytes": "disk read",
     "disk_write_bytes": "disk write",
     "disk_space_total_gb": "disk space total",
@@ -22,32 +22,29 @@ HUMAN_NAMES_MAPPING = {
     "net_recv_bytes": "inbound network traffic",
     "net_sent_bytes": "outbound network traffic",
     "gpu_usage": "GPU usage",
-    "gpu_vram": "VRAM used",
+    "gpu_vram_mib": "VRAM used",
     "gpu_utilized": "GPUs in use",
     # process-level metrics
     "pid": "PID",
     "children": "children",
-    "memory": "memory usage",
-    "read_bytes": "disk read",
-    "write_bytes": "disk write",
+    "memory_mib": "memory usage",
 }
 
 """Mapping of how to convert column-specific values to bytes."""
 BYTE_MAPPING = {
-    # KiB -> B
-    "memory": 1024,
-    "memory_free": 1024,
-    "memory_used": 1024,
-    "memory_buffers": 1024,
-    "memory_cached": 1024,
-    "memory_active": 1024,
-    "memory_inactive": 1024,
     # MiB -> B
-    "gpu_vram": 1024 * 1024,
+    "memory_mib": 1024 * 1024,
+    "memory_free_mib": 1024 * 1024,
+    "memory_used_mib": 1024 * 1024,
+    "memory_buffers_mib": 1024 * 1024,
+    "memory_cached_mib": 1024 * 1024,
+    "memory_active_mib": 1024 * 1024,
+    "memory_inactive_mib": 1024 * 1024,
+    "gpu_vram_mib": 1024 * 1024,
     # GiB -> B
-    "disk_space_total_gb": 1024 * 1024 * 1024,
-    "disk_space_used_gb": 1024 * 1024 * 1024,
-    "disk_space_free_gb": 1024 * 1024 * 1024,
+    "disk_space_total_gb": 1000 * 1000 * 1000,
+    "disk_space_used_gb": 1000 * 1000 * 1000,
+    "disk_space_free_gb": 1000 * 1000 * 1000,
 }
 
 """Ruleset to decide if a server is dedicated to the process(es) tracked or shared with other processes."""
@@ -59,8 +56,8 @@ SERVER_ALLOCATION_CHECKS = [
         "absolute": 0.25,
     },
     {
-        "process_column": "memory",
-        "system_column": "memory_used",
+        "process_column": "memory_mib",
+        "system_column": "memory_used_mib",
         "percent": 1.5,
         "absolute": 512 * 1024,  # 512 MiB
     },
@@ -71,8 +68,8 @@ SERVER_ALLOCATION_CHECKS = [
         "absolute": 0.2,
     },
     {
-        "process_column": "gpu_vram",
-        "system_column": "gpu_vram",
+        "process_column": "gpu_vram_mib",
+        "system_column": "gpu_vram_mib",
         "percent": 1.25,
         "absolute": 512,  # 512 MiB
     },
@@ -97,5 +94,5 @@ REPORT_CSV_MAPPING = {
     ],
     "gpu_usage": ["Timestamp", "Process GPU usage", "System GPU usage"],
     "gpu_utilized": ["Timestamp", "Process GPUs in use", "System GPUs in use"],
-    "gpu_vram": ["Timestamp", "Process VRAM used", "System VRAM used"],
+    "gpu_vram_mib": ["Timestamp", "Process VRAM used", "System VRAM used"],
 }

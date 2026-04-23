@@ -59,14 +59,14 @@ class Report(str):
         return self
 
 
-def round_memory(mb: Union[int, float]) -> int:
+def round_memory(mib: Union[int, float]) -> int:
     """Round a number to the nearest meaningful memory amount.
 
     Args:
-        mb: The value in MB to round.
+        mib: The value in MiB to round.
 
     Returns:
-        The rounded value in MB as an integer.
+        The rounded value in MiB as an integer.
 
     Example:
 
@@ -77,18 +77,18 @@ def round_memory(mb: Union[int, float]) -> int:
         >>> round_memory(3863)
         4096
     """
-    if mb <= 128:
+    if mib <= 128:
         rounded = 128
-    elif mb <= 256:
+    elif mib <= 256:
         rounded = 256
-    elif mb <= 512:
+    elif mib <= 512:
         rounded = 512
-    elif mb <= 1024:
+    elif mib <= 1024:
         rounded = 1024
-    elif mb <= 2048:
+    elif mib <= 2048:
         rounded = 2048
     else:
-        # round up to the next GB
-        rounded_gb = mb / 1024
-        rounded = int(1024 * (rounded_gb // 1 + (1 if rounded_gb % 1 > 0 else 0)))
+        # round up to the next GiB
+        rounded_gib = mib / 1024
+        rounded = int(1024 * (rounded_gib // 1 + (1 if rounded_gib % 1 > 0 else 0)))
     return rounded

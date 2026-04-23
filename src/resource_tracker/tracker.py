@@ -15,13 +15,15 @@ thread/process yourself.
 
 from contextlib import suppress
 from csv import QUOTE_NONNUMERIC
+from csv import writer as csv_writer
 from gzip import open as gzip_open
+from io import StringIO
 from json import dumps as json_dumps
 from json import loads as json_loads
 from logging import getLogger
 from math import ceil
 from multiprocessing import get_context
-from os import getpid, path
+from os import environ, getpid, path
 from signal import SIGINT, SIGTERM, signal
 from statistics import mean
 from sys import platform, stdout
@@ -50,6 +52,7 @@ from .helpers import (
 )
 from .keeper import get_instance_price, get_recommended_cloud_servers
 from .report import Report, _read_report_template_files, round_memory
+from .sentinel_api import RunStatus
 from .server_info import get_server_info
 from .tiny_bars import render_template
 from .tiny_data_frame import StatSpec, TinyDataFrame
@@ -74,14 +77,14 @@ class ProcessTracker:
     - utime (int): The total user+nice mode CPU time in seconds.
     - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
-    - memory (int): The current memory usage in kB. Implementation depends on the
+    - memory_mib (float): The current memory usage in MiB. Implementation depends on the
       operating system, and it is preferably PSS (Proportional Set Size) on Linux,
       USS (Unique Set Size) on macOS and Windows, and RSS (Resident Set Size) on
       Windows.
-    - read_bytes (int): The total number of bytes read from disk.
-    - write_bytes (int): The total number of bytes written to disk.
+    - disk_read_bytes (int): The total number of bytes read from disk.
+    - disk_write_bytes (int): The total number of bytes written to disk.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_vram_mib (float): The current GPU memory used in MiB.
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
@@ -134,7 +137,9 @@ class ProcessTracker:
         return {
             "timestamp": round(self.stats["timestamp"], 3),
             "pid": self.pid,
-            "children": self.stats["children"],
+            "children": (
+                self.stats["children"] if self.stats.get("children") else None
+            ),
             "utime": max(0, round(self.stats["utime"] - last_stats["utime"], 6)),
             "stime": max(0, round(self.stats["stime"] - last_stats["stime"], 6)),
             "cpu_usage": round(
@@ -148,13 +153,15 @@ class ProcessTracker:
                 ),
                 4,
             ),
-            "memory": self.stats["memory"],
-            "read_bytes": max(0, self.stats["read_bytes"] - last_stats["read_bytes"]),
-            "write_bytes": max(
-                0, self.stats["write_bytes"] - last_stats["write_bytes"]
+            "memory_mib": round(self.stats["memory_mib"], 4),
+            "disk_read_bytes": max(
+                0, self.stats["disk_read_bytes"] - last_stats["disk_read_bytes"]
             ),
-            "gpu_usage": self.stats["gpu_usage"],
-            "gpu_vram": self.stats["gpu_vram"],
+            "disk_write_bytes": max(
+                0, self.stats["disk_write_bytes"] - last_stats["disk_write_bytes"]
+            ),
+            "gpu_usage": round(self.stats["gpu_usage"], 4),
+            "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
             "gpu_utilized": self.stats["gpu_utilized"],
         }
 
@@ -173,7 +180,7 @@ class ProcessTracker:
         try:
             while True:
                 current_stats = self.diff_stats()
-                if current_stats["memory"] == 0:
+                if current_stats["memory_mib"] == 0:
                     # the process has exited
                     self.status = "exited"
                     break
@@ -229,12 +236,12 @@ class SystemTracker:
     - utime (int): The total user+nice mode CPU time in seconds.
     - stime (int): The total system mode CPU time in seconds.
     - cpu_usage (float): The current CPU usage between 0 and number of CPUs.
-    - memory_free (int): The amount of free memory in kB.
-    - memory_used (int): The amount of used memory in kB.
-    - memory_buffers (int): The amount of memory used for buffers in kB.
-    - memory_cached (int): The amount of memory used for caching in kB.
-    - memory_active (int): The amount of memory used for active pages in kB.
-    - memory_inactive (int): The amount of memory used for inactive pages in kB.
+    - memory_free_mib (float): The amount of free memory in MiB.
+    - memory_used_mib (float): The amount of used memory in MiB.
+    - memory_buffers_mib (float): The amount of memory used for buffers in MiB.
+    - memory_cached_mib (float): The amount of memory used for caching in MiB.
+    - memory_active_mib (float): The amount of memory used for active pages in MiB.
+    - memory_inactive_mib (float): The amount of memory used for inactive pages in MiB.
     - disk_read_bytes (int): The total number of bytes read from disk.
     - disk_write_bytes (int): The total number of bytes written to disk.
     - disk_space_total_gb (float): The total disk space in GB.
@@ -243,7 +250,7 @@ class SystemTracker:
     - net_recv_bytes (int): The total number of bytes received over network.
     - net_sent_bytes (int): The total number of bytes sent over network.
     - gpu_usage (float): The current GPU utilization between 0 and GPU count.
-    - gpu_vram (float): The current GPU memory used in MiB.
+    - gpu_vram_mib (float): The current GPU memory used in MiB.
     - gpu_utilized (int): The number of GPUs with utilization > 0.
 
     Args:
@@ -329,25 +336,25 @@ class SystemTracker:
                 ),
                 4,
             ),
-            "memory_free": self.stats["memory_free"],
-            "memory_used": self.stats["memory_used"],
-            "memory_buffers": self.stats["memory_buffers"],
-            "memory_cached": self.stats["memory_cached"],
-            "memory_active": self.stats["memory_active"],
-            "memory_inactive": self.stats["memory_inactive"],
+            "memory_free_mib": round(self.stats["memory_free_mib"], 4),
+            "memory_used_mib": round(self.stats["memory_used_mib"], 4),
+            "memory_buffers_mib": round(self.stats["memory_buffers_mib"], 4),
+            "memory_cached_mib": round(self.stats["memory_cached_mib"], 4),
+            "memory_active_mib": round(self.stats["memory_active_mib"], 4),
+            "memory_inactive_mib": round(self.stats["memory_inactive_mib"], 4),
             "disk_read_bytes": total_read_bytes,
             "disk_write_bytes": total_write_bytes,
-            "disk_space_total_gb": round(disk_space_total / (1024**3), 2),
-            "disk_space_used_gb": round(disk_space_used / (1024**3), 2),
-            "disk_space_free_gb": round(disk_space_free / (1024**3), 2),
+            "disk_space_total_gb": round(disk_space_total / 1000_000_000, 2),
+            "disk_space_used_gb": round(disk_space_used / 1000_000_000, 2),
+            "disk_space_free_gb": round(disk_space_free / 1000_000_000, 2),
             "net_recv_bytes": max(
                 0, self.stats["net_recv_bytes"] - last_stats["net_recv_bytes"]
             ),
             "net_sent_bytes": max(
                 0, self.stats["net_sent_bytes"] - last_stats["net_sent_bytes"]
             ),
-            "gpu_usage": self.stats["gpu_usage"],
-            "gpu_vram": self.stats["gpu_vram"],
+            "gpu_usage": round(self.stats["gpu_usage"], 4),
+            "gpu_vram_mib": round(self.stats["gpu_vram_mib"], 4),
             "gpu_utilized": self.stats["gpu_utilized"],
         }
 
@@ -471,15 +478,24 @@ class ResourceTracker:
             startup. Defaults to True.
         discover_cloud: Whether to discover the cloud environment in the background
             at startup. Defaults to True.
+        sentinel_token: Sentinel API bearer token for streaming metrics.  If
+            ``None`` (default), the ``SENTINEL_API_TOKEN`` environment variable
+            is checked.  When no token is available streaming is silently
+            disabled with zero overhead.
+        upload_interval: Seconds between metric uploads when streaming is
+            enabled.  Defaults to 60.
+        streaming_metadata: Optional dict of run metadata forwarded to the
+            Sentinel API (e.g. ``project_name``, ``job_name``, ``tags``).
 
     Example:
 
         >>> from resource_tracker.dummy_workloads import cpu_single, cpu_multi
-        >>> tracker = ResourceTracker()
+        >>> tracker = ResourceTracker(autostart=True)
         >>> cpu_single()
         >>> tracker.recommend_resources()  # doctest: +SKIP
         {'cpu': 1, 'memory': 128, 'gpu': 0, 'vram': 0}
         >>> tracker = ResourceTracker()
+        >>> tracker.start()
         >>> while tracker.n_samples == 0:
         ...     cpu_multi(duration=0.25, ncores=2)
         >>> tracker.recommend_resources()  # multiprocessing is not enough efficient on Windows/macOS  # doctest: +SKIP
@@ -495,11 +511,14 @@ class ResourceTracker:
         children: bool = True,
         interval: float = 1,
         method: Optional[str] = None,
-        autostart: bool = True,
+        autostart: bool = False,
         track_processes: bool = True,
         track_system: bool = True,
         discover_server: bool = True,
         discover_cloud: bool = True,
+        sentinel_token: Optional[str] = None,
+        upload_interval: int = 60,
+        streaming_metadata: Optional[dict] = None,
     ):
         self.pid = pid
         self.children = children
@@ -513,6 +532,14 @@ class ResourceTracker:
             self.trackers.append("system_tracker")
         self.discover_server = discover_server
         self.discover_cloud = discover_cloud
+
+        # --- Streaming to Sentinel API ---
+        self._sentinel_token = sentinel_token or environ.get("SENTINEL_API_TOKEN")
+        self._upload_interval = upload_interval
+        self._streaming_metadata = streaming_metadata
+        self._streaming = None
+        self._sentinel_result: Optional[dict] = None
+        self._combined_csv_rows_written: int = 0
 
         if platform != "linux" and not is_psutil_available():
             raise ImportError(
@@ -627,6 +654,56 @@ class ResourceTracker:
             ],
         )
 
+        # --- Start streaming if a Sentinel API token is available ---
+        if self._sentinel_token:
+            combined_temp = NamedTemporaryFile(delete=False, suffix=".csv")
+            self._combined_csv_filepath = combined_temp.name
+            combined_temp.close()
+            finalize(self, cleanup_files, [self._combined_csv_filepath])
+
+            from .streaming import StreamingManager
+
+            self._streaming = StreamingManager(
+                token=self._sentinel_token,
+                csv_path=self._combined_csv_filepath,
+                upload_interval=self._upload_interval,
+                metadata=self._streaming_metadata,
+                csv_update_fn=self._update_combined_csv,
+            )
+            try:
+                self._streaming.start()
+            except Exception as e:
+                logger.warning("Failed to start streaming: %s", e)
+                self._streaming = None
+
+    def _update_combined_csv(self) -> None:
+        """Append new combined metric rows to the streaming CSV temp file.
+
+        Called by the :class:`~resource_tracker.streaming.StreamingManager`
+        before each upload cycle to ensure the combined CSV is up-to-date.
+        """
+        try:
+            combined_new_lines = self.get_combined_metrics(
+                offset=self._combined_csv_rows_written
+            )
+            if combined_new_lines:
+                buf = StringIO(newline="")
+                writer = csv_writer(buf, quoting=QUOTE_NONNUMERIC)
+                if self._combined_csv_rows_written == 0:
+                    writer.writerow(combined_new_lines.columns)
+                for i in range(len(combined_new_lines)):
+                    writer.writerow(
+                        [
+                            combined_new_lines[col][i]
+                            for col in combined_new_lines.columns
+                        ]
+                    )
+                with open(self._combined_csv_filepath, "ab") as f:
+                    f.write(buf.getvalue().encode("utf-8"))
+                self._combined_csv_rows_written += len(combined_new_lines)
+        except Exception as e:
+            logger.debug("Combined CSV update: %s", e)
+
     def cleanup(self):
         """Cleanup temp files and background processes.
 
@@ -645,6 +722,9 @@ class ResourceTracker:
                 ]
             )
         with suppress(Exception):
+            if hasattr(self, "_combined_csv_filepath"):
+                cleanup_files([self._combined_csv_filepath])
+        with suppress(Exception):
             cleanup_processes(
                 [
                     getattr(self, f"{tracker_name}_process")
@@ -652,8 +732,16 @@ class ResourceTracker:
                 ]
             )
 
-    def stop(self):
-        """Stop the previously started resource trackers' background processes."""
+    def stop(self, exit_code: int = 0, run_status: RunStatus = RunStatus.finished):
+        """Stop the previously started resource trackers' background processes.
+
+        Args:
+            exit_code: Exit code of the monitored process.  Forwarded to the
+                Sentinel API when streaming is enabled.  Defaults to 0.
+            run_status: Run outcome (e.g. ``"finished"``, ``"failed"``,
+                ``"interrupted"``).  Forwarded to the Sentinel API when
+                streaming is enabled.  Defaults to ``"finished"``.
+        """
         self.stop_time = time()
         # check for errors in the subprocesses
         if not self.error_queue.empty():
@@ -670,12 +758,49 @@ class ResourceTracker:
             if hasattr(self, process_attr):
                 cleanup_processes([getattr(self, process_attr)])
         self.error_queue.close()
+
+        # Finalize streaming — flush remaining data and call finish_run
+        if self._streaming is not None:
+            try:
+                self._sentinel_result = self._streaming.stop(
+                    exit_code=exit_code,
+                    run_status=run_status,
+                )
+            except Exception as e:
+                logger.warning("Streaming finalization failed: %s", e)
+            self._streaming = None
+
         logger.debug(
             "Resource tracker stopped after %s seconds, logging %d process-level and %d system-wide records",
             self.stop_time - self.start_time,
             len(self.process_metrics),
             len(self.system_metrics),
         )
+
+    def __enter__(self) -> "ResourceTracker":
+        """Support ``with ResourceTracker(...) as tracker:`` usage.
+
+        Returns:
+            self
+        """
+        self.autostart = True
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """Stop the tracker on context-manager exit.
+
+        Calls :meth:`stop` with ``run_status="failed"`` when an exception
+        occurred inside the ``with`` block, or ``run_status="finished"`` on
+        clean exit.  Exceptions are never suppressed.
+        """
+        if not self.running:
+            return False
+        if exc_type is not None:
+            self.stop(exit_code=1, run_status=RunStatus.failed)
+        else:
+            self.stop(exit_code=0, run_status=RunStatus.finished)
+        return False  # do not suppress exceptions
 
     @property
     def n_samples(self) -> int:
@@ -720,6 +845,16 @@ class ResourceTracker:
         Collected data from [resource_tracker.get_cloud_info][].
         """
         return self._cloud_info
+
+    @property
+    def sentinel_result(self) -> Optional[dict]:
+        """Result from the Sentinel API ``finish_run`` call.
+
+        Only set after :meth:`stop` when streaming was enabled.  Returns
+        ``None`` when streaming is disabled or :meth:`stop` has not been
+        called yet.
+        """
+        return self._sentinel_result
 
     @property
     def process_metrics(self) -> TinyDataFrame:
@@ -861,6 +996,7 @@ class ResourceTracker:
         human_names: bool = False,
         system_prefix: Optional[str] = None,
         process_prefix: Optional[str] = None,
+        offset: Optional[int] = None,
     ) -> TinyDataFrame:
         """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
@@ -868,10 +1004,13 @@ class ResourceTracker:
         and adding a prefix to the column names to distinguish between the system and process metrics.
 
         Args:
-            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (kB, MiB, or GiB).
+            bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (KiB, MiB, or GiB).
             human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
             system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
             process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
+            offset: If set, only return records starting from this index (exclusive lower bound).
+                Useful for incremental reads: pass the number of records already consumed and
+                receive only the new ones. Defaults to ``None`` (all data).
 
         Returns:
             A [resource_tracker.tiny_data_frame.TinyDataFrame][] object containing the combined data or an empty list if tracker(s) not running.
@@ -885,6 +1024,11 @@ class ResourceTracker:
                 process_metrics = process_metrics[: len(system_metrics)]
             elif len(system_metrics) > len(process_metrics):
                 system_metrics = system_metrics[: len(process_metrics)]
+
+            # optionally restrict to records from offset onwards
+            if offset is not None and offset > 0:
+                process_metrics = process_metrics[offset:]
+                system_metrics = system_metrics[offset:]
 
             # nothing to report on
             if len(process_metrics) == 0:
@@ -934,12 +1078,12 @@ class ResourceTracker:
         specs: List[StatSpec] = [
             StatSpec(column="process_cpu_usage", agg=mean, round=2),
             StatSpec(column="process_cpu_usage", agg=max, round=2),
-            StatSpec(column="process_memory", agg=mean, round=2),
-            StatSpec(column="process_memory", agg=max, round=2),
+            StatSpec(column="process_memory_mib", agg=mean, round=2),
+            StatSpec(column="process_memory_mib", agg=max, round=2),
             StatSpec(column="process_gpu_usage", agg=mean, round=2),
             StatSpec(column="process_gpu_usage", agg=max, round=2),
-            StatSpec(column="process_gpu_vram", agg=mean, round=2),
-            StatSpec(column="process_gpu_vram", agg=max, round=2),
+            StatSpec(column="process_gpu_vram_mib", agg=mean, round=2),
+            StatSpec(column="process_gpu_vram_mib", agg=max, round=2),
             StatSpec(column="process_gpu_utilized", agg=mean, round=2),
             StatSpec(column="process_gpu_utilized", agg=max, round=2),
             StatSpec(column="system_disk_space_used_gb", agg=max, round=2),
@@ -1023,8 +1167,10 @@ class ResourceTracker:
         rec = {}
         # target average CPU usage
         rec["cpu"] = max(1, round(stats["process_cpu_usage"]["mean"]))
-        # target maximum memory usage (kB->MB) with a 20% buffer
-        rec["memory"] = round_memory(mb=stats["process_memory"]["max"] * 1.2 / 1024)
+        # target maximum memory usage (KiB->MiB) with a 20% buffer
+        rec["memory"] = round_memory(
+            mib=stats["process_memory_mib"]["max"] * 1.2 / 1024
+        )
         # target maximum GPU number of GPUs used
         rec["gpu"] = (
             max(1, round(stats["process_gpu_usage"]["max"]))
@@ -1033,8 +1179,8 @@ class ResourceTracker:
         )
         # target maximum VRAM usage (MiB) with a 20% buffer
         rec["vram"] = (
-            round_memory(mb=stats["process_gpu_vram"]["max"] * 1.2)
-            if stats["process_gpu_vram"]["max"] > 0
+            round_memory(mib=stats["process_gpu_vram_mib"]["max"] * 1.2)
+            if stats["process_gpu_vram_mib"]["max"] > 0
             else 0
         )
         return rec

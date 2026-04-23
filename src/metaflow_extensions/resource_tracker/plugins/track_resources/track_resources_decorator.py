@@ -75,7 +75,7 @@ class ResourceTrackerDecorator(StepDecorator):
         try:
             from .resource_tracker import ResourceTracker
 
-            self.resource_tracker = ResourceTracker()
+            self.resource_tracker = ResourceTracker(autostart=True)
             self.start_time = time()
 
         except Exception as e:

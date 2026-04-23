@@ -8,6 +8,9 @@ step decorator in Metaflow to automatically track resource usage and generate a
 card with data visualizations on historical resource usage and cloud server
 recommendations for future runs.
 
+For an alternative implementation of the same concept, but less tied to the
+Python ecosystem, see [resource-tracker-rs](https://github.com/sparecores/resource-tracker-rs).
+
 ## Installation
 
 You can install the stable version of the package from PyPI:
@@ -32,8 +35,14 @@ Note that depending on your operating system, you might need to also install
 The `resource-tracker` Python package is designed to be used in a variety of
 ways, even outside of Python. Find more details about how to use it directly
 from Python, R, or via our framework integrations, such as Metaflow, in the
-[integrations](integrations/)
-section of the documentation.
+[integrations](integrations/) section of the documentation.
+
+It also supports streaming resource usage data to a remote location for central
+analysis, visualization, and recommendations. To get started, visit the
+[sentinel.sparecores.com](https://sentinel.sparecores.com) website to register a
+free account, generate an API key, and use it to configure the
+`resource-tracker` package via the `SENTINEL_API_KEY` environment variable. Find
+more details in the the [streaming](streaming.md) section of the documentation.
 
 ## Operating System Support
 
@@ -74,6 +83,7 @@ CI/CD is set up to run tests on the below Python versions on Ubuntu latest LTS, 
 - 3.11
 - 3.12
 - 3.13
+- 3.14
 
 [![Unit tests status per Python version](https://github-actions.40ants.com/spareCores/resource-tracker/matrix.svg?only=Unit%20tests.pytest.ubuntu-latest)](https://github.com/SpareCores/resource-tracker/actions/workflows/tests.yaml)
 

@@ -302,4 +302,3 @@ def _check_ovh() -> dict:
 
         return {"vendor": "ovh", "instance_type": instance_type, "region": region}
     return {}
-

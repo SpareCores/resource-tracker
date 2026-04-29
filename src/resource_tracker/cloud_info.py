@@ -224,8 +224,7 @@ def _check_upcloud() -> dict:
 def _check_alicloud() -> dict:
     """Check if running on Alibaba Cloud (Alicloud) ECS and return standardized info.
 
-    Uses the IMDSv2-style token for security hardening mode. The metadata IP
-    100.100.100.200 is unique to Alibaba Cloud ECS instances.
+    Uses the IMDSv2-style token for security hardening mode.
 
     References: <https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata/>"""
     with suppress(Exception):
@@ -272,33 +271,24 @@ def _check_alicloud() -> dict:
 def _check_ovh() -> dict:
     """Check if running on OVH Cloud (Public Cloud) and return standardized info.
 
-    OVH Public Cloud uses OpenStack Nova metadata. The vendor_data2.json endpoint
-    contains an "OVH" key that uniquely identifies OVH instances.
-
-    References: <https://help.ovhcloud.com/csm/en-public-cloud-compute-first-steps>"""
+    References: <https://docs.openstack.org/nova/latest/user/metadata.html>"""
     with suppress(Exception):
-        # vendor_data2.json contains an "OVH" key unique to OVH Public Cloud instances
         with urllib.request.urlopen(
-            "http://169.254.169.254/openstack/latest/vendor_data2.json",
+            "http://169.254.169.254/openstack/latest/meta_data.json",
             timeout=METADATA_REQUEST_TIMEOUT,
         ) as response:
-            vendor_data = json.loads(response.read().decode("utf-8"))
+            meta_data = json.loads(response.read().decode("utf-8"))
 
-        if "OVH" not in vendor_data:
-            return {}
+        az = meta_data.get("availability_zone", "unknown")
+        region = "unknown" if az in ("unknown", "nova") else az
 
-        ovh_data = vendor_data["OVH"]
-        instance_type = ovh_data.get("flavor_name", "unknown")
-
-        # Get region from OpenStack meta_data.json (availability_zone field)
-        region = "unknown"
+        instance_type = "unknown"
         with suppress(Exception):
             with urllib.request.urlopen(
-                "http://169.254.169.254/openstack/latest/meta_data.json",
+                "http://169.254.169.254/latest/meta-data/instance-type",
                 timeout=METADATA_REQUEST_TIMEOUT,
             ) as response:
-                meta_data = json.loads(response.read().decode("utf-8"))
-                region = meta_data.get("availability_zone", "unknown")
+                instance_type = response.read().decode("utf-8")
 
         return {"vendor": "ovh", "instance_type": instance_type, "region": region}
     return {}

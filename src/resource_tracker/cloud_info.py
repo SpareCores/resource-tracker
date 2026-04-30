@@ -80,6 +80,15 @@ def _check_aws() -> dict:
 
         headers = {"X-aws-ec2-metadata-token": token}
 
+        # make sure we are on AWS and not a different cloud provider implementing a compatible metadata service
+        request = urllib.request.Request(
+            "http://169.254.169.254/latest/meta-data/services/domain", headers=headers
+        )
+        with urllib.request.urlopen(
+            request, timeout=METADATA_REQUEST_TIMEOUT
+        ) as response:
+            assert response.read().decode("utf-8") == "amazonaws.com"
+
         instance_type = "unknown"
         with suppress(Exception):
             request = urllib.request.Request(

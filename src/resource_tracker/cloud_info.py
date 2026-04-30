@@ -274,13 +274,31 @@ def _check_ovh() -> dict:
     References: <https://docs.openstack.org/nova/latest/user/metadata.html>"""
     with suppress(Exception):
         with urllib.request.urlopen(
-            "http://169.254.169.254/openstack/latest/meta_data.json",
+            "http://169.254.169.254/openstack/latest/network_data.json",
             timeout=METADATA_REQUEST_TIMEOUT,
         ) as response:
-            meta_data = json.loads(response.read().decode("utf-8"))
+            network_data = json.loads(response.read().decode("utf-8"))
 
-        az = meta_data.get("availability_zone", "unknown")
-        region = "unknown" if az in ("unknown", "nova") else az
+        dns_address = next(
+            service.get("address")
+            for service in network_data.get("services", [])
+            if service.get("type") == "dns"
+        )
+
+        # OVH default DNS server
+        if dns_address != "213.186.33.99":
+            return {}
+
+        region = "unknown"
+        with suppress(Exception):
+            with urllib.request.urlopen(
+                "http://169.254.169.254/openstack/latest/meta_data.json",
+                timeout=METADATA_REQUEST_TIMEOUT,
+            ) as response:
+                meta_data = json.loads(response.read().decode("utf-8"))
+
+            az = meta_data.get("availability_zone", "unknown")
+            region = "unknown" if az in ("unknown", "nova") else az
 
         instance_type = "unknown"
         with suppress(Exception):

@@ -64,6 +64,20 @@ between the processes using it, making it more representative of the memory
 usage of the monitored applications. Mac OS X and Windows use USS (Unique Set
 Size) instead.
 
+On macOS and Windows you need the `psutil` extra (see above). **Per-process RAM**
+uses psutil’s extended memory APIs (`memory_full_info`, which exposes USS on
+these platforms). The OS may refuse those queries unless the monitor runs with
+**elevated privileges**: on macOS, run your job under `sudo` (verified here); on
+Windows, run Python from an **elevated** shell (for example **Run as
+administrator** on Command Prompt, PowerShell, or Windows Terminal). Upstream
+psutil documents [`AccessDenied`](https://psutil.readthedocs.io/en/latest/faq.html#why-do-i-get-accessdenied)
+for insufficient rights on some processes; Windows behavior has **not** been
+manually validated in this repo. If a process cannot be opened, the psutil
+backend **skips that process** for the sample (CPU time, memory, and disk I/O
+for that PID are omitted together), so totals can be incomplete while
+**system-level** metrics still update—check this if you track worker trees or
+other users’ processes.
+
 CI/CD is set up to run tests on the below operating systems:
 
 - Ubuntu latest LTS (24.04)

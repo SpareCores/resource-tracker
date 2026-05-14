@@ -64,6 +64,10 @@ between the processes using it, making it more representative of the memory
 usage of the monitored applications. Mac OS X and Windows use USS (Unique Set
 Size) instead.
 
+Depending on your operating system and security settings, you might need elevated 
+permissions to track some of the resource usage metrics, e.g. running the 
+Resource Tracker with `sudo` on macOS for per-process RAM usage querying.
+
 CI/CD is set up to run tests on the below operating systems:
 
 - Ubuntu latest LTS (24.04)

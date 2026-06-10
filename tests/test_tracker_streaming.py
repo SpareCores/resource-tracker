@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+from time import time
 from unittest.mock import patch
 
 import pytest
@@ -30,13 +31,16 @@ FAKE_REGISTER_RESPONSE = {
 }
 
 
-def _wait_for_tracker(tracker, timeout=5):
-    """Spin-wait until at least one sample has been collected."""
-    for _ in range(timeout * 10):
-        if tracker.n_samples > 0:
-            return
+def _wait_for_tracker(tracker, timeout=5, min_samples=1):
+    """Spin-wait until at least ``min_samples`` have been collected."""
+    deadline = time() + timeout
+    while tracker.n_samples < min_samples:
+        if time() > deadline:
+            pytest.fail(
+                f"Only {tracker.n_samples} sample(s) collected after {timeout} seconds "
+                f"(expected at least {min_samples})"
+            )
         cpu_single(duration=0.1)
-    pytest.fail(f"No data collected after {timeout} seconds")
 
 
 # ---------------------------------------------------------------------------
@@ -215,7 +219,7 @@ def test_update_combined_csv_appends_rows(mock_register, monkeypatch):
     assert "process_" in lines[0]
 
     # Wait for more samples and update again — should only append
-    cpu_single(duration=1.5)
+    _wait_for_tracker(tracker, timeout=15, min_samples=tracker.n_samples + 1)
     tracker._update_combined_csv()
     n_second = tracker._combined_csv_rows_written
     assert n_second > n_first

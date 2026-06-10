@@ -12,7 +12,6 @@ from importlib.util import find_spec
 from io import StringIO
 from multiprocessing import Process
 from os import unlink
-from subprocess import Popen
 from re import search
 from subprocess import PIPE, Popen, TimeoutExpired
 from typing import Any, Callable, Dict, Iterable, List, Union

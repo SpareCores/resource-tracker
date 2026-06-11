@@ -343,7 +343,7 @@ def _check_vultr() -> dict:
             )
             return {
                 "vendor": "vultr",
-                # Vultr metadata exposes instanceid but not plan/size/flavor.
+                # no instance type in metadata
                 "instance_type": "unknown",
                 "region": region_code,
             }

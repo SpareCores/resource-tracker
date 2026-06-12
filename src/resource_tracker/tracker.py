@@ -45,7 +45,7 @@ from .column_maps import (
 from .helpers import (
     aggregate_stats,
     cleanup_files,
-    cleanup_processes,
+    cleanup_workers,
     get_tracker_implementation,
     is_psutil_available,
     render_csv_row,
@@ -394,7 +394,7 @@ class SystemTracker:
                 file_handle.close()
 
 
-def _run_tracker(tracker_type, error_queue, **kwargs):
+def _run_tracker(tracker_type, error_queue=None, error_file=None, **kwargs):
     """Run either ProcessTracker or SystemTracker with dynamic import resolution and error handling.
 
     This functions is standalone so that it can be pickled by multiprocessing,
@@ -446,14 +446,17 @@ def _run_tracker(tracker_type, error_queue, **kwargs):
         from sys import exc_info, exit
 
         exc_info = exc_info()
-        error_queue.put(
-            {
-                "name": exc_info[0].__name__,
-                "module": exc_info[0].__module__,
-                "message": str(exc_info[1]),
-                "traceback": traceback.format_exception(*exc_info),
-            }
-        )
+        error_data = {
+            "name": exc_info[0].__name__,
+            "module": exc_info[0].__module__,
+            "message": str(exc_info[1]),
+            "traceback": traceback.format_exception(*exc_info),
+        }
+        if error_queue is not None:
+            error_queue.put(error_data)
+        elif error_file:
+            with open(error_file, "w", encoding="utf-8") as handle:
+                handle.write(json_dumps(error_data))
         exit(1)
 
 
@@ -469,7 +472,7 @@ class ResourceTracker:
         children: Whether to track child processes. Defaults to True.
         interval: Sampling interval in seconds. Defaults to 1.
         method: Multiprocessing method. Defaults to None, which tries to fork on
-            Linux and macOS, and spawn on Windows.
+            Linux and macOS, and uses a dedicated worker subprocess on Windows.
         autostart: Whether to start tracking immediately. Defaults to True.
         track_processes: Whether to track resource usage at the process level.
             Defaults to True.
@@ -546,18 +549,26 @@ class ResourceTracker:
                 "psutil is required for resource tracking on non-Linux platforms"
             )
 
-        if method is None:
-            # try to fork when possible due to leaked semaphores on older Python versions
-            # see e.g. https://github.com/python/cpython/issues/90549
-            if platform in ["linux", "darwin"]:
-                self.mpc = get_context("fork")
-            else:
-                self.mpc = get_context("spawn")
-        else:
-            self.mpc = get_context(method)
+        # On Windows, use ``python -m resource_tracker._tracker_worker`` instead
+        # of multiprocessing spawn so the user's main script is not re-imported.
+        self._use_subprocess_workers = platform == "win32"
 
-        # error details from subprocesses
-        self.error_queue = self.mpc.SimpleQueue()
+        if self._use_subprocess_workers:
+            self.mpc = None
+            self.error_queue = None
+        else:
+            if method is None:
+                # try to fork when possible due to leaked semaphores on older Python versions
+                # see e.g. https://github.com/python/cpython/issues/90549
+                if platform in ["linux", "darwin"]:
+                    self.mpc = get_context("fork")
+                else:
+                    self.mpc = get_context("spawn")
+            else:
+                self.mpc = get_context(method)
+
+            # error details from subprocesses
+            self.error_queue = self.mpc.SimpleQueue()
 
         # create temporary CSV file(s) for the tracker(s), and record only the file path(s)
         # to be passed later to subprocess(es) avoiding pickling the file object(s)
@@ -578,6 +589,66 @@ class ResourceTracker:
         if autostart:
             self.start()
 
+    def _start_subprocess_worker(self, tracker_type: str) -> None:
+        """Start a tracker worker via ``python -m resource_tracker._tracker_worker``."""
+        from subprocess import DEVNULL, Popen
+        from sys import executable
+
+        short_type = "process" if tracker_type == "process_tracker" else "system"
+        error_temp = NamedTemporaryFile(delete=False, suffix=".json")
+        error_path = error_temp.name
+        error_temp.close()
+        setattr(self, f"{tracker_type}_error_filepath", error_path)
+
+        cmd = [
+            executable,
+            "-m",
+            "resource_tracker._tracker_worker",
+            short_type,
+            "--start-time",
+            str(self.start_time),
+            "--interval",
+            str(self.interval),
+            "--output-file",
+            getattr(self, f"{tracker_type}_filepath"),
+            "--error-file",
+            error_path,
+        ]
+        if short_type == "process":
+            cmd.extend(["--pid", str(self.pid)])
+            if not self.children:
+                cmd.append("--no-children")
+
+        setattr(
+            self,
+            f"{tracker_type}_process",
+            Popen(cmd, stdout=DEVNULL, stderr=DEVNULL),
+        )
+
+    def _collect_worker_errors(self) -> List[dict]:
+        """Return error payloads reported by background tracker workers."""
+        errors = []
+        if self.error_queue is not None:
+            if not self.error_queue.empty():
+                errors.append(self.error_queue.get())
+            return errors
+
+        for tracker_name in self.trackers:
+            error_path = getattr(self, f"{tracker_name}_error_filepath", None)
+            if error_path and path.isfile(error_path) and path.getsize(error_path) > 0:
+                with open(error_path, encoding="utf-8") as handle:
+                    errors.append(json_loads(handle.read()))
+        return errors
+
+    @staticmethod
+    def _log_worker_error(error_data: dict) -> None:
+        logger.warning(
+            "Resource tracker subprocess failed!\n"
+            f"Error type: {error_data['name']} (from module {error_data['module']})\n"
+            f"Error message: {error_data['message']}\n"
+            f"Original traceback:\n{error_data['traceback']}"
+        )
+
     def start(self):
         """Start the selected resource trackers in the background as subprocess(es)."""
         if self.running:
@@ -595,33 +666,39 @@ class ResourceTracker:
         if self.start_time - time() < 0.05:
             self.start_time += self.interval
 
-        if "process_tracker" in self.trackers:
-            self.process_tracker_process = self.mpc.Process(
-                target=_run_tracker,
-                args=("process", self.error_queue),
-                kwargs={
-                    "pid": self.pid,
-                    "start_time": self.start_time,
-                    "interval": self.interval,
-                    "children": self.children,
-                    "output_file": self.process_tracker_filepath,
-                },
-                daemon=True,
-            )
-            self.process_tracker_process.start()
+        if self._use_subprocess_workers:
+            if "process_tracker" in self.trackers:
+                self._start_subprocess_worker("process_tracker")
+            if "system_tracker" in self.trackers:
+                self._start_subprocess_worker("system_tracker")
+        else:
+            if "process_tracker" in self.trackers:
+                self.process_tracker_process = self.mpc.Process(
+                    target=_run_tracker,
+                    args=("process", self.error_queue),
+                    kwargs={
+                        "pid": self.pid,
+                        "start_time": self.start_time,
+                        "interval": self.interval,
+                        "children": self.children,
+                        "output_file": self.process_tracker_filepath,
+                    },
+                    daemon=True,
+                )
+                self.process_tracker_process.start()
 
-        if "system_tracker" in self.trackers:
-            self.system_tracker_process = self.mpc.Process(
-                target=_run_tracker,
-                args=("system", self.error_queue),
-                kwargs={
-                    "start_time": self.start_time,
-                    "interval": self.interval,
-                    "output_file": self.system_tracker_filepath,
-                },
-                daemon=True,
-            )
-            self.system_tracker_process.start()
+            if "system_tracker" in self.trackers:
+                self.system_tracker_process = self.mpc.Process(
+                    target=_run_tracker,
+                    args=("system", self.error_queue),
+                    kwargs={
+                        "start_time": self.start_time,
+                        "interval": self.interval,
+                        "output_file": self.system_tracker_filepath,
+                    },
+                    daemon=True,
+                )
+                self.system_tracker_process.start()
 
         def collect_server_info():
             """Collect server info to be run in a background thread."""
@@ -647,7 +724,7 @@ class ResourceTracker:
         # make sure to cleanup the started subprocess(es)
         finalize(
             self,
-            cleanup_processes,
+            cleanup_workers,
             [
                 getattr(self, f"{tracker_name}_process")
                 for tracker_name in self.trackers
@@ -725,7 +802,7 @@ class ResourceTracker:
             if hasattr(self, "_combined_csv_filepath"):
                 cleanup_files([self._combined_csv_filepath])
         with suppress(Exception):
-            cleanup_processes(
+            cleanup_workers(
                 [
                     getattr(self, f"{tracker_name}_process")
                     for tracker_name in self.trackers
@@ -743,21 +820,15 @@ class ResourceTracker:
                 streaming is enabled.  Defaults to ``"finished"``.
         """
         self.stop_time = time()
-        # check for errors in the subprocesses
-        if not self.error_queue.empty():
-            error_data = self.error_queue.get()
-            logger.warning(
-                "Resource tracker subprocess failed!\n"
-                f"Error type: {error_data['name']} (from module {error_data['module']})\n"
-                f"Error message: {error_data['message']}\n"
-                f"Original traceback:\n{error_data['traceback']}"
-            )
+        for error_data in self._collect_worker_errors():
+            self._log_worker_error(error_data)
         # terminate tracker processes
         for tracker_name in self.trackers:
             process_attr = f"{tracker_name}_process"
             if hasattr(self, process_attr):
-                cleanup_processes([getattr(self, process_attr)])
-        self.error_queue.close()
+                cleanup_workers([getattr(self, process_attr)])
+        if self.error_queue is not None:
+            self.error_queue.close()
 
         # Finalize streaming — flush remaining data and call finish_run
         if self._streaming is not None:

@@ -145,6 +145,28 @@ def cleanup_processes(processes: List[Process]):
             process.close()
 
 
+def cleanup_workers(workers: List[Union[Process, Popen]]):
+    """Terminate background tracker workers started as processes or subprocesses.
+
+    Args:
+        workers: ``multiprocessing.Process`` or ``subprocess.Popen`` objects.
+    """
+    for worker in workers:
+        if worker is None:
+            continue
+        if isinstance(worker, Popen):
+            with suppress(Exception):
+                if worker.poll() is None:
+                    worker.terminate()
+                    worker.wait(timeout=1.0)
+            with suppress(Exception):
+                if worker.poll() is None:
+                    worker.kill()
+                    worker.wait(timeout=1.0)
+        else:
+            cleanup_processes([worker])
+
+
 def aggregate_stats(
     stats: List[Dict[str, Dict[str, Any]]],
 ) -> Dict[str, Dict[str, Any]]:

@@ -47,6 +47,8 @@ for a more detailed actual usage example.
 It's possible to track only the system-wide or process resource usage by the
 related init parameters of `ResourceTracker`, just like controlling the sampling
 interval, or how to start (e.g. spawn or fork) the subprocesses of the trackers.
+On Windows, background trackers are started via a dedicated worker subprocess so
+you do not need an `if __name__ == "__main__":` guard in your script.
 
 For even more control, you can use the underlying `ProcessTracker` and
 `SystemTracker` classes directly, which are not starting and handling new

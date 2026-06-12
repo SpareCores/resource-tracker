@@ -1,3 +1,7 @@
+## v0.5.x (DEVELOPMENT)
+
+- Add `OVH`, `Vultr`, and `Alibaba` cloud provider detection via VM metadata services.
+
 ## v0.5.0 (April 10, 2026)
 
 - Add optional and configurable metric streaming to the [Spare Cores Sentinel](https://sentinel.sparecores.com): pass

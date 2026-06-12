@@ -21,7 +21,7 @@ def get_cloud_info() -> dict:
     Returns:
         A dictionary containing standardized cloud information:
 
-            - `vendor`: The cloud provider (aws, gcp, azure, hcloud, upcloud, alicloud, ovh), or "unknown"
+            - `vendor`: The cloud provider (aws, gcp, azure, hcloud, upcloud, alicloud, ovh, vultr), or "unknown"
             - `instance_type`: The instance type/size/flavor, or "unknown"
             - `region`: The region/zone where the instance is running, or "unknown"
             - `discovery_time`: The time taken to discover the cloud environment, in seconds
@@ -35,6 +35,7 @@ def get_cloud_info() -> dict:
         _check_upcloud,
         _check_alicloud,
         _check_ovh,
+        _check_vultr,
     ]
 
     # run checks in parallel, return early if any check succeeds
@@ -318,4 +319,32 @@ def _check_ovh() -> dict:
                 instance_type = response.read().decode("utf-8")
 
         return {"vendor": "ovh", "instance_type": instance_type, "region": region}
+    return {}
+
+
+@cache
+def _check_vultr() -> dict:
+    """Check if running on Vultr and return standardized info.
+
+    References: <https://www.vultr.com/metadata/>"""
+    with suppress(Exception):
+        with urllib.request.urlopen(
+            "http://169.254.169.254/v1.json",
+            timeout=METADATA_REQUEST_TIMEOUT,
+        ) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            if "instanceid" not in data:
+                return {}
+            region = data.get("region")
+            region_code = (
+                region.get("regioncode", "unknown")
+                if isinstance(region, dict)
+                else "unknown"
+            )
+            return {
+                "vendor": "vultr",
+                # no instance type in metadata
+                "instance_type": "unknown",
+                "region": region_code,
+            }
     return {}

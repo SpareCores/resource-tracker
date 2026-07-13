@@ -22,7 +22,7 @@ from resource_tracker.dummy_workloads import cpu_single
 def test_get_process_stats_implementations(tracker_implementation):
     """Test get_process_stats from different implementations."""
     module = import_module(tracker_implementation)
-    get_process_stats = getattr(module, "get_process_stats")
+    get_process_stats = module.get_process_stats
 
     pid = getpid()
     stats = get_process_stats(pid)
@@ -58,7 +58,7 @@ def test_get_process_stats_implementations(tracker_implementation):
 def test_get_system_stats_implementations(tracker_implementation):
     """Test get_system_stats from different implementations."""
     module = import_module(tracker_implementation)
-    get_system_stats = getattr(module, "get_system_stats")
+    get_system_stats = module.get_system_stats
 
     stats = get_system_stats()
 
@@ -186,9 +186,12 @@ def wait_for_tracker(
         if check_process_tracker and check_system_tracker:
             if tracker.n_samples > 0:
                 break
-        elif check_process_tracker and len(tracker.process_metrics) > 0:
-            break
-        elif check_system_tracker and len(tracker.system_metrics) > 0:
+        elif (
+            check_process_tracker
+            and len(tracker.process_metrics) > 0
+            or check_system_tracker
+            and len(tracker.system_metrics) > 0
+        ):
             break
         cpu_single(duration=0.1)
     else:
@@ -245,8 +248,7 @@ def test_resource_tracker_combined_metrics():
     assert "process_pid" not in combined.columns
     assert combined[0]["host_cpu_all_utime_s_delta"] >= 0
     assert (
-        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"]
-        >= 0
+        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"] >= 0
     )
     assert combined[0]["proc_cpu_all_utime_s_delta"] >= 0
     assert (

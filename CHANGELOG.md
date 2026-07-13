@@ -1,6 +1,19 @@
-## v0.5.x (DEVELOPMENT)
+## v0.6.0 (DEVELOPMENT)
 
-- Add `OVH`, `Vultr`, and `Alibaba` cloud provider detection via VM metadata services.
+- Drop `process_pid` from the default combined CSV header (`pid` remains in raw process
+  tracker output; pass via upload metadata if needed on Sentinel).
+- Add OVH, Vultr, and Alibaba Cloud cloud provider detection via VM metadata services.
+
+!! Breaking changes:
+
+- Combined metrics CSV headers now use v2 self-describing column names (`host_*`, `proc_*`)
+  instead of v1 `system_*` / `process_*` prefixes. Column values are unchanged. Old runs keep
+  v1 headers; v1 and v2 must not be mixed in one CSV. Update scripts that read combined
+  columns (e.g. `process_memory_mib` → `proc_memory_all_used_mib_gauge`,
+  `system_cpu_usage` → `host_cpu_all_usage_core_gauge`).
+- `get_combined_metrics()` no longer accepts `system_prefix` or `process_prefix`. The optional
+  `human_names` parameter is retained for display labels.
+- `stats()` and `recommend_resources()` now return v2 combined column keys.
 
 ## v0.5.0 (April 10, 2026)
 

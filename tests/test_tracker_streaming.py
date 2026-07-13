@@ -175,8 +175,8 @@ def test_short_run_sends_inline_csv(mock_register, mock_finish, monkeypatch):
     assert finish_kwargs["data_source"] == DataSource.inline
     csv_text = finish_kwargs["data_csv"]
     assert "timestamp" in csv_text
-    assert "system_" in csv_text
-    assert "process_" in csv_text
+    assert "host_" in csv_text
+    assert "proc_" in csv_text
     # Should have at least a header + one data row
     lines = [line for line in csv_text.strip().split("\n") if line]
     assert len(lines) >= 2
@@ -211,8 +211,8 @@ def test_update_combined_csv_appends_rows(mock_register, monkeypatch):
     lines = [line for line in content.strip().split("\n") if line]
     assert len(lines) == n_first + 1  # header + data rows
     assert "timestamp" in lines[0]
-    assert "system_" in lines[0]
-    assert "process_" in lines[0]
+    assert "host_" in lines[0]
+    assert "proc_" in lines[0]
 
     # Wait for more samples and update again — should only append
     cpu_single(duration=1.5)
@@ -372,8 +372,8 @@ def test_upload_batch_uses_csv_update_fn(
     # Decompress and verify the uploaded data
     decompressed = gzip.decompress(put_kwargs["body"])
     assert b"timestamp" in decompressed
-    assert b"system_" in decompressed
-    assert b"process_" in decompressed
+    assert b"host_" in decompressed
+    assert b"proc_" in decompressed
 
     tracker.stop()
 

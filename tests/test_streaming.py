@@ -44,7 +44,10 @@ FAKE_REFRESH_RESPONSE = {
     },
 }
 
-COMBINED_CSV_HEADER = '"timestamp","system_cpu_usage","system_memory_used","process_cpu_usage","process_memory"\n'
+COMBINED_CSV_HEADER = (
+    '"timestamp","host_cpu_all_usage_core_gauge","host_memory_all_used_mib_gauge",'
+    '"proc_cpu_all_usage_core_gauge","proc_memory_all_used_mib_gauge"\n'
+)
 COMBINED_CSV_ROW1 = "1774468571.001,0.57,6108688.0,0.0294,9840.0\n"
 COMBINED_CSV_ROW2 = "1774468572.001,1.5301,5868064.0,0.8516,8576.0\n"
 COMBINED_CSV_ROW3 = "1774468573.001,2.6301,5859120.0,1.1353,8464.0\n"
@@ -195,8 +198,8 @@ def test_stop_short_run_sends_inline_csv(mock_register, mock_finish, tmp_path):
     assert finish_kwargs[1]["data_source"] == DataSource.inline
     csv_text = finish_kwargs[1]["data_csv"]
     assert "timestamp" in csv_text
-    assert "system_cpu_usage" in csv_text
-    assert "process_cpu_usage" in csv_text
+    assert "host_cpu_all_usage_core_gauge" in csv_text
+    assert "proc_cpu_all_usage_core_gauge" in csv_text
     assert finish_kwargs[1]["exit_code"] == 0
     assert finish_kwargs[1]["run_status"] == RunStatus.finished
     assert result == {"stats": {}}
@@ -286,8 +289,8 @@ def test_upload_batch_uploads_gzipped_csv(mock_register, mock_put, tmp_path):
 
     decompressed = gzip.decompress(put_kwargs["body"])
     assert b"timestamp" in decompressed
-    assert b"system_cpu_usage" in decompressed
-    assert b"process_cpu_usage" in decompressed
+    assert b"host_cpu_all_usage_core_gauge" in decompressed
+    assert b"proc_cpu_all_usage_core_gauge" in decompressed
 
     assert len(mgr.uploaded_uris) == 1
     assert mgr.uploaded_uris[0].endswith("0001.csv.gz")

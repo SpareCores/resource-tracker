@@ -126,20 +126,20 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">CPU</div>
                         <div class="section-content-card-value">
-                            <span class="metric-highlight">{{{ stats.process_cpu_usage.mean | round:2 }}}</span> avg
+                            <span class="metric-highlight">{{{ stats.proc_cpu_all_usage_core_gauge.mean | round:2 }}}</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.mean | round:2 }}}{{ #else }}-{{/if}}</span> hist avg
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.proc_cpu_all_usage_core_gauge.mean | round:2 }}}{{ #else }}-{{/if}}</span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.process_cpu_usage.max | round:2 }}}{{ #else }}-{{/if}}</span> peak</div>
+                            <span class="metric">{{ #if historical_stats }}{{{ combined_stats.proc_cpu_all_usage_core_gauge.max | round:2 }}}{{ #else }}-{{/if}}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Memory</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{stats.process_memory_mib.mean | pretty_number:2 }}} MiB</span> avg
+                            <span class="metric">{{{stats.proc_memory_all_used_mib_gauge.mean | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{stats.process_memory_mib.max | pretty_number:2 }}} MiB</span> peak
+                            <span class="metric">{{{stats.proc_memory_all_used_mib_gauge.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
-                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.process_memory_mib.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
+                            <span class="metric-highlight">{{ #if historical_stats }}{{{ combined_stats.proc_memory_all_used_mib_gauge.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB</span> hist peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">Duration</div>
@@ -183,38 +183,38 @@
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">GPU</div>
                         <div class="section-content-card-value">
-                            <span class="metric"></span>{{{ stats.process_gpu_usage.mean }}}</span> avg
+                            <span class="metric"></span>{{{ stats.proc_gpu_all_usage_core_gauge.mean }}}</span> avg
                             <span class="metric-separator">|</span>
                             <span class="metric">
-                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_usage.max }}}{{ #else }}-{{/if}}
+                                {{ #if historical_stats }}{{{ combined_stats.proc_gpu_all_usage_core_gauge.max }}}{{ #else }}-{{/if}}
                             </span> hist avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{ stats.process_gpu_usage.max }}</span> peak</div>
+                            <span class="metric">{{ stats.proc_gpu_all_usage_core_gauge.max }}</span> peak</div>
                     </div>
                     <div class="section-content-card-task">
                         <div class="section-content-card-label">VRAM</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{ stats.process_gpu_vram_mib.mean | pretty_number:2 }}} MiB</span> avg
+                            <span class="metric">{{{ stats.proc_gpu_all_memory_mib_gauge.mean | pretty_number:2 }}} MiB</span> avg
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{ stats.process_gpu_vram_mib.max | pretty_number:2 }}} MiB</span> peak
+                            <span class="metric">{{{ stats.proc_gpu_all_memory_mib_gauge.max | pretty_number:2 }}} MiB</span> peak
                             <span class="metric-separator">|</span>
                             <span class="metric-highlight">
-                                {{ #if historical_stats }}{{{ combined_stats.process_gpu_vram_mib.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
+                                {{ #if historical_stats }}{{{ combined_stats.proc_gpu_all_memory_mib_gauge.max | pretty_number:2 }}}{{ #else }}-{{/if}} MiB
                             </span> hist peak</div>
                     </div>
                     {{ /if }}
                     <div class="section-content-card">
                         <div class="section-content-card-label">Disk Space</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{ stats.system_disk_space_used_gb.max | pretty_number }}} GB</span> peak
+                            <span class="metric">{{{ stats.host_disk_all_space_used_gb_gauge.max | pretty_number }}} GB</span> peak
                         </div>
                     </div>
                     <div class="section-content-card">
                         <div class="section-content-card-label">Traffic</div>
                         <div class="section-content-card-value">
-                            <span class="metric">{{{ stats.system_net_recv_bytes.sum | divide:1073741824 | pretty_number:2 }}} GB</span> in
+                            <span class="metric">{{{ stats.host_net_all_recv_bytes_delta.sum | divide:1073741824 | pretty_number:2 }}} GB</span> in
                             <span class="metric-separator">|</span>
-                            <span class="metric">{{{ stats.system_net_sent_bytes.sum | divide:1073741824 | pretty_number:2 }}} GB</span> out
+                            <span class="metric">{{{ stats.host_net_all_sent_bytes_delta.sum | divide:1073741824 | pretty_number:2 }}} GB</span> out
                         </div>
                     </div>
                 </div>

@@ -236,23 +236,31 @@ def test_resource_tracker_combined_metrics():
     wait_for_tracker(tracker)
     tracker.stop()
     assert len(tracker.get_combined_metrics()) > 0
-    assert tracker.get_combined_metrics()[0]["system_utime"] >= 0
-    assert (
-        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"] >= 0
+    combined = tracker.get_combined_metrics()
+    assert combined.columns[0] == "timestamp"
+    assert all(
+        col.startswith("host_") or col.startswith("proc_") or col == "timestamp"
+        for col in combined.columns
     )
-    assert tracker.get_combined_metrics()[0]["process_utime"] >= 0
+    assert "process_pid" not in combined.columns
+    assert combined[0]["host_cpu_all_utime_s_delta"] >= 0
+    assert (
+        tracker.get_combined_metrics(human_names=True)[0]["System CPU time (user)"]
+        >= 0
+    )
+    assert combined[0]["proc_cpu_all_utime_s_delta"] >= 0
     assert (
         tracker.get_combined_metrics(human_names=True)[0]["Process CPU time (user)"]
         >= 0
     )
-    assert tracker.get_combined_metrics()[0]["system_memory_used_mib"] > 0
-    assert tracker.get_combined_metrics()[0]["process_memory_mib"] > 0
+    assert combined[0]["host_memory_all_used_mib_gauge"] > 0
+    assert combined[0]["proc_memory_all_used_mib_gauge"] > 0
     assert (
-        tracker.get_combined_metrics(bytes=True)[0]["process_memory_mib"]
-        > tracker.get_combined_metrics(bytes=False)[0]["process_memory_mib"]
+        tracker.get_combined_metrics(bytes=True)[0]["proc_memory_all_used_mib_gauge"]
+        > tracker.get_combined_metrics(bytes=False)[0]["proc_memory_all_used_mib_gauge"]
     )
-    assert tracker.stats()["process_cpu_usage"]["max"] > 0
-    assert tracker.stats()["process_memory_mib"]["mean"] > 0
+    assert tracker.stats()["proc_cpu_all_usage_core_gauge"]["max"] > 0
+    assert tracker.stats()["proc_memory_all_used_mib_gauge"]["mean"] > 0
 
 
 def test_resource_tracker_report():

@@ -37,10 +37,10 @@ from weakref import finalize
 from ._version import __version__
 from .cloud_info import get_cloud_info
 from .column_maps import (
-    BYTE_MAPPING,
-    HUMAN_NAMES_MAPPING,
-    REPORT_CSV_MAPPING,
     SERVER_ALLOCATION_CHECKS,
+    V2_REPORT_CSV_MAPPING,
+    build_v2_combined_metrics,
+    v2_report_chart_columns,
 )
 from .helpers import (
     aggregate_stats,
@@ -994,20 +994,16 @@ class ResourceTracker:
         self,
         bytes: bool = False,
         human_names: bool = False,
-        system_prefix: Optional[str] = None,
-        process_prefix: Optional[str] = None,
         offset: Optional[int] = None,
     ) -> TinyDataFrame:
         """Collected data both from the [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][].
 
         This is effectively binding the two dataframes together by timestamp,
-        and adding a prefix to the column names to distinguish between the system and process metrics.
+        using v2 self-describing column names (`host_*`, `proc_*`).
 
         Args:
             bytes: Whether to convert all metrics (e.g. memory, VRAM, disk usage) to bytes. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] (KiB, MiB, or GiB).
-            human_names: Whether to rename the columns to use human-friendly names. Defaults to False, reporting as documented at [resource_tracker.ProcessTracker][] and [resource_tracker.SystemTracker][] with prefixes.
-            system_prefix: Prefix to add to the system-level column names. Defaults to "system_" or "System " based on the value of `human_names`.
-            process_prefix: Prefix to add to the process-level column names. Defaults to "process_" or "Process " based on the value of `human_names`.
+            human_names: Whether to rename the columns to use human-friendly display labels. Defaults to False, reporting canonical v2 machine names.
             offset: If set, only return records starting from this index (exclusive lower bound).
                 Useful for incremental reads: pass the number of records already consumed and
                 receive only the new ones. Defaults to ``None`` (all data).
@@ -1034,34 +1030,12 @@ class ResourceTracker:
             if len(process_metrics) == 0:
                 return TinyDataFrame(data=[])
 
-            if bytes:
-                for col, factor in BYTE_MAPPING.items():
-                    for metrics in (system_metrics, process_metrics):
-                        if col in metrics.columns:
-                            metrics[col] = [v * factor for v in metrics[col]]
-
-            if system_prefix is None:
-                system_prefix = "system_" if not human_names else "System "
-            if process_prefix is None:
-                process_prefix = "process_" if not human_names else "Process "
-
-            # cbind the two dataframes with column name prefixes and optional human-friendly names
-            combined = system_metrics.rename(
-                columns={
-                    n: (
-                        (system_prefix if n != "timestamp" else "")
-                        + (n if not human_names else HUMAN_NAMES_MAPPING.get(n, n))
-                    )
-                    for n in system_metrics.columns
-                }
+            return build_v2_combined_metrics(
+                system_metrics,
+                process_metrics,
+                bytes=bytes,
+                human_names=human_names,
             )
-            for col in process_metrics.columns[1:]:
-                combined[
-                    process_prefix
-                    + (col if not human_names else HUMAN_NAMES_MAPPING.get(col, col))
-                ] = process_metrics[col]
-
-            return combined
         except Exception as e:
             with suppress(Exception):
                 logger.warning(
@@ -1076,19 +1050,19 @@ class ResourceTracker:
     def stats(
         self,
         specs: List[StatSpec] = [
-            StatSpec(column="process_cpu_usage", agg=mean, round=2),
-            StatSpec(column="process_cpu_usage", agg=max, round=2),
-            StatSpec(column="process_memory_mib", agg=mean, round=2),
-            StatSpec(column="process_memory_mib", agg=max, round=2),
-            StatSpec(column="process_gpu_usage", agg=mean, round=2),
-            StatSpec(column="process_gpu_usage", agg=max, round=2),
-            StatSpec(column="process_gpu_vram_mib", agg=mean, round=2),
-            StatSpec(column="process_gpu_vram_mib", agg=max, round=2),
-            StatSpec(column="process_gpu_utilized", agg=mean, round=2),
-            StatSpec(column="process_gpu_utilized", agg=max, round=2),
-            StatSpec(column="system_disk_space_used_gb", agg=max, round=2),
-            StatSpec(column="system_net_recv_bytes", agg=sum),
-            StatSpec(column="system_net_sent_bytes", agg=sum),
+            StatSpec(column="proc_cpu_all_usage_core_gauge", agg=mean, round=2),
+            StatSpec(column="proc_cpu_all_usage_core_gauge", agg=max, round=2),
+            StatSpec(column="proc_memory_all_used_mib_gauge", agg=mean, round=2),
+            StatSpec(column="proc_memory_all_used_mib_gauge", agg=max, round=2),
+            StatSpec(column="proc_gpu_all_usage_core_gauge", agg=mean, round=2),
+            StatSpec(column="proc_gpu_all_usage_core_gauge", agg=max, round=2),
+            StatSpec(column="proc_gpu_all_memory_mib_gauge", agg=mean, round=2),
+            StatSpec(column="proc_gpu_all_memory_mib_gauge", agg=max, round=2),
+            StatSpec(column="proc_gpu_all_utilized_count_gauge", agg=mean, round=2),
+            StatSpec(column="proc_gpu_all_utilized_count_gauge", agg=max, round=2),
+            StatSpec(column="host_disk_all_space_used_gb_gauge", agg=max, round=2),
+            StatSpec(column="host_net_all_recv_bytes_delta", agg=sum),
+            StatSpec(column="host_net_all_sent_bytes_delta", agg=sum),
             StatSpec(
                 column="timestamp", agg=lambda x: max(x) - min(x), agg_name="duration"
             ),
@@ -1166,21 +1140,21 @@ class ResourceTracker:
 
         rec = {}
         # target average CPU usage
-        rec["cpu"] = max(1, round(stats["process_cpu_usage"]["mean"]))
+        rec["cpu"] = max(1, round(stats["proc_cpu_all_usage_core_gauge"]["mean"]))
         # target maximum memory usage (KiB->MiB) with a 20% buffer
         rec["memory"] = round_memory(
-            mib=stats["process_memory_mib"]["max"] * 1.2 / 1024
+            mib=stats["proc_memory_all_used_mib_gauge"]["max"] * 1.2 / 1024
         )
         # target maximum GPU number of GPUs used
         rec["gpu"] = (
-            max(1, round(stats["process_gpu_usage"]["max"]))
-            if stats["process_gpu_usage"]["mean"] > 0
+            max(1, round(stats["proc_gpu_all_usage_core_gauge"]["max"]))
+            if stats["proc_gpu_all_usage_core_gauge"]["mean"] > 0
             else 0
         )
         # target maximum VRAM usage (MiB) with a 20% buffer
         rec["vram"] = (
-            round_memory(mib=stats["process_gpu_vram_mib"]["max"] * 1.2)
-            if stats["process_gpu_vram_mib"]["max"] > 0
+            round_memory(mib=stats["proc_gpu_all_memory_mib_gauge"]["max"] * 1.2)
+            if stats["proc_gpu_all_memory_mib_gauge"]["max"] > 0
             else 0
         )
         return rec
@@ -1251,7 +1225,8 @@ class ResourceTracker:
 
         # comma-separated values
         joined = self.get_combined_metrics(bytes=True, human_names=True)
-        for name, columns in REPORT_CSV_MAPPING.items():
+        for name in V2_REPORT_CSV_MAPPING:
+            columns = v2_report_chart_columns(name, human_names=True)
             csv_data = joined[columns]
             # convert to JS milliseconds
             csv_data["Timestamp"] = [t * 1000 for t in csv_data["Timestamp"]]

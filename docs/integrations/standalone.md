@@ -44,6 +44,13 @@ additional methods for e.g. printing and saving to a CSV file. See the
 [standalone.py](https://github.com/SpareCores/resource-tracker/tree/main/examples/standalone.py)
 for a more detailed actual usage example.
 
+`get_combined_metrics()` emits **v2** combined CSV headers: self-describing names with
+`host_*` (system-wide) and `proc_*` (process tree) prefixes, e.g.
+`host_cpu_all_usage_core_gauge` and `proc_memory_all_used_mib_gauge`. The recommended
+header is `timestamp`, then sorted `host_*` columns, then `cgroup_*` (reserved), then
+sorted `proc_*` columns. `process_pid` is not included in the default combined header.
+Pass `human_names=True` for display labels in tables and reports.
+
 It's possible to track only the system-wide or process resource usage by the
 related init parameters of `ResourceTracker`, just like controlling the sampling
 interval, or how to start (e.g. spawn or fork) the subprocesses of the trackers.
